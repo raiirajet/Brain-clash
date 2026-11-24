@@ -148,9 +148,10 @@ class ChallengeQuestions extends Questions{
     final answer=cycle[level+1];
     return pick(World.logic,'${pattern.join(' ')} ?',answer,signs.where((s)=>s!=answer).take(3).toList());
    case Challenge.colorConfusion:
-    final words=['Rot','Blau','Grün','Gelb'];
-    final i=random.nextInt(4),j=(i+1+random.nextInt(3))%4;
-    final options=[...words]..shuffle(random);
+    final words=['Rot','Blau','Grün','Gelb','Violett','Orange'].take(level<2?4:level+3).toList();
+    final i=random.nextInt(words.length),j=(i+1+random.nextInt(words.length-1))%words.length;
+    final others=words.where((w)=>w!=words[i]).toList()..shuffle(random);
+    final options=[words[i],...others.take(3)]..shuffle(random);
     return Question(World.focus,words[j].toUpperCase(),words[i],options,'Farbe: ${words[i]}',interaction:Interaction.stroop,board:['$i']);
    case Challenge.spellingDuel:
     const bank=[['Fahrrad','Farad','Fahrad','Farrad'],['Rhythmus','Rytmus','Rhytmus','Rythmuss'],['Bibliothek','Biblioteck','Bibliohthek','Biblothek'],['Schokolade','Schokollade','Schokolate','Schokoladde']];

@@ -1,7 +1,13 @@
 # 0.9.7 audit remediation candidate
 
-Implemented: per-game arithmetic option normalization, difficulty-sensitive generator variants, clue-based Word Sprint, variable target/tap tasks, new maze per stage, bounded 30-second overtime, comparable Speed Battle setup, arcade objective result, first-attempt mastery (20 comparable training samples), no XP for wrong-only/empty rounds, separate competitive rating and configuration records, game-tagged review queue, save retry, both-player summary, guarded setup navigation, selectable tournament game/rule/time/level, persisted bracket validation, shared-rank and replay disclosure.
+Implemented:
+- normalized per-game arithmetic options; manual digits remain exact except constrained no-carry combinations; age presets and game-specific difficulty behavior expanded.
+- Word Sprint clue bank, variable target/tap tasks, larger mazes per tier with regenerated stages, changing treasure allocation, tower/lock goals and boss health scaling, tier-specific fuse timer.
+- bounded 30s overtime, equal-setting Speed Battle guard and identical tasks for matching speed settings, objective results, stage feedback, second-player statistics.
+- first-attempt mastery in comparable training settings, separated XP and local competitive rating (not Elo), XP breakdown, qualified participation/record bonuses, review routing, save retry.
+- per-profile quick-start settings, completed best-of series checkpoints with draw cap, tournament choices and persisted bracket validation, instructions.
+- regression tests and supported-mode/rule simulation matrix.
 
-Intentional compatibility: old XP, profiles, assets, database schema, package id and test APK workflow retained. Fixed digit choices remain user-controlled; skill tiers do not silently override manual numeric operands. Existing masterplan and prior audit remain historical records.
+Compatibility: existing XP, profiles, assets, database schema and package ID retained. Old global quick-start configuration is not imported into another profile; users establish a new profile-specific setup on their next round. Active unfinished rounds are intentionally not restored; completed series rounds are retained. Manual digit choices remain user-controlled.
 
-Outstanding: complete per-game level curriculum and calibrated learning thresholds, larger maze geometry, variable boss designs/chest distributions/fuse settings, persistent interrupted rounds and best-of-series, fully profile-specific quick-start, complete tournament execution matrix, accessibility and localization review, code formatting/lint cleanup, physical-device performance and signed upgrade. New tests and CI must pass before release. Production signing needs owner key. No claim of full remediation until evidence.
+Still open: real-device calibration of learning thresholds and touch accessibility; richer curricula, multiple boss art designs and more sophisticated competitive rating, comprehensive localization and tutorial review; interruption recovery beyond completed series rounds, comprehensive tournament execution/restart tests, remaining lint and formatting work, measured device performance and signed-upgrade tests. New CI must pass before release; production signing needs owner key. No claim of full remediation until evidence.

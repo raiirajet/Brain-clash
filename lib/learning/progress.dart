@@ -22,6 +22,7 @@ class Progress {
     if(!profiles.containsKey(active))active='Gast';
   }
   Map<String,dynamic> fresh()=>{'rounds':0,'wins':0,'right':0,'wrong':0,'xp':0,'avatar':0,'categories':<String,dynamic>{},'review':<String,dynamic>{},'best':0};
+  String quickKey(String key)=>'profile:${Uri.encodeComponent(active)}:$key';
   Map<String,dynamic> get current=>profiles[active] as Map<String,dynamic>;
   static Future<Progress> open(SharedPreferences prefs,{String? databasePath})async{
     final progress=Progress(prefs);
