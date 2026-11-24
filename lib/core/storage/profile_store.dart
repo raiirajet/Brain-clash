@@ -12,9 +12,9 @@ class ProfileSnapshot {
 class ProfileStore {
  final Database db;
  ProfileStore(this.db);
- static Future<ProfileStore> open()async{
+ static Future<ProfileStore> open({String? databasePath})async{
   final root=await getDatabasesPath();
-  final db=await openDatabase('$root/brain_clash_v1.db',version:1,onConfigure:(db)=>db.execute('PRAGMA foreign_keys=ON'),onCreate:(db,version)async{
+  final db=await openDatabase(databasePath??'$root/brain_clash_v1.db',version:1,onConfigure:(db)=>db.execute('PRAGMA foreign_keys=ON'),onCreate:(db,version)async{
    await db.execute('CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)');
    await db.execute('CREATE TABLE profiles (name TEXT PRIMARY KEY, payload TEXT NOT NULL)');
    await db.execute('CREATE TABLE game_sessions (id TEXT PRIMARY KEY, profile TEXT NOT NULL REFERENCES profiles(name) ON DELETE CASCADE, date TEXT, game TEXT, correct INTEGER, total INTEGER, points INTEGER)');

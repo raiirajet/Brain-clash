@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import '../localization/strings.dart';
 import 'arcade.dart';
 
 class AccuracyHistory extends StatelessWidget {

@@ -5,7 +5,10 @@ on:
 permissions:
   contents: write
 jobs:
+  device:
+    uses: ./.github/workflows/device.yml
   release:
+    needs: device
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

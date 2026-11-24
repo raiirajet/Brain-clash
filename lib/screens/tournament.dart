@@ -1,5 +1,6 @@
 import 'dart:convert';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import '../localization/strings.dart';
 import '../learning/progress.dart';
 import '../game_engine/battle.dart';
 import '../question_generators/challenges.dart';
@@ -68,7 +69,7 @@ class _TournamentPageState extends State<TournamentPage>{
   return Scaffold(appBar:AppBar(title:const Text('Lokales Turnier')),body:ListView(padding:const EdgeInsets.all(16),children:[
    if(!active)...[
     const Text('2–8 Teilnehmer · Addition · First to 5'),
-    TextField(controller:names,maxLines:4,decoration:const InputDecoration(labelText:'Namen, getrennt durch Komma oder Zeilenumbruch')),
+    TextField(controller:names,maxLines:4,decoration:InputDecoration(labelText:L.text('Namen, getrennt durch Komma oder Zeilenumbruch'))),
     SwitchListTile(title:const Text('Jeder gegen jeden'),subtitle:const Text('Aus: K.-o.-System'),value:roundRobin,onChanged:(v)=>setState(()=>roundRobin=v)),
     Wrap(spacing:8,children:[for(var n=1;n<=4;n++)ChoiceChip(label:Text('$n Ziffern'),selected:digits==n,onSelected:(_)=>setState(()=>digits=n))]),
     FilledButton(onPressed:begin,child:const Text('Turnier starten')),

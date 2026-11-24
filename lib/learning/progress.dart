@@ -22,10 +22,10 @@ class Progress {
   }
   Map<String,dynamic> fresh()=>{'rounds':0,'wins':0,'right':0,'wrong':0,'xp':0,'avatar':0,'categories':<String,dynamic>{},'review':<String,dynamic>{},'best':0};
   Map<String,dynamic> get current=>profiles[active] as Map<String,dynamic>;
-  static Future<Progress> open(SharedPreferences prefs)async{
+  static Future<Progress> open(SharedPreferences prefs,{String? databasePath})async{
     final progress=Progress(prefs);
     try{
-      final store=await ProfileStore.open();
+      final store=await ProfileStore.open(databasePath:databasePath);
       final stored=await store.read();
       if(stored!=null&&stored.revision>=progress._revision){
         progress.profiles=stored.profiles;progress.active=stored.active;progress._revision=stored.revision;
