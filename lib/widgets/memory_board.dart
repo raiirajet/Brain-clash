@@ -2,6 +2,7 @@ import 'package:flutter/material.dart' hide Text;
 import '../localization/strings.dart';
 import '../question_generators/questions.dart';
 import '../game_engine/battle.dart';
+import 'arcade.dart';
 class MemoryBoard extends StatelessWidget {
  final Question question;
  final Battle battle;
@@ -26,7 +27,7 @@ class MemoryBoard extends StatelessWidget {
         final lit=highlight==i||paired||chosen;
         final revealed=!sequence&&(preview||paired||chosen||mismatch);
         return Semantics(label:L.text(sequence?'Feld ${i+1}':revealed?question.board[i]:'Verdeckte Karte ${i+1}'),button:true,
-          child:FilledButton(style:FilledButton.styleFrom(backgroundColor:mismatch?const Color(0xffab3548):lit?const Color(0xff139b8d):const Color(0xff304d90),disabledBackgroundColor:mismatch?const Color(0xffab3548):lit?const Color(0xff139b8d):const Color(0xff304d90),disabledForegroundColor:Colors.white,padding:EdgeInsets.zero),
+          child:FilledButton(style:FilledButton.styleFrom(backgroundColor:mismatch?const Color(0xffab3548):lit?const Color(0xff139b8d):const Color(0xff304d90),disabledBackgroundColor:mismatch?const Color(0xffab3548):lit?const Color(0xff139b8d):const Color(0xff304d90),disabledForegroundColor:Colors.white,padding:EdgeInsets.zero,minimumSize:Size.zero,tapTargetSize:MaterialTapTargetSize.shrinkWrap,shape:RoundedRectangleBorder(borderRadius:BorderRadius.circular(11),side:BorderSide(color:mismatch?arcadeRed:lit?arcadeGreen:Colors.white24))),
           onPressed:!preview&&battle.canAnswer(player)&&!paired?()=>onTap(i):null,
           child:Text(sequence?(lit?'●':'${i+1}'):revealed?question.board[i]:'?',style:TextStyle(fontSize:cell*.48,color:Colors.white))));
       });

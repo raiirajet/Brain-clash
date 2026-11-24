@@ -14,3 +14,6 @@
 - Interactive memory boards, focus signal, unlockable arenas and effects, new icon and splash, optimized test APK.
 
 - German/English UI, extended stats, Android emulator smoke test and expanded multiplication practice.
+
+## 0.3.0 — Arcade visual update
+- Shared arcade theme, gradient mode/world tiles, XP progress, improved navigation surfaces, score HUD, answer feedback and combo display, coloured energy territories, directional attack particles, memory tile styling, and animated accuracy results. Existing game logic and storage retained.

@@ -8,6 +8,7 @@ import '../question_generators/questions.dart';
 import 'play.dart';
 import '../widgets/character.dart';
 import 'cosmetics.dart';
+import '../widgets/arcade.dart';
 
 const avatars=['🤖','👨‍🚀','🥷','🦊','🐉','👽'];
 const names=['Roboter','Astronaut','Ninja','Fuchs','Drache','Alien'];
@@ -28,24 +29,44 @@ class _HomeState extends State<Home>{
  }
  Future<void> open(Widget screen)async{unawaited(GameAudio(p.prefs).effect('menu'));await Navigator.push<void>(context,MaterialPageRoute(builder:(_)=>screen));if(mounted)setState((){});}
  @override Widget build(BuildContext context){
-  final colors=[const Color(0xff2359c5),const Color(0xffb44818),const Color(0xff187768),const Color(0xff7144ba)];
-  final icons=[Icons.bolt,Icons.sports_esports,Icons.psychology,Icons.groups];
-  return Scaffold(body:SafeArea(child:LayoutBuilder(builder:(context,box){
-    return Center(child:ConstrainedBox(constraints:const BoxConstraints(maxWidth:760),child:Padding(padding:const EdgeInsets.all(18),child:Column(children:[
-      Row(children:[Image.asset('assets/branding/brain_clash.webp',width:54,height:54),const Spacer(),ActionChip(avatar:AvatarArt(index:p.current['avatar'] as int,size:24),label:Text(p.active),onPressed:()=>open(Profiles(progress:p))) ]),
+  final colors=[const Color(0xff2879e7),const Color(0xffbf4b12),const Color(0xff16856b),const Color(0xff7546bb)];
+  final icons=[Icons.bolt_rounded,Icons.sports_esports_rounded,Icons.psychology_rounded,Icons.groups_rounded];
+  return Scaffold(body:ArcadeBackdrop(child:SafeArea(child:LayoutBuilder(builder:(context,box){
+    final compact=box.maxHeight<510;
+    return Center(child:ConstrainedBox(constraints:const BoxConstraints(maxWidth:780),child:Padding(padding:const EdgeInsets.symmetric(horizontal:16,vertical:8),child:Column(children:[
+      Row(children:[
+       ClipRRect(borderRadius:BorderRadius.circular(13),child:Image.asset('assets/branding/brain_clash.webp',width:48,height:48)),
+       const SizedBox(width:8),
+       Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('BRAIN CLASH',style:Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight:FontWeight.w900,letterSpacing:.5)),const Text('PLAY. THINK. WIN.',style:TextStyle(fontSize:10,letterSpacing:1.7,fontWeight:FontWeight.w700))])),
+       ActionChip(avatar:AvatarArt(index:p.current['avatar'] as int,size:24),label:Text(p.active),onPressed:()=>open(Profiles(progress:p))),
+      ]),
       const SizedBox(height:10),
-      Text('BRAIN CLASH',style:Theme.of(context).textTheme.headlineLarge?.copyWith(fontWeight:FontWeight.w900,letterSpacing:1.5)),
-      const Text('PLAY. THINK. WIN.',style:TextStyle(letterSpacing:3,fontWeight:FontWeight.w600)),
-      const SizedBox(height:20),
-      Expanded(child:GridView.builder(itemCount:4,gridDelegate:SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:2,mainAxisSpacing:12,crossAxisSpacing:12,mainAxisExtent:((box.maxHeight-250)/2).clamp(85.0,220.0).toDouble()),itemBuilder:(c,i)=>Material(color:colors[i],borderRadius:BorderRadius.circular(24),child:InkWell(borderRadius:BorderRadius.circular(24),onTap:()=>open(Setup(progress:p,mode:Mode.values[i])),child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[Icon(icons[i],size:box.maxHeight<500?27:45,color:Colors.white),const SizedBox(height:8),Text(modeNames[i],style:const TextStyle(color:Colors.white,fontWeight:FontWeight.w800,fontSize:17))]))))),
-      Row(mainAxisAlignment:MainAxisAlignment.spaceAround,children:[
+      if(!compact)Container(height:105,padding:const EdgeInsets.all(12),decoration:BoxDecoration(borderRadius:BorderRadius.circular(20),gradient:const LinearGradient(colors:[Color(0xff193e7f),Color(0xff161a33),Color(0xff63351f)]),border:Border.all(color:arcadeBlue.withAlpha(85))),child:Row(children:[
+       AvatarArt(index:p.current['avatar'] as int,size:76),
+       Expanded(child:Column(mainAxisAlignment:MainAxisAlignment.center,crossAxisAlignment:CrossAxisAlignment.start,children:[
+        Text('${p.current['xp']} XP',style:const TextStyle(fontSize:27,color:Colors.white,fontWeight:FontWeight.w900)),
+        const SizedBox(height:6),
+        LinearProgressIndicator(value:((p.current['xp'] as int)%100)/100,backgroundColor:Colors.white24,color:arcadeGreen,borderRadius:BorderRadius.circular(8)),
+        const SizedBox(height:5),
+        Text('Lv ${1+(p.current['xp'] as int)~/100}',style:const TextStyle(color:Colors.white70,fontSize:12)),
+       ])),const SizedBox(width:10),const Icon(Icons.bolt_rounded,color:arcadeOrange,size:36),
+      ])),
+      const SizedBox(height:10),
+      Expanded(child:LayoutBuilder(builder:(context,grid){
+        final wide=grid.maxWidth>=640&&compact;
+        final cols=wide?4:2;
+        final rows=(4/cols).ceil();
+        return GridView.builder(padding:EdgeInsets.zero,itemCount:4,gridDelegate:SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:cols,mainAxisSpacing:10,crossAxisSpacing:10,mainAxisExtent:((grid.maxHeight-(rows-1)*10)/rows).clamp(76.0,230.0).toDouble()),itemBuilder:(c,i)=>ArcadeTile(label:modeNames[i],icon:icons[i],color:colors[i],onTap:()=>open(Setup(progress:p,mode:Mode.values[i]))));
+      })),
+      const SizedBox(height:7),
+      Container(decoration:BoxDecoration(color:Theme.of(context).colorScheme.surface.withAlpha(215),borderRadius:BorderRadius.circular(18),border:Border.all(color:Theme.of(context).colorScheme.outlineVariant.withAlpha(100))),child:Row(children:[
        nav(Icons.insights,'Fortschritt',()=>open(Stats(progress:p))),
        nav(Icons.face,'Sammlung',()=>open(CollectionPage(progress:p))),
        nav(Icons.emoji_events,'Erfolge',()=>open(Stats(progress:p,achievements:true))),
        nav(Icons.settings,'Einstellungen',()=>open(Settings(progress:p,themeChanged:widget.themeChanged,intro:intro))),
-      ]),
+      ])),
     ]))));
-  })));
+  }))));
  }
  Widget nav(IconData icon,String label,VoidCallback tap)=>Expanded(child:InkWell(onTap:tap,borderRadius:BorderRadius.circular(12),child:Padding(padding:const EdgeInsets.symmetric(vertical:10),child:Column(children:[Icon(icon,size:26),Text(label,style:const TextStyle(fontSize:10),textAlign:TextAlign.center)]))));
 }
@@ -61,7 +82,7 @@ class _SetupState extends State<Setup>{
  @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:Text(modeNames[widget.mode.index])),body:SafeArea(child:ListView(padding:const EdgeInsets.all(18),children:[
   Text('Lernwelt',style:Theme.of(context).textTheme.titleLarge),
   const SizedBox(height:8),
-  Wrap(spacing:8,runSpacing:8,children:World.values.map((w)=>ChoiceChip(avatar:Icon(worldIcons[w.index],size:18),label:Text(w.label),selected:w==world,onSelected:(_)=>setState(()=>world=w))).toList()),
+  GridView.count(shrinkWrap:true,physics:const NeverScrollableScrollPhysics(),crossAxisCount:3,childAspectRatio:1.25,mainAxisSpacing:7,crossAxisSpacing:7,children:World.values.map((w)=>ArcadeTile(label:w.label,icon:worldIcons[w.index],color:[const Color(0xff276fe5),const Color(0xff7044bf),const Color(0xffa743ab),const Color(0xffb95518),const Color(0xff187b65),const Color(0xff3b629b)][w.index],selected:w==world,onTap:()=>setState(()=>world=w))).toList()),
   const SizedBox(height:20),
   DropdownButtonFormField<String>(value:age,decoration:InputDecoration(labelText:L.text('Altersgruppe (freiwillig)')),items:['8–9 Jahre','10–11 Jahre','12–14 Jahre','15 Jahre und älter','Individuell','Automatisch'].map((a)=>DropdownMenuItem(value:a,child:Text(a))).toList(),onChanged:(v)=>setState((){age=v!;final ages=['8–9 Jahre','10–11 Jahre','12–14 Jahre','15 Jahre und älter'];if(ages.contains(age)){level=ages.indexOf(age);automatic=false;}if(age=='Automatisch')automatic=true;})),
   DropdownButtonFormField<int>(value:level,decoration:InputDecoration(labelText:L.text('Deine Schwierigkeit')),items:levels(),onChanged:(v)=>setState(()=>level=v!)),
@@ -85,18 +106,19 @@ class Stats extends StatelessWidget{
   return Scaffold(appBar:AppBar(title:Text(achievements?'Erfolge':'Mein Fortschritt')),body:ListView(padding:const EdgeInsets.all(20),children:[
    if(achievements)...[for(final a in [('Erste Runde',p['rounds'] as int,1),('Rechenkünstler',right,100),('Duellmeister',p['wins'] as int,10),('Ausdauer',p['rounds'] as int,25),('Brain Clash Champion',xp,1000)])ListTile(leading:Icon(a.$2>=a.$3?Icons.emoji_events:Icons.lock_outline),title:Text(a.$1),subtitle:Text('${a.$2} / ${a.$3}'))]
    else ...[
-    Text('$xp XP',style:Theme.of(context).textTheme.displaySmall),
+    Row(children:[Expanded(child:MetricTile(label:'XP',value:'$xp',icon:Icons.bolt,color:arcadeOrange)),const SizedBox(width:12),AccuracyRing(value:right+wrong==0?0:right/(right+wrong),reduced:progress.prefs.getBool('reduced')??false)]),
+    const SizedBox(height:12),
     ListTile(title:const Text('Runden'),trailing:Text('${p['rounds']}')),
     ListTile(title:const Text('Siege'),trailing:Text('${p['wins']}')),
     ListTile(title:const Text('Richtige Antworten'),trailing:Text('$right')),
     ListTile(title:const Text('Rundenrekord'),trailing:Text('${p['best']??0}')),
     ListTile(title:const Text('Fällige Wiederholungen'),trailing:Text('${progress.dueQuestions(World.mixed).length}')),
     ListTile(title:const Text('Trefferquote'),trailing:Text(right+wrong==0?'–':'${(100*right/(right+wrong)).round()} %')),
-    for(final w in World.values.where((w)=>w!=World.mixed))category(w,p),
+    for(final w in World.values.where((w)=>w!=World.mixed))Card(child:Padding(padding:const EdgeInsets.symmetric(vertical:4),child:category(w,p))),
    ]
   ]));
  }
- Widget category(World w,Map p){final c=(p['categories'] as Map)[w.name] as Map?;final r=c?['right'] as int? ??0;final f=c?['wrong'] as int? ??0;return ListTile(title:Text(w.label),subtitle:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[LinearProgressIndicator(value:r+f==0?0:r/(r+f)),if(r+f>0)Text('Ø ${((c!['ms'] as int)/(r+f)/1000).toStringAsFixed(1)} s · Lv ${(c['level'] as int)+1}')]),trailing:Text('$r / ${r+f}'));}
+ Widget category(World w,Map p){final c=(p['categories'] as Map)[w.name] as Map?;final r=c?['right'] as int? ??0;final f=c?['wrong'] as int? ??0;return ListTile(leading:Icon(worldIcons[w.index],color:arcadeBlue),title:Text(w.label),subtitle:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[LinearProgressIndicator(value:r+f==0?0:r/(r+f)),if(r+f>0)Text('Ø ${((c!['ms'] as int)/(r+f)/1000).toStringAsFixed(1)} s · Lv ${(c['level'] as int)+1}')]),trailing:Text('$r / ${r+f}'));}
 }
 class CollectionPage extends StatefulWidget{
  final Progress progress;
@@ -104,7 +126,7 @@ class CollectionPage extends StatefulWidget{
  @override State<CollectionPage> createState()=>_CollectionPageState();
 }
 class _CollectionPageState extends State<CollectionPage>{
- @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Sammlung'),actions:[IconButton(tooltip:L.text('Arena & Effekte'),icon:const Icon(Icons.palette),onPressed:()=>Navigator.push<void>(context,MaterialPageRoute(builder:(_)=>Cosmetics(progress:widget.progress))))]),body:GridView.builder(padding:const EdgeInsets.all(16),gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:2,childAspectRatio:1.15,crossAxisSpacing:8,mainAxisSpacing:8),itemCount:6,itemBuilder:(c,i){final p=widget.progress.current;final unlocked=(p['xp'] as int)>=thresholds[i];return Card(child:InkWell(onTap:unlocked?()async{setState(()=>p['avatar']=i);await widget.progress.save();}:null,child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[AvatarArt(index:i,size:66),Text(names[i]),Text(unlocked?(p['avatar']==i?'Ausgewählt':'Auswählen'):'🔒 ${thresholds[i]} XP')])));}));
+ @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Sammlung'),actions:[IconButton(tooltip:L.text('Arena & Effekte'),icon:const Icon(Icons.palette),onPressed:()=>Navigator.push<void>(context,MaterialPageRoute(builder:(_)=>Cosmetics(progress:widget.progress))))]),body:GridView.builder(padding:const EdgeInsets.all(16),gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:2,childAspectRatio:1.15,crossAxisSpacing:8,mainAxisSpacing:8),itemCount:6,itemBuilder:(c,i){final p=widget.progress.current;final unlocked=(p['xp'] as int)>=thresholds[i];return Card(child:InkWell(onTap:unlocked?()async{setState(()=>p['avatar']=i);await widget.progress.save();}:null,child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[Container(decoration:BoxDecoration(shape:BoxShape.circle,gradient:RadialGradient(colors:[palette[i].withAlpha(90),Colors.transparent])),child:AvatarArt(index:i,size:80)),Text(names[i]),Text(unlocked?(p['avatar']==i?'Ausgewählt':'Auswählen'):'🔒 ${thresholds[i]} XP')])));}));
 }
 class Profiles extends StatefulWidget{
  final Progress progress;
@@ -141,6 +163,6 @@ class _SettingsState extends State<Settings>{
   ListTile(title:const Text('Einführung erneut anzeigen'),onTap:widget.intro),
   ListTile(title:const Text('Lernfortschritt zurücksetzen'),onTap:()async{final yes=await showDialog<bool>(context:context,builder:(c)=>AlertDialog(title:const Text('Fortschritt zurücksetzen?'),actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Abbrechen')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('Zurücksetzen'))]));if(yes==true){p.profiles[p.active]=p.fresh();await p.save();if(mounted)setState((){});}}),
   ListTile(title:const Text('Datenschutz'),onTap:()=>showDialog<void>(context:context,builder:(c)=>AlertDialog(title:const Text('Deine Daten'),content:const Text('Profile und Lernfortschritt werden auf diesem Gerät gespeichert. Kein Konto, keine Werbung, kein Tracking. Lösche Profile in der Profilverwaltung oder alle Daten in den Android-App-Einstellungen.'),actions:[TextButton(onPressed:()=>Navigator.pop(c),child:const Text('OK'))]))),
-  AboutListTile(applicationName:'Brain Clash',applicationVersion:'0.2.0 – Testversion',applicationLegalese:'Play. Think. Win.'),
+  AboutListTile(applicationName:'Brain Clash',applicationVersion:'0.3.0 – Testversion',applicationLegalese:'Play. Think. Win.'),
  ]));
 }
