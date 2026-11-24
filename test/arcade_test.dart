@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:brain_clash/widgets/arcade.dart';
+import 'package:brain_clash/game_engine/arena.dart';
 void main(){
+ test('arena tracks independent player pulses and resets them',(){final arena=Arena();arena.hit(0);expect(arena.pulses[0],greaterThan(0));expect(arena.pulses[1],0);arena.hit(1);expect(arena.pulses[1],greaterThan(0));arena.clearEffects();expect(arena.pulses,[0,0]);});
  testWidgets('correct feedback shows a check and point text without animation in reduced mode',(tester)async{
   await tester.pumpWidget(const MaterialApp(home:Scaffold(body:AnswerFeedback(message:'+1 · Richtig!',correct:true,reduced:true,event:1))));
   expect(find.byIcon(Icons.check_circle),findsOneWidget);

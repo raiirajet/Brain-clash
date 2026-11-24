@@ -17,3 +17,5 @@
 
 ## 0.3.0 — Arcade visual update
 - Shared arcade theme, gradient mode/world tiles, XP progress, improved navigation surfaces, score HUD, answer feedback and combo display, coloured energy territories, directional attack particles, memory tile styling, and animated accuracy results. Existing game logic and storage retained.
+
+- Separate visual arenas for practice and cooperative modes, settings icons, and independent player pulse test.

@@ -43,7 +43,7 @@ class ArcadeTile extends StatelessWidget {
     Positioned(right:-18,top:-18,child:Icon(icon,size:110,color:Colors.white.withAlpha(25))),
     Padding(padding:const EdgeInsets.all(9),child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[
      Flexible(child:art??FittedBox(fit:BoxFit.scaleDown,child:Icon(icon,size:48,color:Colors.white,shadows:[Shadow(color:color,blurRadius:14),const Shadow(color:Colors.black38,offset:Offset(0,3),blurRadius:4)]))),
-     const SizedBox(height:5),Text(L.text(label),maxLines:1,overflow:TextOverflow.ellipsis,textAlign:TextAlign.center,style:const TextStyle(color:Colors.white,fontWeight:FontWeight.w800,fontSize:16)),
+     const SizedBox(height:5),Text(L.text(label),maxLines:2,overflow:TextOverflow.ellipsis,textAlign:TextAlign.center,style:const TextStyle(color:Colors.white,fontWeight:FontWeight.w800,fontSize:14)),
     ])),
     if(selected)const Positioned(top:7,right:7,child:Icon(Icons.check_circle,color:Colors.white,size:18)),
    ])),
