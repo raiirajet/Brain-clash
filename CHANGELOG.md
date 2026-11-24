@@ -5,3 +5,5 @@
 - Android bootstrap and CI test APK workflow. No release signature.
 
 - Original vector avatars and animated energy pulse, Android launcher icon, spaced practice queue and round records.
+
+- Original synthesized sound effects, optional music, volume controls and native Android audio adapter.

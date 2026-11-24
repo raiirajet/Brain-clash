@@ -1,2 +1,4 @@
 # Datenschutz – Brain Clash (Entwicklungsstand)
 Spielerprofile, Spitznamen, Einstellungen und Lernwerte werden lokal auf dem Gerät gespeichert. Es gibt keine Registrierung, Werbung, Tracking, Chat oder Rangliste. Die App benötigt keine Kamera, kein Mikrofon und keinen Standort. Profile können lokal gelöscht werden; durch Löschen der App-Daten werden sämtliche lokalen Daten entfernt. Android-Backup wird im Build deaktiviert. Vor Veröffentlichung müssen Android-Manifest, Abhängigkeiten, Offline-Verhalten und die Angaben zum verantwortlichen Anbieter sowie Kontakt gemäss anwendbarem Schweizer und europäischem Recht überprüft und vervollständigt werden.
+
+Musik und Sounds werden lokal abgespielt. Die native Audioausgabe benötigt keinen Mikrofonzugriff. Debug-/Profil-Internetberechtigungen werden beim Android-Bootstrap entfernt. Eine Prüfung des fertigen APK-Manifests bleibt erforderlich.

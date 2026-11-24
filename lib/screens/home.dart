@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import '../audio/audio.dart';
 import '../game_engine/battle.dart';
 import '../learning/progress.dart';
 import '../question_generators/questions.dart';
@@ -22,7 +24,7 @@ class _HomeState extends State<Home>{
   await showDialog<void>(context:context,builder:(c)=>AlertDialog(title:const Text('Willkommen in der Arena!'),content:const Text('Wähle eine Lernwelt. Jede richtige Antwort verschiebt die Energie um 5 %. Falsche Antworten sperren das Feld kurz. Im Training lernst du ohne Druck.'),actions:[TextButton(onPressed:()=>Navigator.pop(c),child:const Text('Überspringen')),FilledButton(onPressed:()=>Navigator.pop(c),child:const Text('Los geht’s'))]));
   await p.prefs.setBool('intro',true);
  }
- Future<void> open(Widget screen)async{await Navigator.push<void>(context,MaterialPageRoute(builder:(_)=>screen));if(mounted)setState((){});}
+ Future<void> open(Widget screen)async{unawaited(GameAudio(p.prefs).effect('menu'));await Navigator.push<void>(context,MaterialPageRoute(builder:(_)=>screen));if(mounted)setState((){});}
  @override Widget build(BuildContext context){
   final colors=[const Color(0xff2359c5),const Color(0xffb44818),const Color(0xff187768),const Color(0xff7144ba)];
   final icons=[Icons.bolt,Icons.sports_esports,Icons.psychology,Icons.groups];
@@ -125,7 +127,9 @@ class _SettingsState extends State<Settings>{
  @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Einstellungen')),body:ListView(children:[
   ListTile(title:const Text('Design'),trailing:DropdownButton<int>(value:p.prefs.getInt('theme')??2,items:const [DropdownMenuItem(value:0,child:Text('System')),DropdownMenuItem(value:1,child:Text('Hell')),DropdownMenuItem(value:2,child:Text('Dunkel'))],onChanged:(v)async{await p.prefs.setInt('theme',v!);if(mounted)setState((){});widget.themeChanged();})),
   ListTile(title:const Text('Standard-Schwierigkeit'),trailing:DropdownButton<int>(value:p.prefs.getInt('difficulty')??1,items:List.generate(4,(i)=>DropdownMenuItem(value:i,child:Text(['Einfach','Normal','Schwer','Experte'][i]))),onChanged:(v)async{await p.prefs.setInt('difficulty',v!);if(mounted)setState((){});})),
-  toggle('sound','Soundeffekte',true),toggle('haptics','Vibration',true),toggle('reduced','Reduzierte Animationen',false),
+  toggle('sound','Soundeffekte',true),
+  SwitchListTile(title:const Text('Hintergrundmusik'),value:p.prefs.getBool('music')??false,onChanged:(v)async{await p.prefs.setBool('music',v);await GameAudio(p.prefs).music();if(mounted)setState((){});}),
+  ListTile(title:const Text('Lautstärke'),subtitle:Slider(value:p.prefs.getDouble('volume')??.65,onChanged:(v){setState(()=>p.prefs.setDouble('volume',v));},onChangeEnd:(v)async{await p.prefs.setDouble('volume',v);await GameAudio(p.prefs).music();await GameAudio(p.prefs).effect('menu');})),toggle('haptics','Vibration',true),toggle('reduced','Reduzierte Animationen',false),
   ListTile(title:const Text('Standard-Spielzeit'),trailing:DropdownButton<int>(value:p.prefs.getInt('duration')??60,items:[30,60,90,120].map((v)=>DropdownMenuItem(value:v,child:Text('$v s'))).toList(),onChanged:(v)async{await p.prefs.setInt('duration',v!);if(mounted)setState((){});})),
   ListTile(title:const Text('Spielerprofile'),onTap:()=>Navigator.push<void>(context,MaterialPageRoute(builder:(_)=>Profiles(progress:p)))),
   ListTile(title:const Text('Einführung erneut anzeigen'),onTap:widget.intro),

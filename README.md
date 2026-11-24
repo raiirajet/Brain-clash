@@ -9,3 +9,9 @@ Run scripts/bootstrap_android.sh with Flutter installed to generate the standard
 Architecture: question_generators (questions), game_engine (state and Flame arena), learning (local persistence), screens/widgets (UI). No backend.
 
 Review queue: failed questions become due next training round, then correctly recalled questions recur after 1, 3 and 7 days. Original procedural character artwork and Android vector launcher assets are generated from source.
+
+## Audio
+Original sound effects and an optional background loop are synthesized by scripts/synth_audio.py. Android uses SoundPool and MediaPlayer; independent effects, music, haptics and volume settings. Native playback adapter for iOS/Web remains to be implemented.
+
+## Release signing
+A tag is eligible for a signed release only after testing and review. Configure GitHub Actions secrets BRAINCLASH_KEYSTORE_B64, BRAINCLASH_STORE_PASSWORD, BRAINCLASH_KEY_ALIAS and BRAINCLASH_KEY_PASSWORD. Preserve the same keystore securely outside GitHub source. Never distribute the debug APK as production; debug keys may differ between CI runners.

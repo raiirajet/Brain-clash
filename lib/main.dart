@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'learning/progress.dart';
 import 'screens/home.dart';
+import 'audio/audio.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs=await SharedPreferences.getInstance();
   runApp(BrainClash(progress:Progress(prefs)));
+  await GameAudio(prefs).music();
 }
 class BrainClash extends StatefulWidget {
   final Progress progress;

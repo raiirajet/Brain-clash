@@ -24,7 +24,8 @@ class Battle {
   int pendingAt=0, botAt=0;
   bool get shared=>mode==Mode.duel&&level==opponentLevel;
   Battle({required this.mode,required this.world,required this.duration,required this.level,required this.opponentLevel,Questions? questions,Random? random}):questions=questions??Questions(),rng=random??Random() {
-    tasks=[this.questions.make(world,level),this.questions.make(world,opponentLevel)];
+    final first=this.questions.make(world,level);
+    tasks=[first,mode==Mode.training||shared?first:this.questions.make(world,opponentLevel)];
     if(shared) tasks[1]=tasks[0];
   }
   int get remaining=>max(0,duration*1000-time);
@@ -36,7 +37,7 @@ class Battle {
   }
   void start() {
     phase=Phase.playing;
-    for(var p=0;p<2;p++) setTask(p,tasks[p]);
+    for(var p=0;p<2;p++){setTask(p,tasks[p]);}
     scheduleBot();
   }
   void scheduleBot() {botAt=ready[1]+[3500,2500,1500,850][opponentLevel]+rng.nextInt(900);}

@@ -3,6 +3,7 @@ import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../game_engine/arena.dart';
+import '../audio/audio.dart';
 import '../game_engine/battle.dart';
 import '../learning/progress.dart';
 import '../question_generators/questions.dart';
@@ -14,15 +15,19 @@ class Play extends StatefulWidget{
 }
 class _PlayState extends State<Play> with WidgetsBindingObserver{
  late Battle b;late Timer timer;final arena=Arena();final watch=Stopwatch();
- int last=0;bool saved=false,leaving=false,dialogOpen=false;final feedback=['',''];
+ int last=0,streak=0;int lastCountdown=3;bool saved=false,leaving=false,dialogOpen=false;final feedback=['',''];
  @override void initState(){super.initState();WidgetsBinding.instance.addObserver(this);reset();watch.start();timer=Timer.periodic(const Duration(milliseconds:32),(_){
   if(!mounted)return;final now=watch.elapsedMilliseconds;final delta=now-last;last=now;
   if(b.phase==Phase.paused||b.phase==Phase.ended)return;
+  final before=b.phase;final oldScore=b.points[0]+b.points[1];
   setState((){b.tick(delta);arena.energy=b.energy/100;arena.score=b.points[0]+b.points[1];});
+  if(before==Phase.countdown&&b.phase==Phase.playing){unawaited(GameAudio(widget.progress.prefs).effect('start'));}
+  if(b.phase==Phase.countdown){final count=(b.countdown/1000).ceil();if(count!=lastCountdown){lastCountdown=count;unawaited(GameAudio(widget.progress.prefs).effect('countdown'));}}
+  if(b.points[0]+b.points[1]>oldScore&&b.phase==Phase.playing)unawaited(GameAudio(widget.progress.prefs).effect('energy'));
   if(b.phase==Phase.ended)persist();
  });}
- void reset(){b=Battle(mode:widget.mode,world:widget.world,duration:widget.duration,level:widget.level,opponentLevel:widget.opponent,questions:widget.mode==Mode.training?ReviewQuestions(widget.progress.dueQuestions(widget.world)):null);arena.energy=.5;arena.leftAvatar=widget.progress.current['avatar'] as int;arena.rightAvatar=widget.mode==Mode.team?4:5;arena.reduced=widget.progress.prefs.getBool('reduced')??false;saved=false;feedback[0]='';feedback[1]='';}
- void persist(){if(saved)return;saved=true;widget.progress.record(b);unawaited(widget.progress.save());}
+ void reset(){b=Battle(mode:widget.mode,world:widget.world,duration:widget.duration,level:widget.level,opponentLevel:widget.opponent,questions:widget.mode==Mode.training?ReviewQuestions(widget.progress.dueQuestions(widget.world)):null);arena.energy=.5;arena.leftAvatar=widget.progress.current['avatar'] as int;arena.rightAvatar=widget.mode==Mode.team?4:5;arena.reduced=widget.progress.prefs.getBool('reduced')??false;saved=false;streak=0;lastCountdown=3;arena.score=0;feedback[0]='';feedback[1]='';}
+ void persist(){if(saved)return;saved=true;final before=widget.progress.current['xp'] as int;widget.progress.record(b);final after=widget.progress.current['xp'] as int;unawaited(widget.progress.save());final audio=GameAudio(widget.progress.prefs);unawaited(audio.effect(widget.mode==Mode.training?'right':b.winner==null?'draw':b.winner==0?'win':'loss'));if([50,150,300,600,1000].any((n)=>before<n&&after>=n))unawaited(audio.effect('unlock'));}
  @override void didChangeAppLifecycleState(AppLifecycleState state){if(state!=AppLifecycleState.resumed&&mounted){setState(()=>b.pause());}}
  @override void dispose(){timer.cancel();watch.stop();WidgetsBinding.instance.removeObserver(this);super.dispose();}
  void answer(int p,String v,Question expected){
@@ -30,7 +35,9 @@ class _PlayState extends State<Play> with WidgetsBindingObserver{
   final now=watch.elapsedMilliseconds;
   setState((){b.tick(now-last);last=now;final result=identical(b.tasks[p],expected)?b.answer(p,v):null;if(result!=null){
     feedback[p]=result?'Richtig!':widget.mode==Mode.training?'Richtig: ${expected.answer}':'Noch einmal versuchen';
-    if(widget.progress.prefs.getBool('sound')??true)unawaited(SystemSound.play(result?SystemSoundType.click:SystemSoundType.alert));
+    final audio=GameAudio(widget.progress.prefs);
+    if(p==0){streak=result?streak+1:0;}
+    unawaited(audio.effect(result?(p==0&&streak%5==0?'streak':'right'):'wrong'));
     if(widget.progress.prefs.getBool('haptics')??true)unawaited(result?HapticFeedback.selectionClick():HapticFeedback.lightImpact());
   }arena.energy=b.energy/100;});
   if(b.phase==Phase.ended)persist();
