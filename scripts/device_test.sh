@@ -6,7 +6,7 @@ adb shell svc data disable
 python3 - <<'PY'
 from pathlib import Path
 p=Path('android/app/src/debug/AndroidManifest.xml')
-s=p.read_text().replace('</manifest>','<uses-permission android:name="android.permission.INTERNET"/></manifest>')
+s=p.read_text().replace('</manifest>','<uses-permission android:name="android.permission.INTERNET"/>\n</manifest>')
 p.write_text(s)
 PY
 flutter test integration_test/app_test.dart -d emulator-5554
