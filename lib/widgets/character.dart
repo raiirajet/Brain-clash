@@ -48,3 +48,12 @@ void drawAvatar(Canvas c,Offset center,double r,int index){
  if(i!=2&&i!=0&&i!=1){c.drawArc(const Rect.fromLTWH(-8,7,16,13),0,pi,false,Paint()..color=dark.color..style=PaintingStyle.stroke..strokeWidth=2.5..strokeCap=StrokeCap.round);}
  c.restore();
 }
+
+class VictoryAvatar extends StatelessWidget {
+ final int index;final bool animate;
+ const VictoryAvatar({super.key,required this.index,required this.animate});
+ @override Widget build(BuildContext context)=>TweenAnimationBuilder<double>(
+  tween:Tween(begin:animate?.55:1.0,end:1.0),duration:Duration(milliseconds:animate?650:0),curve:Curves.easeOutBack,
+  builder:(context,scale,child)=>Transform.scale(scale:scale,child:child),
+  child:AvatarArt(index:index,size:100));
+}

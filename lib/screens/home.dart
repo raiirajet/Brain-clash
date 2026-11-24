@@ -6,6 +6,7 @@ import '../learning/progress.dart';
 import '../question_generators/questions.dart';
 import 'play.dart';
 import '../widgets/character.dart';
+import 'cosmetics.dart';
 
 const avatars=['🤖','👨‍🚀','🥷','🦊','🐉','👽'];
 const names=['Roboter','Astronaut','Ninja','Fuchs','Drache','Alien'];
@@ -80,7 +81,7 @@ class Stats extends StatelessWidget{
  @override Widget build(BuildContext context){
   final p=progress.current;final right=p['right'] as int,wrong=p['wrong'] as int,xp=p['xp'] as int;
   return Scaffold(appBar:AppBar(title:Text(achievements?'Erfolge':'Mein Fortschritt')),body:ListView(padding:const EdgeInsets.all(20),children:[
-   if(achievements)...List.generate(thresholds.length,(i)=>ListTile(leading:Icon(xp>=thresholds[i]?Icons.emoji_events:Icons.lock_outline),title:Text(names[i]),subtitle:Text('${thresholds[i]} XP')) )
+   if(achievements)...[for(final a in [('Erste Runde',p['rounds'] as int,1),('Rechenkünstler',right,100),('Duellmeister',p['wins'] as int,10),('Ausdauer',p['rounds'] as int,25),('Brain Clash Champion',xp,1000)])ListTile(leading:Icon(a.$2>=a.$3?Icons.emoji_events:Icons.lock_outline),title:Text(a.$1),subtitle:Text('${a.$2} / ${a.$3}'))]
    else ...[
     Text('$xp XP',style:Theme.of(context).textTheme.displaySmall),
     ListTile(title:const Text('Runden'),trailing:Text('${p['rounds']}')),
@@ -101,7 +102,7 @@ class CollectionPage extends StatefulWidget{
  @override State<CollectionPage> createState()=>_CollectionPageState();
 }
 class _CollectionPageState extends State<CollectionPage>{
- @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Meine Spielfiguren')),body:GridView.builder(padding:const EdgeInsets.all(16),gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:2,childAspectRatio:1.15,crossAxisSpacing:8,mainAxisSpacing:8),itemCount:6,itemBuilder:(c,i){final p=widget.progress.current;final unlocked=(p['xp'] as int)>=thresholds[i];return Card(child:InkWell(onTap:unlocked?()async{setState(()=>p['avatar']=i);await widget.progress.save();}:null,child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[AvatarArt(index:i,size:66),Text(names[i]),Text(unlocked?(p['avatar']==i?'Ausgewählt':'Auswählen'):'🔒 ${thresholds[i]} XP')])));}));
+ @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Sammlung'),actions:[IconButton(tooltip:'Arena & Effekte',icon:const Icon(Icons.palette),onPressed:()=>Navigator.push<void>(context,MaterialPageRoute(builder:(_)=>Cosmetics(progress:widget.progress))))]),body:GridView.builder(padding:const EdgeInsets.all(16),gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:2,childAspectRatio:1.15,crossAxisSpacing:8,mainAxisSpacing:8),itemCount:6,itemBuilder:(c,i){final p=widget.progress.current;final unlocked=(p['xp'] as int)>=thresholds[i];return Card(child:InkWell(onTap:unlocked?()async{setState(()=>p['avatar']=i);await widget.progress.save();}:null,child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[AvatarArt(index:i,size:66),Text(names[i]),Text(unlocked?(p['avatar']==i?'Ausgewählt':'Auswählen'):'🔒 ${thresholds[i]} XP')])));}));
 }
 class Profiles extends StatefulWidget{
  final Progress progress;

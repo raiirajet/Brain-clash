@@ -13,7 +13,7 @@ class Question {
   final List<String> board;
   int get previewMs=>interaction==Interaction.sequence?board.length*480+400:interaction==Interaction.pairs?2600:interaction==Interaction.signal?1800:preview.isEmpty?0:2200;
   const Question(this.world,this.prompt,this.answer,this.options,this.explanation,{this.preview='',this.interaction=Interaction.choices,this.board=const []});
-  String get key=>'${world.name}|$prompt|$answer|$preview';
+  String get key=>'${world.name}|$prompt|$answer|$preview|${board.join(',')}';
   Map<String,dynamic> toJson()=>{'world':world.name,'prompt':prompt,'answer':answer,'options':options,'explanation':explanation,'preview':preview,'interaction':interaction.name,'board':board};
   factory Question.fromJson(Map data)=>Question(World.values.byName(data['world'] as String),data['prompt'] as String,data['answer'] as String,List<String>.from(data['options'] as List),data['explanation'] as String,preview:data['preview'] as String,interaction:Interaction.values.byName(data['interaction'] as String? ?? 'choices'),board:List<String>.from(data['board'] as List? ?? []));
 }

@@ -17,3 +17,6 @@ Original sound effects and an optional background loop are synthesized by script
 A tag is eligible for a signed release only after testing and review. Configure GitHub Actions secrets BRAINCLASH_KEYSTORE_B64, BRAINCLASH_STORE_PASSWORD, BRAINCLASH_KEY_ALIAS and BRAINCLASH_KEY_PASSWORD. Preserve the same keystore securely outside GitHub source. Never distribute the debug APK as production; debug keys may differ between CI runners.
 
 Training supports typed numeric answers, voluntary age-based starting levels, automatic adjustment, and number/symbol/colour recognition sequences.
+
+## 0.2.0 candidate
+Interactive sequence and pair boards, focus signals, unlockable cosmetics and approved launcher branding. CI builds a universal optimized TEST APK with a non-production key and publishes a marked prerelease. A production signing key is still required.

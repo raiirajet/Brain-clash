@@ -14,7 +14,7 @@ class Progress {
   Map<String,dynamic> fresh()=>{'rounds':0,'wins':0,'right':0,'wrong':0,'xp':0,'avatar':0,'categories':<String,dynamic>{},'review':<String,dynamic>{},'best':0};
   Map<String,dynamic> get current=>profiles[active] as Map<String,dynamic>;
   Future<void> save()async{await prefs.setString('profiles',jsonEncode(profiles));await prefs.setString('active',active);}
-  int levelFor(String world,int fallback){final c=(current['categories'] as Map)[world] as Map?;return (c?['level'] as int?)??fallback;}
+  int levelFor(String world,int fallback){if(world=='mixed'){final values=(current['categories'] as Map).values.map((v)=>(v as Map)['level'] as int).toList();return values.isEmpty?fallback:(values.reduce((a,b)=>a+b)/values.length).round();}final c=(current['categories'] as Map)[world] as Map?;return (c?['level'] as int?)??fallback;}
   static int adapt(int level,int right,int total){
     if(total<20)return level;
     final rate=right/total;

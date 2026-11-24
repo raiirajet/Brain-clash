@@ -9,3 +9,6 @@
 - Original synthesized sound effects, optional music, volume controls and native Android audio adapter.
 
 - Age-based starting difficulty, optional number pad and broader memory/focus/word tasks.
+
+## 0.2.0 – test candidate
+- Interactive memory boards, focus signal, unlockable arenas and effects, new icon and splash, optimized test APK.

@@ -43,7 +43,7 @@ class Battle {
     for(var p=0;p<2;p++){setTask(p,tasks[p]);}
     scheduleBot();
   }
-  void scheduleBot() {botAt=ready[1]+[3500,2500,1500,850][opponentLevel]+rng.nextInt(900);}
+  void scheduleBot() {botAt=ready[1]+(tasks[1].interaction==Interaction.pairs?tasks[1].board.length*400:tasks[1].interaction==Interaction.sequence?tasks[1].board.length*260:0)+[3500,2500,1500,850][opponentLevel]+rng.nextInt(900);}
   void tick(int ms) {
     if(phase==Phase.countdown) {countdown-=ms;if(countdown<=0) start();return;}
     if(phase!=Phase.playing)return;

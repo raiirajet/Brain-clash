@@ -8,6 +8,7 @@ import '../game_engine/battle.dart';
 import '../learning/progress.dart';
 import '../question_generators/questions.dart';
 import '../widgets/memory_board.dart';
+import '../widgets/character.dart';
 
 class Play extends StatefulWidget{
  final Progress progress;final Mode mode;final World world;final int duration,level,opponent;final bool numberEntry;
@@ -27,8 +28,8 @@ class _PlayState extends State<Play> with WidgetsBindingObserver{
   if(b.points[0]+b.points[1]>oldScore&&b.phase==Phase.playing)unawaited(GameAudio(widget.progress.prefs).effect('energy'));
   if(b.phase==Phase.ended)persist();
  });}
- void reset(){b=Battle(mode:widget.mode,world:widget.world,duration:widget.duration,level:widget.level,opponentLevel:widget.opponent,questions:widget.mode==Mode.training?ReviewQuestions(widget.progress.dueQuestions(widget.world)):null);arena.energy=.5;arena.leftAvatar=widget.progress.current['avatar'] as int;arena.rightAvatar=widget.mode==Mode.team?4:5;arena.reduced=widget.progress.prefs.getBool('reduced')??false;saved=false;typed='';streak=0;lastCountdown=3;arena.score=0;feedback[0]='';feedback[1]='';}
- void persist(){if(saved)return;saved=true;final before=widget.progress.current['xp'] as int;widget.progress.record(b);final after=widget.progress.current['xp'] as int;unawaited(widget.progress.save());final audio=GameAudio(widget.progress.prefs);unawaited(audio.effect(widget.mode==Mode.training?'right':b.winner==null?'draw':b.winner==0?'win':'loss'));if([50,150,300,600,1000].any((n)=>before<n&&after>=n))unawaited(audio.effect('unlock'));}
+ void reset(){b=Battle(mode:widget.mode,world:widget.world,duration:widget.duration,level:widget.level,opponentLevel:widget.opponent,questions:widget.mode==Mode.training?ReviewQuestions(widget.progress.dueQuestions(widget.world)):null);arena.energy=.5;arena.leftAvatar=widget.progress.current['avatar'] as int;arena.rightAvatar=widget.mode==Mode.team?4:5;arena.reduced=widget.progress.prefs.getBool('reduced')??false;saved=false;typed='';streak=0;lastCountdown=3;arena.score=0;arena.skin=widget.progress.current['arena'] as int? ?? 0;arena.effect=widget.progress.current['effect'] as int? ?? 0;arena.tint=widget.progress.current['color'] as int? ?? 0;arena.background=widget.progress.current['background'] as int? ?? 0;arena.victor=null;arena.failed=-1;feedback[0]='';feedback[1]='';}
+ void persist(){arena.victor=b.winner;if(saved)return;saved=true;final before=widget.progress.current['xp'] as int;widget.progress.record(b);final after=widget.progress.current['xp'] as int;unawaited(widget.progress.save());final audio=GameAudio(widget.progress.prefs);unawaited(audio.effect(widget.mode==Mode.training?'right':b.winner==null?'draw':b.winner==0?'win':'loss'));if([50,150,300,600,1000].any((n)=>before<n&&after>=n))unawaited(audio.effect('unlock'));}
  @override void didChangeAppLifecycleState(AppLifecycleState state){if(state!=AppLifecycleState.resumed&&mounted){setState(()=>b.pause());}}
  @override void dispose(){timer.cancel();watch.stop();WidgetsBinding.instance.removeObserver(this);super.dispose();}
  void answer(int p,String v,Question expected,{int? cell}){
@@ -36,6 +37,7 @@ class _PlayState extends State<Play> with WidgetsBindingObserver{
   final now=watch.elapsedMilliseconds;
   setState((){b.tick(now-last);last=now;final result=identical(b.tasks[p],expected)?(cell==null?b.answer(p,v):b.tapCell(p,cell)):null;if(result!=null){
     if(p==0)typed='';
+    if(!result)arena.failed=p;
     feedback[p]=result?'Richtig!':widget.mode==Mode.training?'Richtig: ${expected.answer}':'Noch einmal versuchen';
     final audio=GameAudio(widget.progress.prefs);
     if(p==0){streak=result?streak+1:0;}
@@ -95,8 +97,9 @@ class _PlayState extends State<Play> with WidgetsBindingObserver{
   final a=b.attempts.where((a)=>a.player==0).toList(),correct=a.where((a)=>a.correct).length;
   final title=widget.mode==Mode.training?'Training abgeschlossen':widget.mode==Mode.team?(b.winner==0?'Gemeinsam gewonnen!':'Gut gekämpft!'):b.winner==null?'Unentschieden':b.winner==0?'Spieler 1 gewinnt!':widget.mode==Mode.solo?'Der Gegner gewinnt':'Spieler 2 gewinnt!';
   return ListView(padding:const EdgeInsets.all(24),children:[
-   const Icon(Icons.emoji_events,size:66,color:Colors.amber),Text(title,textAlign:TextAlign.center,style:Theme.of(context).textTheme.headlineSmall),
-   const SizedBox(height:18),Text('Richtig: $correct · Trefferquote: ${a.isEmpty?0:(100*correct/a.length).round()} % · +${b.points[0]*10} XP',textAlign:TextAlign.center),
+   Center(child:VictoryAvatar(index:b.winner==1?5:widget.progress.current['avatar'] as int,animate:!(widget.progress.prefs.getBool('reduced')??false))),Text(title,textAlign:TextAlign.center,style:Theme.of(context).textTheme.headlineSmall),
+   const SizedBox(height:18),if(two)Text('Spieler 2: ${b.points[1]} Punkte · ${b.misses[1]} Fehler',textAlign:TextAlign.center),
+   Text('Richtig: $correct · Trefferquote: ${a.isEmpty?0:(100*correct/a.length).round()} % · +${b.points[0]*10} XP',textAlign:TextAlign.center),
    if(a.any((a)=>!a.correct))ExpansionTile(title:const Text('Fehler ansehen'),children:a.where((a)=>!a.correct).map((a)=>ListTile(title:Text(a.question.prompt),subtitle:Text(a.question.explanation))).toList()),
    const SizedBox(height:18),FilledButton(onPressed:()=>setState(reset),child:const Text('Revanche')),
    OutlinedButton(onPressed:()=>Navigator.pop(context),child:const Text('Neues Spiel')),
