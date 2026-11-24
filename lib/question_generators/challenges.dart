@@ -53,11 +53,9 @@ class ChallengeQuestions extends Questions{
  String decimal(int n)=>n%10==0?'${n~/10}':'${n~/10}.${n%10}';
  Question generate(World world,int level){
   level=level.clamp(0,3).toInt();
-  if(challenge.standard){
-   final i=due.indexWhere((q)=>world==World.mixed||q.world==world);
-   if(i>=0)return due.removeAt(i);
-   return super.make(world,level);
-  }
+  final review=due.indexWhere((q)=>world==World.mixed||q.world==world);
+  if(review>=0)return due.removeAt(review);
+  if(challenge.standard)return super.make(world,level);
   var a=operand();
   var b=operand();
   if(config.factorDigits>0&&challenge==Challenge.multiplication){

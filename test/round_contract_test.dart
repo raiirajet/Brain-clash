@@ -18,7 +18,7 @@ void solve(Battle b,int p){
  final q=b.tasks[p];
  switch(q.interaction){
   case Interaction.target:b.tapCell(p,q.board.indexOf(q.answer));break;
-  case Interaction.tap:for(var i=0;i<5;i++)b.tapCell(p,0);break;
+  case Interaction.tap:for(var i=0;i<int.parse(q.answer);i++)b.tapCell(p,0);break;
   case Interaction.sequence:for(final v in q.board)b.tapCell(p,int.parse(v));break;
   case Interaction.pairs:
    final used=<int>{};

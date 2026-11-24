@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../game_engine/battle.dart';
 import '../question_generators/questions.dart';
+import '../question_generators/challenges.dart';
 import 'engagement.dart';
 import '../core/storage/profile_store.dart';
 class Progress {
@@ -42,11 +43,12 @@ class Progress {
     final previous=_writes;
     _writes=()async{
       try{await previous;}catch(_){/* A later snapshot can still be saved. */}
-      await prefs.setString('profileSnapshotV1',jsonEncode(snapshot.toJson()));
+      final backupOk=await prefs.setString('profileSnapshotV1',jsonEncode(snapshot.toJson()));
       await prefs.setString('profiles',jsonEncode(snapshot.profiles));
       await prefs.setString('active',snapshot.active);
       await prefs.setInt('profilesRevision',snapshot.revision);
       if(_store!=null){try{await _store!.write(snapshot);storageFallback=false;}catch(_){storageFallback=true;}}
+      if(!backupOk&&(_store==null||storageFallback))throw StateError('Profile snapshot could not be saved');
     }();
     return _writes;
   }
@@ -60,14 +62,16 @@ class Progress {
     final rate=right/total;
     return (level+(rate>=.9?1:rate<.6?-1:0)).clamp(0,3).toInt();
   }
+  int masteryLevel(String game,int fallback,{String? profile}){final p=profiles[profile??active] as Map? ??current;return (((p['skills'] as Map?)?[game] as Map?)?['level'] as int? ??fallback).clamp(0,3).toInt();}
   Map get reviews=>current.putIfAbsent('review',()=> <String,dynamic>{}) as Map;
-  List<Question> dueQuestions(World world,{DateTime? at}){
+  List<Question> dueQuestions(World world,{DateTime? at,String? game}){
     final now=(at??DateTime.now()).millisecondsSinceEpoch;
     final result=<Question>[];
     for(final v in reviews.values){
       try {
         final item=v as Map;
         if((item['due'] as int)>now)continue;
+        if(game!=null&&item['game']!=game)continue;
         final q=Question.fromJson(item['question'] as Map);
         if(world==World.mixed||q.world==world)result.add(q);
       }catch(_){continue;}
@@ -78,18 +82,19 @@ class Progress {
     final now=at??DateTime.now();
     final grouped=<String,List<Attempt>>{};
     for(final a in b.attempts.where((a)=>a.player==player)){
+      if(a.question.interaction==Interaction.tap||a.question.interaction==Interaction.signal)continue;
       grouped.putIfAbsent(a.question.key,()=>[]).add(a);
     }
     for(final entry in grouped.entries){
       final a=entry.value.last;
       if(entry.value.any((a)=>!a.correct)){
-        reviews[entry.key]={'question':a.question.toJson(),'due':now.millisecondsSinceEpoch,'stage':0};
+        reviews[entry.key]={'question':a.question.toJson(),'game':b.skillName,'due':now.millisecondsSinceEpoch,'stage':0};
       }else if(b.mode==Mode.training&&reviews.containsKey(entry.key)){
         final old=reviews[entry.key] as Map;
         if((old['due'] as int)>now.millisecondsSinceEpoch)continue;
         final stage=old['stage'] as int;
         if(stage>=3){reviews.remove(entry.key);}else{
-          reviews[entry.key]={'question':a.question.toJson(),'due':now.add(Duration(days:[1,3,7][stage])).millisecondsSinceEpoch,'stage':stage+1};
+          reviews[entry.key]={'question':a.question.toJson(),'game':b.skillName,'due':now.add(Duration(days:[1,3,7][stage])).millisecondsSinceEpoch,'stage':stage+1};
         }
       }
     }
@@ -98,10 +103,19 @@ class Progress {
     final previous=active;
     if(profile!=null&&profiles.containsKey(profile))active=profile;
     final p=current;
+    final own=b.attempts.where((a)=>a.player==player).toList();
+    if(own.isEmpty){active=previous;return;}
+    final first=<int,Attempt>{};for(final a in own){first.putIfAbsent(a.taskId,()=>a);}
+    final samples=first.values.toList();
     final previousDue=dueQuestions(World.mixed).map((q)=>q.key).toSet();
     updateReviews(b,player:player);
-    final newRecord=b.points[player]>(p['best'] as int? ??0);
-    if(newRecord)p['best']=b.points[player];
+    final digit=player==0?b.digits:b.opponentDigits,level=player==0?b.level:b.opponentLevel;
+    final recordKey='${b.skillName}|${b.mode.name}|${b.rule.name}|${b.duration}|$digit|$level|${b.settingsKey}';
+    final records=p.putIfAbsent('records',()=> <String,dynamic>{}) as Map;
+    final newRecord=b.points[player]>(records[recordKey] as int? ??0);
+    if(newRecord)records[recordKey]=b.points[player];
+    if(records.length>300)records.remove(records.keys.first);
+    if(b.points[player]>(p['best'] as int? ??0))p['best']=b.points[player];
     p['rounds']=(p['rounds'] as int)+1;
     if(b.winner==player||(b.mode==Mode.team&&b.winner==0))p['wins']=(p['wins'] as int)+1;
     for(final a in b.attempts.where((a)=>a.player==player)){
@@ -109,29 +123,40 @@ class Progress {
       final cats=p['categories'] as Map;
       final c=cats.putIfAbsent(a.question.world.name,()=>{'right':0,'wrong':0,'ms':0,'level':player==0?b.level:b.opponentLevel,'windowRight':0,'windowTotal':0}) as Map;
       c[key]=(c[key] as int)+1;c['ms']=(c['ms'] as int)+a.ms;c['last']=a.question.prompt;if(a.correct&&(c['bestMs']==null||a.ms<(c['bestMs'] as int)))c['bestMs']=a.ms;
-      c['windowTotal']=(c['windowTotal'] as int)+1;
-      if(a.correct)c['windowRight']=(c['windowRight'] as int)+1;
+      // Category totals are descriptive; mastery uses first attempts per game.
     }
-    for(final c in (p['categories'] as Map).values.cast<Map>()){
-      if((c['windowTotal'] as int)>=20){c['level']=adapt(c['level'] as int,c['windowRight'] as int,c['windowTotal'] as int);c['windowTotal']=0;c['windowRight']=0;}
-    }
-    final own=b.attempts.where((a)=>a.player==player).toList();
     final right=own.where((a)=>a.correct).length;
+    final firstRight=samples.where((a)=>a.correct).length;
     final dayBonus=DailyProgress.add(p,right);
     final weekBonus=WeeklyProgress.add(p,own.where((a)=>a.correct).map((a)=>a.question.world.name));
-    final learned=b.mode==Mode.training?own.where((a)=>a.correct&&previousDue.contains(a.question.key)).map((a)=>a.question.key).toSet().length:0;
-    final reward=own.isEmpty?0:right*10+15+(b.mode!=Mode.training&&b.winner==player?25:0)+(right>=5&&right==own.length?50:0)+dayBonus+weekBonus+(newRecord?30:0)+learned*15;
+    final learned=b.mode==Mode.training?samples.where((a)=>a.correct&&previousDue.contains(a.question.key)).map((a)=>a.question.key).toSet().length:0;
+    final qualified=samples.length>=5&&right>=3&&(b.elapsed>=10000||b.finishReason==FinishReason.goal);
+    final reward=right*10+(qualified?15:0)+(right>0&&b.mode!=Mode.training&&(b.mode==Mode.team?b.winner==0:b.winner==player)?25:0)+(qualified&&firstRight==samples.length?50:0)+dayBonus+weekBonus+(qualified&&newRecord?30:0)+learned*15;
     final skillMap=p.putIfAbsent('skills',()=> <String,dynamic>{}) as Map;
-    final digit=player==0?b.digits:b.opponentDigits;
-    final skill=skillMap.putIfAbsent(b.skillName,()=>{'right':0,'wrong':0,'digits':digit,'sampleDigits':digit,'windowRight':0,'windowTotal':0,'windowMs':0}) as Map;
-    if(skill['sampleDigits']!=digit){skill['sampleDigits']=digit;skill['windowRight']=0;skill['windowTotal']=0;skill['windowMs']=0;}
-    skill['right']=(skill['right'] as int)+right;skill['wrong']=(skill['wrong'] as int)+own.length-right;
-    skill['windowRight']=(skill['windowRight'] as int)+right;skill['windowTotal']=(skill['windowTotal'] as int)+own.length;
-    skill['windowMs']=(skill['windowMs'] as int)+own.fold<int>(0,(sum,a)=>sum+a.ms);
-    if((skill['windowTotal'] as int)>=20){
-     final rate=(skill['windowRight'] as int)/(skill['windowTotal'] as int),avg=(skill['windowMs'] as int)/(skill['windowTotal'] as int);
-     skill['digits']=(digit+(rate<.6?-1:rate>=.9&&avg<=4500?1:0)).clamp(1,4).toInt();
-     skill['windowRight']=0;skill['windowTotal']=0;skill['windowMs']=0;
+    final skill=skillMap.putIfAbsent(b.skillName,()=>{'right':0,'wrong':0,'digits':digit,'level':level}) as Map;
+    skill['right']=(skill['right'] as int? ??0)+right;skill['wrong']=(skill['wrong'] as int? ??0)+own.length-right;
+    final numeric=Challenge.values.where((c)=>c.name==b.skillName).firstOrNull?.usesDigits??false;
+    final signature='$digit|$level|${b.settingsKey}';
+    if(skill['sampleKey']!=signature){skill['sampleKey']=signature;skill['sampleWindow']=<dynamic>[];}
+    final window=skill.putIfAbsent('sampleWindow',()=> <dynamic>[]) as List;
+    if(b.mode==Mode.training){
+     for(final a in samples){window.add({'ok':a.correct,'ms':a.ms});}
+     while(window.length>=20){
+      final group=window.take(20).cast<Map>().toList();
+      final correct=group.where((a)=>a['ok']==true).length;
+      final next=adapt(level,correct,20);
+      skill['level']=next;
+      if(numeric){skill['digits']=(digit+(next-level)).clamp(1,4).toInt();}
+      skill['masteryAccuracy']=correct/20;
+      window.removeRange(0,20);
+     }
+    }
+    if(b.mode==Mode.duel||b.mode==Mode.solo){
+      final competitive=p.putIfAbsent('competitive',()=>{'played':0,'wins':0,'draws':0,'rating':1000}) as Map;
+      competitive['played']=(competitive['played'] as int)+1;
+      competitive['wins']=(competitive['wins'] as int)+(b.winner==player?1:0);
+      competitive['draws']=(competitive['draws'] as int)+(b.winner==null?1:0);
+      competitive['rating']=((competitive['rating'] as int)+(b.winner==null?0:b.winner==player?20:-20)).clamp(0,100000).toInt();
     }
     p['xp']=(p['xp'] as int)+reward;
     final history=p.putIfAbsent('history',()=> <dynamic>[]) as List;
@@ -139,7 +164,7 @@ class Progress {
       var best=0,series=0;
       for(final a in own){series=a.correct?series+1:0;if(series>best)best=series;}
       if(best>(p['bestSeries'] as int? ??0))p['bestSeries']=best;
-      history.add({'date':DateTime.now().toIso8601String().substring(0,10),'world':b.world.name,'game':b.skillName,'points':b.points[player],'right':right,'total':own.length,'ms':own.fold<int>(0,(sum,a)=>sum+a.ms),'attempts':[for(final a in own.take(30)){'prompt':a.question.prompt,'solution':a.question.answer,'response':a.response,'correct':a.correct,'ms':a.ms}]});
+      history.add({'date':DateTime.now().toIso8601String().substring(0,10),'world':b.world.name,'game':b.skillName,'points':b.points[player],'level':level,'digits':digit,'duration':b.duration,'mode':b.mode.name,'rule':b.rule.name,'firstRight':firstRight,'firstTotal':samples.length,'xp':reward,'right':right,'total':own.length,'ms':own.fold<int>(0,(sum,a)=>sum+a.ms),'attempts':[for(final a in own.take(30)){'prompt':a.question.prompt,'solution':a.question.answer,'response':a.response,'correct':a.correct,'ms':a.ms}]});
     }
     if(history.length>100)history.removeRange(0,history.length-100);
     active=previous;

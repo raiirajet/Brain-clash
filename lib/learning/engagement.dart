@@ -19,7 +19,7 @@ class DailyProgress {
 class WeeklyProgress{
  static String week(DateTime? at){
   final now=at??DateTime.now(),date=DateTime(now.year,now.month,now.day);
-  return date.subtract(Duration(days:date.weekday-1)).toIso8601String().substring(0,10);
+  return DateTime(date.year,date.month,date.day-date.weekday+1).toIso8601String().substring(0,10);
  }
  static int count(Map profile,{DateTime? at})=>profile['weeklyDate']==week(at)?(profile['weeklyRight'] as int? ??0):0;
  static List<String> worlds(Map profile,{DateTime? at})=>profile['weeklyDate']==week(at)?List<String>.from(profile['weeklyWorlds'] as List? ??[]):[];

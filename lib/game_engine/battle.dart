@@ -11,10 +11,10 @@ enum Phase { countdown, playing, paused, ended }
 enum FinishReason { time, goal, defeat, hearts, mistake, speed, finalClash, manual }
 class Attempt {
   final Question question;
-  final int player, ms;
+  final int player, ms, taskId;
   final bool correct;
   final String? response;
-  Attempt(this.question,this.player,this.ms,this.correct,{this.response});
+  Attempt(this.question,this.player,this.ms,this.correct,{this.response,this.taskId=0});
 }
 class Battle {
   final Mode mode;
@@ -26,7 +26,7 @@ class Battle {
   final bool sameQuestions;
   final bool numberEntry,timedArcade;
   final int fuseMs,digits,opponentDigits;
-  final String skillName;
+  final String skillName,settingsKey;
   late final ArcadeRules? arcade;
   final sorted=[<String>[],<String>[]];
   final Random rng;
@@ -34,6 +34,7 @@ class Battle {
   int time=0, countdown=3000, energy=50, elapsed=0, serial=0;
   int? winner;
   FinishReason? finishReason;
+  final taskIds=[0,0];
   final points=[0,0], misses=[0,0], locks=[0,0], shown=[0,0], ready=[0,0];
   final List<Attempt> attempts=[];
   final partial=[<String>[],<String>[]];
@@ -49,7 +50,7 @@ class Battle {
   bool get shared=>mode==Mode.duel&&sameQuestions&&level==opponentLevel&&fuseMs==0&&ArcadeRules.kindFor(skillName)==null;
   bool get speedContest=>arcade==null&&rule==BattleRule.speed&&(mode==Mode.duel||mode==Mode.solo);
   bool get arbitrate=>shared||speedContest;
-  Battle({required this.mode,required this.world,required this.duration,required this.level,required this.opponentLevel,Questions? questions,this.opponentQuestions,this.rule=BattleRule.tug,this.sameQuestions=true,this.numberEntry=false,this.timedArcade=false,this.fuseMs=0,this.digits=1,this.opponentDigits=1,this.skillName='mixed',Random? random}):questions=questions??Questions(),rng=random??Random() {
+  Battle({required this.mode,required this.world,required this.duration,required this.level,required this.opponentLevel,Questions? questions,this.opponentQuestions,this.rule=BattleRule.tug,this.sameQuestions=true,this.numberEntry=false,this.timedArcade=false,this.fuseMs=0,this.digits=1,this.opponentDigits=1,this.skillName='mixed',this.settingsKey='',Random? random}):questions=questions??Questions(),rng=random??Random() {
     final kind=ArcadeRules.kindFor(skillName);
     arcade=kind==null?null:ArcadeRules(kind,seed:rng.nextInt(1<<30),cooperative:mode==Mode.team,repeatObjectives:mode==Mode.training||timedArcade&&kind!=ArcadeKind.boss);
     final first=this.questions.make(world,level);
@@ -62,7 +63,7 @@ class Battle {
   bool activePlayer(int p)=>p>=0&&p<(mode==Mode.training?1:2);
   bool canAnswer(int p)=>activePlayer(p)&&phase==Phase.playing&&arcade?.waiting(p)!=true&&visible(p)&&elapsed>=locks[p]&&!(arbitrate&&pendingPlayer==p);
   void setTask(int p,Question q) {
-    tasks[p]=q;sorted[p]=List.of(q.board);partial[p].clear();matched[p].clear();mismatched[p].clear();selected[p]=-1;shown[p]=elapsed;ready[p]=elapsed+q.previewMs;locks[p]=ready[p];
+    taskIds[p]++;tasks[p]=q;sorted[p]=List.of(q.board);partial[p].clear();matched[p].clear();mismatched[p].clear();selected[p]=-1;shown[p]=elapsed;ready[p]=elapsed+q.previewMs;locks[p]=ready[p];
   }
   void start() {
     phase=Phase.playing;
@@ -179,11 +180,11 @@ class Battle {
   bool? answer(int p,String value) {
     if(!activePlayer(p)||phase!=Phase.playing)return null;
     final q=tasks[p];
-    if(q.interaction==Interaction.signal&&!visible(p)&&locks[p]==ready[p]){misses[p]++;attempts.add(Attempt(q,p,0,false,response:'false start'));locks[p]=ready[p]+850;if(mode!=Mode.training&&mode!=Mode.team&&rule==BattleRule.perfect)finish(forcedWinner:1-p,reason:FinishReason.mistake);else if(mode!=Mode.training&&mode!=Mode.team&&rule==BattleRule.hearts&&misses[p]>=3)finish(forcedWinner:1-p,reason:FinishReason.hearts);return false;}
+    if(q.interaction==Interaction.signal&&!visible(p)&&locks[p]==ready[p]){misses[p]++;attempts.add(Attempt(q,p,0,false,response:'false start',taskId:taskIds[p]));locks[p]=ready[p]+850;if(mode!=Mode.training&&mode!=Mode.team&&rule==BattleRule.perfect)finish(forcedWinner:1-p,reason:FinishReason.mistake);else if(mode!=Mode.training&&mode!=Mode.team&&rule==BattleRule.hearts&&misses[p]>=3)finish(forcedWinner:1-p,reason:FinishReason.hearts);return false;}
     if(!canAnswer(p))return null;
     if(!q.options.contains(value)&&!(q.interaction==Interaction.recall&&RegExp(r'^\d+$').hasMatch(value))&&!((numberEntry||mode==Mode.training&&p==0)&&q.world==World.math&&double.tryParse(value)?.isFinite==true))return null;
     final good=value==q.answer||((numberEntry||mode==Mode.training)&&q.world==World.math&&double.tryParse(value)?.isFinite==true&&double.tryParse(value)==double.tryParse(q.answer));
-    if(mode!=Mode.solo||p==0)attempts.add(Attempt(q,p,elapsed-ready[p],good,response:value));
+    if(mode!=Mode.solo||p==0)attempts.add(Attempt(q,p,elapsed-ready[p],good,response:value,taskId:taskIds[p]));
     if(!good){misses[p]++;locks[p]=elapsed+850;if(arcade!=null){arcade!.wrong(p);checkArcade();if(p==1&&mode==Mode.solo)botAt=locks[p]+700;return false;}if(rule==BattleRule.perfect&&(mode==Mode.duel||mode==Mode.solo)){finish(forcedWinner:1-p,reason:FinishReason.mistake);return false;}if(rule==BattleRule.hearts&&(mode==Mode.duel||mode==Mode.solo)){updateRuleEnergy();if(misses[p]>=3){finish(forcedWinner:1-p,reason:FinishReason.hearts);return false;}}if(fuseMs>0&&!shared){setTask(p,(p==0?questions:opponentQuestions??questions).make(world,p==0?level:opponentLevel));ready[p]+=850;locks[p]=ready[p];if(p==1)scheduleBot();}else if(p==1&&mode==Mode.solo)botAt=locks[p]+700;return false;}
     if(arbitrate) {
       if(pendingPlayer!=null) {
