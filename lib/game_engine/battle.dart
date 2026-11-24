@@ -1,17 +1,18 @@
 import 'dart:math';
 import '../question_generators/questions.dart';
 enum Mode { solo, duel, training, team }
-enum BattleRule { tug, race, sprint, hearts, race10, perfect, speed }
+enum BattleRule { tug, race, sprint, hearts, race10, perfect, speed, finalClash }
 extension RuleInfo on BattleRule {
- String get label=>const ['Energie-Duell','5er-Rennen','Punkte-Sprint','3 Herzen','First to 10','Perfect Battle','Speed Battle'][index];
- String get description=>const ['Ziehe die Energie auf deine Seite.','Wer zuerst 5 Punkte hat, gewinnt.','Die meisten Punkte vor Ablauf der Zeit gewinnen.','Drei Fehler kosten das Duell.','Wer zuerst zehn Punkte erreicht, gewinnt.','Der erste Fehler entscheidet.','Schnellste richtige Antwort gewinnt; Gleichstand innerhalb 100 ms.'][index];
+ String get label=>const ['Energie-Duell','5er-Rennen','Punkte-Sprint','3 Herzen','First to 10','Perfect Battle','Speed Battle','Final Clash'][index];
+ String get description=>const ['Ziehe die Energie auf deine Seite.','Wer zuerst 5 Punkte hat, gewinnt.','Die meisten Punkte vor Ablauf der Zeit gewinnen.','Drei Fehler kosten das Duell.','Wer zuerst zehn Punkte erreicht, gewinnt.','Der erste Fehler entscheidet.','Schnellste richtige Antwort gewinnt; Gleichstand innerhalb 100 ms.','Bei Gleichstand entscheidet eine letzte Aufgabe.'][index];
 }
 enum Phase { countdown, playing, paused, ended }
 class Attempt {
   final Question question;
   final int player, ms;
   final bool correct;
-  Attempt(this.question,this.player,this.ms,this.correct);
+  final String? response;
+  Attempt(this.question,this.player,this.ms,this.correct,{this.response});
 }
 class Battle {
   final Mode mode;
@@ -22,7 +23,8 @@ class Battle {
   final BattleRule rule;
   final bool sameQuestions;
   final bool numberEntry;
-  final int fuseMs;
+  final int fuseMs,digits,opponentDigits;
+  final String skillName;
   final sorted=[<String>[],<String>[]];
   final Random rng;
   Phase phase=Phase.countdown, previous=Phase.countdown;
@@ -37,14 +39,15 @@ class Battle {
   late List<Question> tasks;
   int? pendingPlayer;
   int pendingAt=0, botAt=0;
+  bool finalRound=false;
   bool get shared=>mode==Mode.duel&&sameQuestions&&level==opponentLevel;
-  Battle({required this.mode,required this.world,required this.duration,required this.level,required this.opponentLevel,Questions? questions,this.opponentQuestions,this.rule=BattleRule.tug,this.sameQuestions=true,this.numberEntry=false,this.fuseMs=0,Random? random}):questions=questions??Questions(),rng=random??Random() {
+  Battle({required this.mode,required this.world,required this.duration,required this.level,required this.opponentLevel,Questions? questions,this.opponentQuestions,this.rule=BattleRule.tug,this.sameQuestions=true,this.numberEntry=false,this.fuseMs=0,this.digits=1,this.opponentDigits=1,this.skillName='mixed',Random? random}):questions=questions??Questions(),rng=random??Random() {
     final first=this.questions.make(world,level);
     tasks=[first,mode==Mode.training||shared?first:(opponentQuestions??this.questions).make(world,opponentLevel)];
     if(shared) tasks[1]=tasks[0];
   }
   int get remaining=>max(0,duration*1000-time);
-  bool get unlimited=>duration==0;
+  bool get unlimited=>duration==0||finalRound;
   bool visible(int p)=>elapsed>=ready[p];
   bool canAnswer(int p)=>phase==Phase.playing&&visible(p)&&elapsed>=locks[p]&&!(shared&&pendingPlayer==p);
   void setTask(int p,Question q) {
@@ -78,7 +81,7 @@ class Battle {
       final good=rng.nextDouble()<[.60,.76,.88,.97][opponentLevel];
       answer(1,good?q.answer:q.options.firstWhere((x)=>x!=q.answer));
     }
-    if(!unlimited&&remaining==0) {if(pendingPlayer!=null)resolvePending();finish();}
+    if(!unlimited&&remaining==0) {if(pendingPlayer!=null)resolvePending();if(phase==Phase.playing&&rule==BattleRule.finalClash&&points[0]==points[1]){finalRound=true;if(shared){advanceShared();}else{setTask(0,questions.make(world,level));setTask(1,(opponentQuestions??questions).make(world,opponentLevel));scheduleBot();}}else{finish();}}
   }
   void pause(){if(phase==Phase.playing||phase==Phase.countdown){previous=phase;phase=Phase.paused;}}
   void resume(){if(phase==Phase.paused)phase=previous;}
@@ -131,11 +134,11 @@ class Battle {
   bool? answer(int p,String value) {
     if(p<0||p>1||phase!=Phase.playing)return null;
     final q=tasks[p];
-    if(q.interaction==Interaction.signal&&!visible(p)&&locks[p]==ready[p]){misses[p]++;attempts.add(Attempt(q,p,0,false));locks[p]=ready[p]+850;if(rule==BattleRule.perfect||rule==BattleRule.hearts&&misses[p]>=3)finish(forcedWinner:1-p);return false;}
+    if(q.interaction==Interaction.signal&&!visible(p)&&locks[p]==ready[p]){misses[p]++;attempts.add(Attempt(q,p,0,false,response:'false start'));locks[p]=ready[p]+850;if(rule==BattleRule.perfect||rule==BattleRule.hearts&&misses[p]>=3)finish(forcedWinner:1-p);return false;}
     if(!canAnswer(p))return null;
     if(!q.options.contains(value)&&!(q.interaction==Interaction.recall&&RegExp(r'^\d+$').hasMatch(value))&&!((numberEntry||mode==Mode.training&&p==0)&&q.world==World.math&&double.tryParse(value)?.isFinite==true))return null;
     final good=value==q.answer||((numberEntry||mode==Mode.training)&&q.world==World.math&&double.tryParse(value)?.isFinite==true&&double.tryParse(value)==double.tryParse(q.answer));
-    if(mode!=Mode.solo||p==0)attempts.add(Attempt(q,p,elapsed-ready[p],good));
+    if(mode!=Mode.solo||p==0)attempts.add(Attempt(q,p,elapsed-ready[p],good,response:value));
     if(!good){misses[p]++;locks[p]=elapsed+850;if(rule==BattleRule.perfect&&(mode==Mode.duel||mode==Mode.solo)){finish(forcedWinner:1-p);return false;}if(rule==BattleRule.hearts&&(mode==Mode.duel||mode==Mode.solo)){updateRuleEnergy();if(misses[p]>=3){finish(forcedWinner:1-p);return false;}}if(p==1&&mode==Mode.solo)botAt=locks[p]+700;return false;}
     if(shared) {
       if(pendingPlayer!=null) {
@@ -150,6 +153,7 @@ class Battle {
   void advanceShared(){final q=questions.make(world,level);setTask(0,q);setTask(1,q);serial++;}
   void score(int p){
     points[p]++;
+    if(finalRound){finish(forcedWinner:p);return;}
     if(mode==Mode.training)return;
     if((mode==Mode.duel||mode==Mode.solo)&&rule!=BattleRule.tug){updateRuleEnergy();if((rule==BattleRule.race&&points[p]>=5)||(rule==BattleRule.race10&&points[p]>=10)||(rule==BattleRule.speed&&points[p]>=1))finish(forcedWinner:p);return;}
     energy=(energy+((mode==Mode.team||p==0)?5:-5)).clamp(0,100).toInt();

@@ -15,3 +15,21 @@ class DailyProgress {
   return old<10&&old+correct>=10?75:0;
  }
 }
+
+class WeeklyProgress{
+ static String week(DateTime? at){
+  final now=at??DateTime.now(),date=DateTime(now.year,now.month,now.day);
+  return date.subtract(Duration(days:date.weekday-1)).toIso8601String().substring(0,10);
+ }
+ static int count(Map profile,{DateTime? at})=>profile['weeklyDate']==week(at)?(profile['weeklyRight'] as int? ??0):0;
+ static List<String> worlds(Map profile,{DateTime? at})=>profile['weeklyDate']==week(at)?List<String>.from(profile['weeklyWorlds'] as List? ??[]):[];
+ static int add(Map profile,Iterable<String> categories,{DateTime? at}){
+  final list=categories.toList();if(list.isEmpty)return 0;
+  final old=count(profile,at:at),oldWorlds=worlds(profile,at:at);
+  final next=<String>{...oldWorlds,...list};
+  final wasComplete=old>=50&&oldWorlds.length>=3;
+  final total=(old+list.length).clamp(0,50).toInt();
+  profile['weeklyDate']=week(at);profile['weeklyRight']=total;profile['weeklyWorlds']=next.toList();
+  return !wasComplete&&total>=50&&next.length>=3?100:0;
+ }
+}

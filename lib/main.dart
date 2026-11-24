@@ -10,7 +10,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs=await SharedPreferences.getInstance();
-  runApp(BrainClash(progress:Progress(prefs)));
+  runApp(BrainClash(progress:await Progress.open(prefs)));
   await GameAudio(prefs).music();
 }
 class BrainClash extends StatefulWidget {

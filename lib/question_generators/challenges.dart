@@ -160,8 +160,7 @@ class ChallengeQuestions extends Questions{
     final answer=correct?'Richtig':'Falsch';
     return Question(World.logic,'$a + $b = $result',answer,const ['Richtig','Falsch'],'$a + $b = ${a+b}');
    case Challenge.reaction:
-    final signs=['●','▲','■','◆']..shuffle(random);
-    return Question(World.focus,'JETZT! Tippe ${signs.first}',signs.first,signs,'Reagiere erst auf das Signal.',preview:'Warte auf das Signal …',interaction:Interaction.signal,board:[(900+random.nextInt(1900)).toString()]);
+    return Question(World.focus,'JETZT!','LOS',const ['LOS','Zu früh','Falsch','Warten'],'Reagiere erst auf das Signal.',preview:'Warte auf das Signal …',interaction:Interaction.signal,board:[(900+random.nextInt(1900)).toString()]);
    case Challenge.odd:
     final signs=['●','▲','■','◆','★','✚']..shuffle(random);
     final row=List.filled(8+level.clamp(0,3).toInt()*3,signs[0]);row[random.nextInt(row.length)]=signs[1];

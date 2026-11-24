@@ -40,6 +40,17 @@ void main(){
   final target=Battle(mode:Mode.training,world:Challenge.targetHunt.world,duration:0,level:0,opponentLevel:0,questions:ChallengeQuestions(Challenge.targetHunt,1));
   target.tick(3000);expect(target.tapCell(0,target.tasks[0].board.indexOf(target.tasks[0].answer)),true);
  });
+ test('weekly target needs both answers and three worlds',(){
+  final p=<String,dynamic>{};final date=DateTime(2026,1,1);
+  expect(WeeklyProgress.add(p,List.filled(50,'math'),at:date),0);
+  expect(WeeklyProgress.add(p,['memory','focus'],at:date),100);
+  expect(WeeklyProgress.add(p,['logic'],at:date),0);
+ });
+ test('final clash resolves tied time battle with one extra question',(){
+  final b=Battle(mode:Mode.duel,world:Challenge.addition.world,duration:30,level:0,opponentLevel:0,rule:BattleRule.finalClash,questions:ChallengeQuestions(Challenge.addition,1));
+  b.tick(3000);b.tick(30000);expect(b.finalRound,true);expect(b.phase,Phase.playing);
+  b.answer(0,b.tasks[0].answer);b.tick(101);expect(b.winner,0);expect(b.phase,Phase.ended);
+ });
  test('perfect battle ends on the first wrong answer',(){
   final b=Battle(mode:Mode.duel,world:Challenge.addition.world,duration:60,level:0,opponentLevel:0,rule:BattleRule.perfect,questions:ChallengeQuestions(Challenge.addition,1));
   b.tick(3000);b.answer(0,b.tasks[0].options.firstWhere((s)=>s!=b.tasks[0].answer));expect(b.winner,1);expect(b.phase,Phase.ended);

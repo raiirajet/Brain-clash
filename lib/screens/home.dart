@@ -14,6 +14,7 @@ import '../widgets/arcade.dart';
 import '../widgets/mode_art.dart';
 import '../learning/engagement.dart';
 import 'tournament.dart';
+import '../widgets/accuracy_history.dart';
 
 const avatars=['🤖','👨‍🚀','🥷','🦊','🐉','👽'];
 const names=['Volt','Cosmo','Shadow','Blaze','Drako','Nova','Frost','Ember','Titan','Luna','Orion','Sol'];
@@ -101,7 +102,8 @@ class _SetupState extends State<Setup>{
  void start(){
   final prefs=widget.progress.prefs;unawaited(prefs.setString('lastGame',challenge.name));unawaited(prefs.setInt('lastSeries',seriesLength));unawaited(prefs.setInt('lastOtherDigits',otherDigits));unawaited(prefs.setInt('lastLevel',level));unawaited(prefs.setInt('lastOpponent',opponent));unawaited(prefs.setInt('lastRange',range));unawaited(prefs.setInt('lastTable',table));unawaited(prefs.setInt('lastFactorDigits',factorDigits));unawaited(prefs.setInt('lastChoices',choiceCount));unawaited(prefs.setInt('lastDivision',division.index));unawaited(prefs.setBool('lastNegative',negative));unawaited(prefs.setBool('lastNoCarry',noCarry));unawaited(prefs.setBool('lastNumberEntry',numberEntry));unawaited(prefs.setBool('lastCustomDigits',customDigits));unawaited(prefs.setBool('lastAutomatic',automatic));unawaited(prefs.setString('lastSecondProfile',secondProfile));unawaited(prefs.setInt('lastDigits',digits));unawaited(prefs.setInt('lastDuration',duration));unawaited(prefs.setString('lastRule',rule.name));unawaited(prefs.setInt('lastMode',widget.mode.index));
   final actual=automatic?widget.progress.levelFor(challenge.world.name,level):level;
-  Navigator.push<void>(context,MaterialPageRoute(builder:(_)=>Play(progress:widget.progress,mode:widget.mode,world:challenge.world,duration:duration,level:actual,opponent:opponent,numberEntry:numberEntry&&challenge.canType&&!(challenge==Challenge.division&&division==DivisionStyle.remainder),seriesLength:seriesLength,avatars:[avatar1??widget.progress.current['avatar'] as int,avatar2??(widget.progress.profiles[secondProfile] as Map?)?['avatar'] as int? ??5],mathConfig:customDigits?config.withDigitsOnly():config,secondProfile:secondProfile,challenge:challenge,digits:digits,opponentDigits:customDigits&&challenge.usesDigits?otherDigits:digits,rule:competitive?rule:BattleRule.tug)));
+  final chosenDigits=automatic&&challenge.usesDigits&&range==0?widget.progress.digitsFor(challenge.name,digits):digits;
+  Navigator.push<void>(context,MaterialPageRoute(builder:(_)=>Play(progress:widget.progress,mode:widget.mode,world:challenge.world,duration:duration,level:actual,opponent:opponent,numberEntry:numberEntry&&challenge.canType&&!(challenge==Challenge.division&&division==DivisionStyle.remainder),seriesLength:seriesLength,avatars:[avatar1??widget.progress.current['avatar'] as int,avatar2??(widget.progress.profiles[secondProfile] as Map?)?['avatar'] as int? ??5],mathConfig:customDigits?config.withDigitsOnly():config,secondProfile:secondProfile,challenge:challenge,digits:chosenDigits,opponentDigits:customDigits&&challenge.usesDigits?otherDigits:chosenDigits,rule:competitive?rule:BattleRule.tug)));
  }
  Widget section(String text)=>Padding(padding:const EdgeInsets.only(top:16,bottom:8),child:Text(text,style:Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight:FontWeight.w900)));
  Widget digitRow(int value,ValueChanged<int> set)=>Wrap(spacing:6,children:[for(var i=1;i<=4;i++)ChoiceChip(label:Text(i==1?'1 Ziffer':'$i Ziffern'),selected:value==i,onSelected:(_)=>set(i))]);
@@ -134,7 +136,7 @@ class _SetupState extends State<Setup>{
     if(challenge==Challenge.division)DropdownButtonFormField<DivisionStyle>(value:division,decoration:const InputDecoration(labelText:'Division'),items:[for(final style in DivisionStyle.values)DropdownMenuItem(value:style,child:Text(['Ganzzahlig','Mit Rest','Dezimal'][style.index]))],onChanged:(v)=>setState(()=>division=v!)),
     if(competitive)...[
      section('Spielregeln'),
-     GridView.count(shrinkWrap:true,physics:const NeverScrollableScrollPhysics(),crossAxisCount:2,mainAxisSpacing:7,crossAxisSpacing:7,childAspectRatio:1.65,children:BattleRule.values.map((r)=>ArcadeTile(label:r.label,icon:[Icons.bolt,Icons.flag,Icons.timer,Icons.favorite,Icons.flag_circle,Icons.verified,Icons.speed][r.index],color:[const Color(0xff2464bc),const Color(0xffa95a22),const Color(0xff187b65),const Color(0xffa74468),const Color(0xff2464bc),const Color(0xff8052c6),const Color(0xff187b65)][r.index],selected:r==rule,onTap:()=>setState((){rule=r;if(r==BattleRule.sprint)duration=30;}))).toList()),
+     GridView.count(shrinkWrap:true,physics:const NeverScrollableScrollPhysics(),crossAxisCount:2,mainAxisSpacing:7,crossAxisSpacing:7,childAspectRatio:1.65,children:BattleRule.values.map((r)=>ArcadeTile(label:r.label,icon:[Icons.bolt,Icons.flag,Icons.timer,Icons.favorite,Icons.flag_circle,Icons.verified,Icons.speed,Icons.bolt_rounded][r.index],color:[const Color(0xff2464bc),const Color(0xffa95a22),const Color(0xff187b65),const Color(0xffa74468),const Color(0xff2464bc),const Color(0xff8052c6),const Color(0xff187b65),const Color(0xffa95a22)][r.index],selected:r==rule,onTap:()=>setState((){rule=r;if(r==BattleRule.sprint)duration=30;}))).toList()),
      Padding(padding:const EdgeInsets.only(top:7),child:Text(rule.description,style:const TextStyle(fontSize:12))),
     ],
     if(competitive)Wrap(spacing:8,children:[for(final n in [1,3,5])ChoiceChip(label:Text(n==1?'Einzelrunde':'Best of $n'),selected:seriesLength==n,onSelected:(_)=>setState(()=>seriesLength=n))]),
@@ -179,13 +181,18 @@ class Stats extends StatelessWidget{
     const SizedBox(height:12),
     ListTile(title:const Text('Rang'),trailing:Text(rankFor(xp))),
     ListTile(title:const Text('Tages-Challenge'),trailing:Text('${DailyProgress.count(p)}/10')),
+    ListTile(title:const Text('Wochen-Challenge'),subtitle:Text('${WeeklyProgress.worlds(p).length}/3 Lernwelten'),trailing:Text('${WeeklyProgress.count(p)}/50')),
+    ListTile(title:const Text('Beste Serie'),trailing:Text('${p['bestSeries']??0}')),
+    if((p['history'] as List? ?? []).length>=2)AccuracyHistory(history:p['history'] as List),
     ListTile(title:const Text('Runden'),trailing:Text('${p['rounds']}')),
     ListTile(title:const Text('Siege'),trailing:Text('${p['wins']}')),
     ListTile(title:const Text('Richtige Antworten'),trailing:Text('$right')),
     ListTile(title:const Text('Rundenrekord'),trailing:Text('${p['best']??0}')),
     ListTile(title:const Text('Fällige Wiederholungen'),trailing:Text('${progress.dueQuestions(World.mixed).length}')),
+    if(progress.dueQuestions(World.mixed).isNotEmpty)FilledButton.icon(onPressed:()=>Navigator.push<void>(context,MaterialPageRoute(builder:(_)=>Play(progress:progress,mode:Mode.training,world:World.mixed,duration:60,level:1,opponent:1))),icon:const Icon(Icons.replay),label:const Text('Fehlertraining starten')),
     ListTile(title:const Text('Trefferquote'),trailing:Text(right+wrong==0?'–':'${(100*right/(right+wrong)).round()} %')),
     if((p['history'] as List? ?? []).isNotEmpty)ExpansionTile(title:const Text('Letzte Spiele'),children:[for(final entry in (p['history'] as List).reversed.take(10))ListTile(title:Text('${entry['world']} · ${entry['points']} Punkte'),subtitle:Text('${entry['date']} · ${entry['right']}/${entry['total']} richtig'))]),
+    if((p['skills'] as Map? ?? {}).isNotEmpty)ExpansionTile(title:const Text('Kompetenz je Spiel'),children:[for(final e in (p['skills'] as Map).entries)ListTile(title:Text(Challenge.values.where((c)=>c.name==e.key).firstOrNull?.label??e.key.toString()),subtitle:Text('${e.value['right']} richtig · ${e.value['wrong']} Fehler'),trailing:Text('${e.value['digits']} Ziffern'))]),
     for(final w in World.values.where((w)=>w!=World.mixed))Card(child:Padding(padding:const EdgeInsets.symmetric(vertical:4),child:category(w,p))),
    ]
   ]));
@@ -237,6 +244,7 @@ class _SettingsState extends State<Settings>{
   ListTile(leading:const Icon(Icons.people_outline),title:const Text('Spielerprofile'),onTap:()=>Navigator.push<void>(context,MaterialPageRoute(builder:(_)=>Profiles(progress:p)))),
   ListTile(leading:const Icon(Icons.help_outline),title:const Text('Einführung erneut anzeigen'),onTap:widget.intro),
   ListTile(leading:const Icon(Icons.restart_alt),title:const Text('Lernfortschritt zurücksetzen'),onTap:()async{final yes=await showDialog<bool>(context:context,builder:(c)=>AlertDialog(title:const Text('Fortschritt zurücksetzen?'),actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Abbrechen')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('Zurücksetzen'))]));if(yes==true){p.profiles[p.active]=p.fresh();await p.save();if(mounted)setState((){});}}),
+  ListTile(leading:const Icon(Icons.storage),title:const Text('Lokale Datenspeicherung'),subtitle:Text(p.storageName)),
   ListTile(leading:const Icon(Icons.privacy_tip_outlined),title:const Text('Datenschutz'),onTap:()=>showDialog<void>(context:context,builder:(c)=>AlertDialog(title:const Text('Deine Daten'),content:const Text('Profile und Lernfortschritt werden auf diesem Gerät gespeichert. Kein Konto, keine Werbung, kein Tracking. Lösche Profile in der Profilverwaltung oder alle Daten in den Android-App-Einstellungen.'),actions:[TextButton(onPressed:()=>Navigator.pop(c),child:const Text('OK'))]))),
   AboutListTile(applicationName:'Brain Clash',applicationVersion:'0.4.0 – Testversion',applicationLegalese:'Play. Think. Win.'),
  ]));
