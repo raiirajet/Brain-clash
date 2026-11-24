@@ -1,20 +1,21 @@
 import 'dart:math';
 import 'questions.dart';
 
-enum Challenge { mathClassic, addition, subtraction, multiplication, division, timesTable, arithmeticMix, compare, missing, logic, memory, focus, words, mixed, reaction, odd, sequence, pairs, trueFalse, targetNumber, bigTable, numberSeries, fractions, percent, decimals, precedence, estimate, mathTower, mathRace, rocketRace, treasureRush, numberBomb, mazeBattle, colorConfusion, numberRecall, shapeClash, patternMaster, spellingDuel, targetHunt, tapBattle, numberSort }
+enum Challenge { mathClassic, addition, subtraction, multiplication, division, timesTable, arithmeticMix, compare, missing, logic, memory, focus, words, mixed, reaction, odd, sequence, pairs, trueFalse, targetNumber, bigTable, numberSeries, fractions, percent, decimals, precedence, estimate, mathTower, mathRace, rocketRace, treasureRush, numberBomb, mazeBattle, colorConfusion, numberRecall, shapeClash, patternMaster, spellingDuel, targetHunt, tapBattle, numberSort, wordSprint, logicEscape, bossBattle }
 extension ChallengeInfo on Challenge {
- String get label=>const ['Mathematik Mix (klassisch)','Addition','Subtraktion','Multiplikation','Division','Einmaleins','Rechen-Mix','Zahlen-Duell','Zahlenlücke','Logic Clash','Memory Arena','Focus Rush','Word Battle','Mixed Battle','Signal Sprint','Symbol-Jagd','Licht-Memory','Paare-Duell','Wahr oder falsch','Zahlen-Ziel','Grosses Einmaleins','Zahlenfolgen','Bruchrechnen','Prozentrechnen','Dezimalzahlen','Punkt vor Strich','Schätzrechnen','Math Tower','Math Race','Rocket Race','Treasure Rush','Number Bomb','Maze Battle','Color Confusion','Number Recall','Shape Clash','Pattern Master','Spelling Duel','Target Hunt','Tap Battle','Number Sort'][index];
- String get symbol=>const ['±','+','−','×','÷','1×1','±×','>','?','◆','◉','◎','ABC','⚡','!','★','▦','◫','✓','◎','20×20','1…','½','%','0.5','×+','≈','▥','»','↑','◇','◷','▦','◉','123','↻','▧','ABC','⊕','⚡','↕'][index];
+ String get label=>const ['Mathematik Mix (klassisch)','Addition','Subtraktion','Multiplikation','Division','Einmaleins','Rechen-Mix','Zahlen-Duell','Zahlenlücke','Logic Clash','Memory Arena','Focus Rush','Word Battle','Mixed Battle','Signal Sprint','Symbol-Jagd','Licht-Memory','Paare-Duell','Wahr oder falsch','Zahlen-Ziel','Grosses Einmaleins','Zahlenfolgen','Bruchrechnen','Prozentrechnen','Dezimalzahlen','Punkt vor Strich','Schätzrechnen','Math Tower','Math Race','Rocket Race','Treasure Rush','Number Bomb','Maze Battle','Color Confusion','Number Recall','Shape Clash','Pattern Master','Spelling Duel','Target Hunt','Tap Battle','Number Sort','Word Sprint','Logic Escape','Boss Battle'][index];
+ String get symbol=>const ['±','+','−','×','÷','1×1','±×','>','?','◆','◉','◎','ABC','⚡','!','★','▦','◫','✓','◎','20×20','1…','½','%','0.5','×+','≈','▥','»','↑','◇','◷','▦','◉','123','↻','▧','ABC','⊕','⚡','↕','ABC','▣','◆'][index];
  World get world=>switch(this){
-  Challenge.logic||Challenge.trueFalse||Challenge.shapeClash||Challenge.patternMaster=>World.logic,
+  Challenge.logic||Challenge.trueFalse||Challenge.shapeClash||Challenge.patternMaster||Challenge.logicEscape=>World.logic,
   Challenge.memory||Challenge.sequence||Challenge.pairs||Challenge.numberRecall=>World.memory,
   Challenge.focus||Challenge.reaction||Challenge.odd||Challenge.colorConfusion||Challenge.targetHunt||Challenge.tapBattle=>World.focus,
-  Challenge.words||Challenge.spellingDuel=>World.words,Challenge.mixed=>World.mixed,_=>World.math,
+  Challenge.words||Challenge.spellingDuel||Challenge.wordSprint=>World.words,Challenge.mixed||Challenge.bossBattle=>World.mixed,_=>World.math,
  };
  bool get usesDigits=>const [Challenge.addition,Challenge.subtraction,Challenge.multiplication,Challenge.division,Challenge.arithmeticMix,Challenge.compare,Challenge.missing,Challenge.targetNumber,Challenge.trueFalse,Challenge.mathTower,Challenge.mathRace,Challenge.rocketRace,Challenge.treasureRush,Challenge.numberBomb,Challenge.mazeBattle].contains(this);
  bool get standard=>const [Challenge.mathClassic,Challenge.logic,Challenge.memory,Challenge.focus,Challenge.words,Challenge.mixed].contains(this);
  bool get numeric=>world==World.math;
- bool get arcadeStage=>const [Challenge.mathTower,Challenge.mathRace,Challenge.rocketRace,Challenge.treasureRush,Challenge.numberBomb,Challenge.mazeBattle].contains(this);
+ bool get arcadeStage=>const [Challenge.mathTower,Challenge.mathRace,Challenge.rocketRace,Challenge.treasureRush,Challenge.numberBomb,Challenge.mazeBattle,Challenge.logicEscape,Challenge.bossBattle].contains(this);
+ bool get specialRules=>arcadeStage&&this!=Challenge.numberBomb;
  bool get canType=>numeric&&!const [Challenge.targetNumber,Challenge.fractions,Challenge.estimate,Challenge.numberSort].contains(this);
 }
 enum DivisionStyle { exact, remainder, decimal }
@@ -55,7 +56,7 @@ class ChallengeQuestions extends Questions{
    final lo=[1,10,100,1000][i],hi=[9,99,999,9999][i];
    b=lo+random.nextInt(hi-lo+1);
   }
-  final type=challenge==Challenge.arithmeticMix||challenge.arcadeStage?[Challenge.addition,Challenge.subtraction,Challenge.multiplication,Challenge.division][random.nextInt(4)]:challenge;
+  final type=challenge==Challenge.arithmeticMix||(challenge.arcadeStage&&challenge!=Challenge.logicEscape&&challenge!=Challenge.bossBattle)?[Challenge.addition,Challenge.subtraction,Challenge.multiplication,Challenge.division][random.nextInt(4)]:challenge;
   switch(type){
    case Challenge.addition:
     if(config.noCarry){
@@ -107,6 +108,14 @@ class ChallengeQuestions extends Questions{
     final x=11+random.nextInt(89),y=11+random.nextInt(89);
     final estimate=((x*y)/100).round()*100;
     return pick(World.math,'$x × $y ≈ ? (auf 100)', '$estimate',List.generate(3,(i)=>'${estimate+100*(i+1)}'));
+   case Challenge.wordSprint:
+    const bank=['APFEL','LAMPE','WOLKE','TIGER','BLUME','STERN','FISCH','KARTE','HAFEN','MAUER','PFERD','STEIN'];
+    final word=bank[random.nextInt(bank.length)],letters=word.split('')..shuffle(random);
+    if(letters.join()==word){final first=letters.removeAt(0);letters.add(first);}
+    final wrong=<String>{};while(wrong.length<3){final copy=word.split('')..shuffle(random);if(copy.join()!=word)wrong.add(copy.join());}
+    return pick(World.words,'Ordne die Buchstaben: '+letters.join(' '),word,wrong.toList());
+   case Challenge.logicEscape:return super.make(World.logic,level);
+   case Challenge.bossBattle:return super.make(World.mixed,level);
    case Challenge.numberRecall:
     final s=List.generate(3+level.clamp(0,3).toInt(),(_)=>random.nextInt(10)).join();
     final wrong=List.generate(3,(i)=>'${(int.parse(s[0])+i+1)%10}${s.substring(1)}');

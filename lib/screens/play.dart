@@ -13,6 +13,8 @@ import '../widgets/memory_board.dart';
 import '../widgets/character.dart';
 import '../widgets/arcade.dart';
 import '../widgets/arcade_stage.dart';
+import '../game_engine/arcade_rules.dart';
+import '../widgets/arcade_controls.dart';
 
 class Play extends StatefulWidget{
  final Progress progress;final Mode mode;final World world;final int duration,level,opponent;final bool numberEntry;final String secondProfile;
@@ -35,7 +37,8 @@ class _PlayState extends State<Play> with WidgetsBindingObserver{
  void syncArena(List<int> before){arena.energy=b.energy/100;arena.score=b.points[0]+b.points[1];for(var p=0;p<2;p++){if(b.points[p]>before[p]){arena.hit(p);combo[p]++;showFeedback(p,combo[p]>=3?'COMBO ×${combo[p]} · +1':'+1 · Richtig!',true);}}}
  @override void initState(){super.initState();WidgetsBinding.instance.addObserver(this);reset();watch.start();timer=Timer.periodic(const Duration(milliseconds:32),(_){
   if(!mounted)return;final now=watch.elapsedMilliseconds;final delta=now-last;last=now;
-  if(b.phase==Phase.paused||b.phase==Phase.ended)return;
+  if(b.phase==Phase.paused)return;
+  if(b.phase==Phase.ended){if(!saved)setState(persist);return;}
   final before=b.phase;final oldScore=b.points[0]+b.points[1];final beforePoints=List<int>.of(b.points);
   setState((){b.tick(delta);syncArena(beforePoints);});
   if(before==Phase.countdown&&b.phase==Phase.playing){unawaited(GameAudio(widget.progress.prefs).effect('start'));}
@@ -89,11 +92,11 @@ class _PlayState extends State<Play> with WidgetsBindingObserver{
     Expanded(child:scoreChip(1)),
    ])),
    Padding(padding:const EdgeInsets.symmetric(horizontal:10),child:ClipRRect(borderRadius:BorderRadius.circular(16),child:SizedBox(height:two?(space.maxHeight*.12).clamp(42.0,78.0).toDouble():(space.maxHeight*.29).clamp(68.0,220.0).toDouble(),child:Stack(fit:StackFit.expand,children:[
-    if(widget.challenge?.arcadeStage==true)ArcadeStage(challenge:widget.challenge!,points:b.points,remaining:b.remaining,reduced:reduced)else GameWidget(game:arena),
+    if(widget.challenge?.arcadeStage==true)ArcadeStage(challenge:widget.challenge!,points:b.points,remaining:b.remaining,reduced:reduced,rules:b.arcade)else GameWidget(game:arena),
     if(b.phase==Phase.countdown||b.phase==Phase.paused)IgnorePointer(child:ColoredBox(color:Colors.black38,child:Center(child:Text(b.phase==Phase.paused?'PAUSE':'${(b.countdown/1000).ceil()}',style:const TextStyle(color:Colors.white,fontSize:34,fontWeight:FontWeight.w900))))),
    ])))),
    if(widget.challenge==Challenge.numberBomb)Text('P1: ${((8000-(b.elapsed-b.ready[0])).clamp(0,8000)/1000).ceil()} s · P2: ${((8000-(b.elapsed-b.ready[1])).clamp(0,8000)/1000).ceil()} s'),
-   if(widget.mode==Mode.team)Padding(padding:const EdgeInsets.only(top:3),child:Text('Monster-Energie: ${(100-b.energy)*2} %',style:const TextStyle(fontSize:11,fontWeight:FontWeight.w700))),
+   if(widget.mode==Mode.team&&b.arcade==null)Padding(padding:const EdgeInsets.only(top:3),child:Text('Monster-Energie: ${(100-b.energy)*2} %',style:const TextStyle(fontSize:11,fontWeight:FontWeight.w700))),
    Expanded(child:panel(0)),
    if(widget.mode==Mode.training)TextButton(onPressed:()=>setState((){b.finish();persist();}),child:const Text('Training beenden')),
   ]))))));
@@ -101,8 +104,8 @@ class _PlayState extends State<Play> with WidgetsBindingObserver{
   final color=p==0?arcadeBlue:arcadeOrange;
   final label=p==0?'P1':widget.mode==Mode.solo?'BOT':widget.mode==Mode.training?'XP':'P2';
   final score=p==1&&widget.mode==Mode.training?b.points[0]*10:b.points[p];
-  if(widget.rule==BattleRule.hearts&&(widget.mode==Mode.duel||widget.mode==Mode.solo))return Container(padding:const EdgeInsets.symmetric(vertical:8),decoration:BoxDecoration(color:color.withAlpha(25),borderRadius:BorderRadius.circular(13),border:Border.all(color:color.withAlpha(100))),child:Row(mainAxisAlignment:MainAxisAlignment.center,children:[Text(label,style:const TextStyle(fontSize:11,fontWeight:FontWeight.w700)),const SizedBox(width:3),for(var i=0;i<3;i++)Icon(i<3-b.misses[p]?Icons.favorite:Icons.favorite_border,color:color,size:15),const SizedBox(width:3),Text('$score',style:const TextStyle(fontSize:13,fontWeight:FontWeight.w800))]));
-  return Container(padding:const EdgeInsets.symmetric(horizontal:8,vertical:5),decoration:BoxDecoration(color:color.withAlpha(25),border:Border.all(color:color.withAlpha(120)),borderRadius:BorderRadius.circular(13)),child:Row(mainAxisAlignment:MainAxisAlignment.center,children:[Icon(p==0?Icons.bolt:widget.mode==Mode.training?Icons.star:Icons.shield,color:color,size:17),const SizedBox(width:4),Text(label,style:const TextStyle(fontSize:11,fontWeight:FontWeight.w700)),const SizedBox(width:5),Text(widget.rule==BattleRule.race?'$score/5':widget.rule==BattleRule.race10?'$score/10':'$score',style:const TextStyle(fontSize:20,fontWeight:FontWeight.w900))]));
+  if(b.arcade==null&&widget.rule==BattleRule.hearts&&(widget.mode==Mode.duel||widget.mode==Mode.solo))return Container(padding:const EdgeInsets.symmetric(vertical:8),decoration:BoxDecoration(color:color.withAlpha(25),borderRadius:BorderRadius.circular(13),border:Border.all(color:color.withAlpha(100))),child:Row(mainAxisAlignment:MainAxisAlignment.center,children:[Text(label,style:const TextStyle(fontSize:11,fontWeight:FontWeight.w700)),const SizedBox(width:3),for(var i=0;i<3;i++)Icon(i<3-b.misses[p]?Icons.favorite:Icons.favorite_border,color:color,size:15),const SizedBox(width:3),Text('$score',style:const TextStyle(fontSize:13,fontWeight:FontWeight.w800))]));
+  return Container(padding:const EdgeInsets.symmetric(horizontal:8,vertical:5),decoration:BoxDecoration(color:color.withAlpha(25),border:Border.all(color:color.withAlpha(120)),borderRadius:BorderRadius.circular(13)),child:Row(mainAxisAlignment:MainAxisAlignment.center,children:[Icon(p==0?Icons.bolt:widget.mode==Mode.training?Icons.star:Icons.shield,color:color,size:17),const SizedBox(width:4),Text(label,style:const TextStyle(fontSize:11,fontWeight:FontWeight.w700)),const SizedBox(width:5),Text(b.arcade!=null?'${(b.arcade!.progress(p).clamp(0.0,1.0)*100).round()}%':widget.rule==BattleRule.race?'$score/5':widget.rule==BattleRule.race10?'$score/10':'$score',style:const TextStyle(fontSize:20,fontWeight:FontWeight.w900))]));
  }
 
  Widget panel(int p){
@@ -114,12 +117,13 @@ class _PlayState extends State<Play> with WidgetsBindingObserver{
   return Padding(padding:const EdgeInsets.symmetric(horizontal:10,vertical:4),child:LayoutBuilder(builder:(context,box){
    final small=box.maxHeight<220;
    final feedbackHeight=small?23.0:36.0;
-   final prompt=!running?(b.phase==Phase.paused?'Pausiert':'Bereit?'):!visible?(isMemory?'Merke dir die Felder':q.preview):q.prompt;
+   final prompt=running&&b.arcade?.waiting(p)==true?(b.arcade!.kind==ArcadeKind.maze?'Wähle einen freien Weg':'Öffne eine Schatztruhe'):!running?(b.phase==Phase.paused?'Pausiert':'Bereit?'):!visible?(isMemory?'Merke dir die Felder':q.preview):q.prompt;
    return Column(children:[
     SizedBox(height:small?18:25,child:Row(children:[Icon([Icons.calculate,Icons.extension,Icons.psychology,Icons.track_changes,Icons.translate,Icons.shuffle][q.world.index],color:p==0?arcadeBlue:arcadeOrange,size:16),const SizedBox(width:5),Expanded(child:Text('${playerName(p)} · ${q.world.label}',style:const TextStyle(fontSize:11,fontWeight:FontWeight.w700))),if(q.interaction==Interaction.stroop)const Text('Schriftfarbe'),if(combo[p]>=3)Text('COMBO ×${combo[p]}',style:const TextStyle(fontSize:12,fontWeight:FontWeight.w800))])),
     Expanded(child:Container(width:double.infinity,padding:const EdgeInsets.symmetric(horizontal:8,vertical:3),decoration:BoxDecoration(color:Theme.of(context).colorScheme.surface.withAlpha(220),borderRadius:BorderRadius.circular(15),border:Border.all(color:activeFeedback?(feedbackCorrect[p]?arcadeGreen:arcadeRed).withAlpha(160):color.withAlpha(95))),child:Center(child:FittedBox(fit:BoxFit.scaleDown,child:Text(prompt,style:TextStyle(color:q.interaction==Interaction.stroop&&visible&&running?[arcadeRed,arcadeBlue,arcadeGreen,const Color(0xffffcf54)][int.parse(q.board.first)]:null,fontSize:small?23:34,fontWeight:FontWeight.w900),textAlign:TextAlign.center))))),
     const SizedBox(height:4),
-    if(running&&isMemory)Expanded(flex:3,child:MemoryBoard(question:q,battle:b,player:p,onTap:(i)=>answer(p,'',q,cell:i)))
+    if(running&&b.arcade?.waiting(p)==true)Expanded(flex:3,child:ArcadeControls(rules:b.arcade!,player:p,onMove:(d)=>setState(()=>b.arcadeMove(p,d)),onChest:(i)=>setState(()=>b.arcadeChest(p,i))))
+    else if(running&&isMemory)Expanded(flex:3,child:MemoryBoard(question:q,battle:b,player:p,onTap:(i)=>answer(p,'',q,cell:i)))
     else if(running&&visible&&q.interaction==Interaction.target)Expanded(flex:3,child:LayoutBuilder(builder:(context,grid)=>GridView.builder(padding:EdgeInsets.zero,gridDelegate:SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:3,mainAxisExtent:((grid.maxHeight-6)/3).clamp(12.0,80.0).toDouble(),mainAxisSpacing:3,crossAxisSpacing:3),physics:const NeverScrollableScrollPhysics(),itemCount:q.board.length,itemBuilder:(context,i)=>FilledButton(style:FilledButton.styleFrom(backgroundColor:color,padding:EdgeInsets.zero,minimumSize:Size.zero),onPressed:b.canAnswer(p)?()=>answer(p,'',q,cell:i):null,child:Text(q.board[i])))))
     else if(running&&visible&&q.interaction==Interaction.tap)Expanded(flex:2,child:FilledButton(style:FilledButton.styleFrom(backgroundColor:color),onPressed:b.canAnswer(p)?()=>answer(p,'',q,cell:0):null,child:Text('TAP ${b.partial[p].length}/5',style:const TextStyle(fontSize:26,fontWeight:FontWeight.w900))))
     else if(running&&visible&&q.interaction==Interaction.sort)Expanded(flex:3,child:Column(children:[Expanded(child:ReorderableListView(scrollDirection:Axis.horizontal,buildDefaultDragHandles:false,onReorder:(a,z)=>setState(()=>b.moveCell(p,a,z)),children:[for(var i=0;i<b.sorted[p].length;i++)ReorderableDragStartListener(key:ValueKey(b.sorted[p][i]),index:i,enabled:b.canAnswer(p),child:Container(width:54,alignment:Alignment.center,margin:const EdgeInsets.all(2),decoration:BoxDecoration(color:color,borderRadius:BorderRadius.circular(9)),child:Text(b.sorted[p][i],style:const TextStyle(color:Colors.white,fontSize:20,fontWeight:FontWeight.bold))))])),TextButton(onPressed:b.canAnswer(p)?(){final good=b.sorted[p].join(' ')==q.answer;answer(p,good?q.answer:q.options.firstWhere((s)=>s!=q.answer),q);}:null,child:const Text('Prüfen'))]))
