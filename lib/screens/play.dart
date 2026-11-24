@@ -14,7 +14,7 @@ class Play extends StatefulWidget{
 }
 class _PlayState extends State<Play> with WidgetsBindingObserver{
  late Battle b;late Timer timer;final arena=Arena();final watch=Stopwatch();
- int last=0;bool saved=false,leaving=false;final feedback=['',''];
+ int last=0;bool saved=false,leaving=false,dialogOpen=false;final feedback=['',''];
  @override void initState(){super.initState();WidgetsBinding.instance.addObserver(this);reset();watch.start();timer=Timer.periodic(const Duration(milliseconds:32),(_){
   if(!mounted)return;final now=watch.elapsedMilliseconds;final delta=now-last;last=now;
   if(b.phase==Phase.paused||b.phase==Phase.ended)return;
@@ -25,25 +25,29 @@ class _PlayState extends State<Play> with WidgetsBindingObserver{
  void persist(){if(saved)return;saved=true;widget.progress.record(b);unawaited(widget.progress.save());}
  @override void didChangeAppLifecycleState(AppLifecycleState state){if(state!=AppLifecycleState.resumed&&mounted){setState(()=>b.pause());}}
  @override void dispose(){timer.cancel();watch.stop();WidgetsBinding.instance.removeObserver(this);super.dispose();}
- void answer(int p,String v){
+ void answer(int p,String v,Question expected){
   // Synchronise the monotonic clock at the input, not just the display frame.
   final now=watch.elapsedMilliseconds;
-  setState((){b.tick(now-last);last=now;final result=b.answer(p,v);if(result!=null){
-    feedback[p]=result?'Richtig!':'Richtig: ${b.tasks[p].answer}';
+  setState((){b.tick(now-last);last=now;final result=identical(b.tasks[p],expected)?b.answer(p,v):null;if(result!=null){
+    feedback[p]=result?'Richtig!':widget.mode==Mode.training?'Richtig: ${expected.answer}':'Noch einmal versuchen';
     if(widget.progress.prefs.getBool('sound')??true)unawaited(SystemSound.play(result?SystemSoundType.click:SystemSoundType.alert));
     if(widget.progress.prefs.getBool('haptics')??true)unawaited(result?HapticFeedback.selectionClick():HapticFeedback.lightImpact());
   }arena.energy=b.energy/100;});
   if(b.phase==Phase.ended)persist();
  }
  Future<void> leave()async{
+  if(dialogOpen)return;
   if(b.phase==Phase.ended){Navigator.pop(context);return;}
+  dialogOpen=true;
+  final wasPaused=b.phase==Phase.paused;
   setState(()=>b.pause());
   final yes=await showDialog<bool>(context:context,builder:(c)=>AlertDialog(title:const Text('Runde verlassen?'),content:const Text('Diese Runde wird nicht gespeichert.'),actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Weiterspielen')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('Verlassen'))]));
+  dialogOpen=false;
   if(!mounted)return;
-  if(yes==true){setState(()=>leaving=true);WidgetsBinding.instance.addPostFrameCallback((_){if(mounted)Navigator.pop(context);});}else{setState(()=>b.resume());}
+  if(yes==true){setState(()=>leaving=true);WidgetsBinding.instance.addPostFrameCallback((_){if(mounted)Navigator.pop(context);});}else if(!wasPaused){setState(()=>b.resume());}
  }
  bool get two=>widget.mode==Mode.duel||widget.mode==Mode.team;
- @override Widget build(BuildContext context)=>PopScope(canPop:leaving||b.phase==Phase.ended,onPopInvokedWithResult:(didPop,result){if(!didPop)unawaited(leave());},child:Scaffold(
+ @override Widget build(BuildContext context)=>PopScope(canPop:leaving||b.phase==Phase.ended,onPopInvokedWithResult:(didPop,result){if(!didPop&&!leaving)unawaited(leave());},child:Scaffold(
   appBar:AppBar(title:Text(widget.world.label),leading:IconButton(icon:const Icon(Icons.arrow_back),onPressed:leave),actions:[if(b.phase!=Phase.ended)IconButton(icon:Icon(b.phase==Phase.paused?Icons.play_arrow:Icons.pause),onPressed:()=>setState((){if(b.phase==Phase.paused){b.resume();}else{b.pause();}}))]),
   body:SafeArea(child:b.phase==Phase.ended?result():Column(children:[
    if(two)Expanded(child:RotatedBox(quarterTurns:2,child:panel(1))),
@@ -62,7 +66,7 @@ class _PlayState extends State<Play> with WidgetsBindingObserver{
   return Padding(padding:const EdgeInsets.all(8),child:LayoutBuilder(builder:(c,box)=>Column(children:[
    Row(mainAxisAlignment:MainAxisAlignment.spaceBetween,children:[Text(p==0?'🔵 Spieler 1':'🟠 Spieler 2'),Text('${b.points[p]} ✓')]),
    Expanded(child:Center(child:Text(!running?(b.phase==Phase.paused?'Pausiert':'Bereit?'):!visible?q.preview:q.prompt,style:TextStyle(fontSize:box.maxHeight<230?18:25,fontWeight:FontWeight.w800),textAlign:TextAlign.center))),
-   if(running&&visible)SizedBox(height:((box.maxHeight-80)*.62).clamp(62.0,145.0).toDouble(),child:GridView.count(physics:const NeverScrollableScrollPhysics(),crossAxisCount:2,childAspectRatio:(box.maxWidth/2)/(((box.maxHeight-80)*.62).clamp(62.0,145.0)/2),mainAxisSpacing:3,crossAxisSpacing:5,children:q.options.map((v)=>FilledButton(style:FilledButton.styleFrom(backgroundColor:color,padding:const EdgeInsets.symmetric(horizontal:4)),onPressed:b.canAnswer(p)?()=>answer(p,v):null,child:FittedBox(fit:BoxFit.scaleDown,child:Text(v,style:const TextStyle(fontSize:19))))).toList())),
+   if(running&&visible)SizedBox(height:((box.maxHeight-80)*.62).clamp(62.0,145.0).toDouble(),child:GridView.count(physics:const NeverScrollableScrollPhysics(),crossAxisCount:2,childAspectRatio:(box.maxWidth/2)/(((box.maxHeight-80)*.62).clamp(62.0,145.0)/2),mainAxisSpacing:3,crossAxisSpacing:5,children:q.options.map((v)=>FilledButton(style:FilledButton.styleFrom(backgroundColor:color,padding:const EdgeInsets.symmetric(horizontal:4)),onPressed:b.canAnswer(p)?()=>answer(p,v,q):null,child:FittedBox(fit:BoxFit.scaleDown,child:Text(v,style:const TextStyle(fontSize:19))))).toList())),
    SizedBox(height:21,child:Text(!running?'':b.locks[p]>b.elapsed?feedback[p]:b.pendingPlayer==p?'Warte …':'',style:const TextStyle(fontSize:13))),
   ])));
  }

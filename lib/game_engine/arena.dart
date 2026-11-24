@@ -4,10 +4,11 @@ import 'package:flutter/material.dart';
 class Arena extends FlameGame {
   double energy=.5, display=.5, clock=0;
   bool reduced=false;
-  @override void update(double dt){super.update(dt);clock+=dt;display=reduced?energy:display+(energy-display)*min(1,dt*9);}
+  @override void update(double dt){super.update(dt);clock+=dt;display=reduced?energy:display+(energy-display)*min(1.0,dt*9);}
   @override void render(Canvas canvas){
     super.render(canvas);
     final w=size.x,h=size.y;
+    if(w<45||h<1)return;
     final rect=Rect.fromLTWH(0,0,w,h);
     canvas.drawRect(rect,Paint()..shader=const LinearGradient(colors:[Color(0xff112c69),Color(0xff24183d),Color(0xff6b3014)]).createShader(rect));
     final y=h/2,x=w*display;

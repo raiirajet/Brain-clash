@@ -56,8 +56,10 @@ class Battle {
   void pause(){if(phase==Phase.playing||phase==Phase.countdown){previous=phase;phase=Phase.paused;}}
   void resume(){if(phase==Phase.paused)phase=previous;}
   bool? answer(int p,String value) {
-    if(!canAnswer(p))return null;
-    final q=tasks[p], good=value==tasks[p].answer;
+    if(p<0||p>1||!canAnswer(p))return null;
+    final q=tasks[p];
+    if(!q.options.contains(value))return null;
+    final good=value==q.answer;
     if(mode!=Mode.solo||p==0)attempts.add(Attempt(q,p,elapsed-ready[p],good));
     if(!good){misses[p]++;locks[p]=elapsed+850;if(p==1&&mode==Mode.solo)botAt=locks[p]+700;return false;}
     if(shared) {
