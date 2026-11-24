@@ -12,7 +12,7 @@ class Arena extends FlameGame {
  int skin=0,effect=0,tint=0,background=0,failed=-1;
  int? victor;
  final pulses=[0.0,0.0];
- static const skins=[[Color(0xff102c60),Color(0xff141329),Color(0xff662c13)],[Color(0xff073b3a),Color(0xff0d6653),Color(0xff102943)],[Color(0xff240e4b),Color(0xff632c73),Color(0xff173773)]];
+ static const skins=[[Color(0xff102c60),Color(0xff141329),Color(0xff662c13)],[Color(0xff073b3a),Color(0xff0d6653),Color(0xff102943)],[Color(0xff240e4b),Color(0xff632c73),Color(0xff173773)],[Color(0xff4e160c),Color(0xff281117),Color(0xffb5481e)],[Color(0xff133955),Color(0xff104d68),Color(0xff629ec4)],[Color(0xff543d15),Color(0xff292112),Color(0xff967329)]];
  static const tints=[Color(0xff4d9cff),Color(0xff38d6c4),Color(0xffa78bfa)];
  void hit(int player){pulses[player]=.65;}
  void clearEffects(){pulses[0]=0;pulses[1]=0;display=.5;shake=0;}
@@ -28,7 +28,7 @@ class Arena extends FlameGame {
   final w=size.x,h=size.y;if(w<45||h<1)return;
   final rect=Rect.fromLTWH(0,0,w,h);
   final blue=tints[tint.clamp(0,2).toInt()],orange=const Color(0xffffa04d);
-  canvas.drawRect(rect,Paint()..shader=LinearGradient(colors:skins[skin.clamp(0,2).toInt()]).createShader(rect));
+  canvas.drawRect(rect,Paint()..shader=LinearGradient(colors:skins[skin.clamp(0,5).toInt()]).createShader(rect));
   drawStage(canvas,Size(w,h),skin,clock,reduced);
   final y=h*.55,x=w*display;
   if(training||team){renderCooperative(canvas,w,h,blue,orange);return;}
@@ -59,7 +59,7 @@ class Arena extends FlameGame {
    canvas.drawCircle(offset,radius*1.16,Paint()..color=base.withAlpha(30));
    drawAvatar(canvas,offset,radius*(pulses[p]>0&&!reduced?1.08:1),avatar,action:reduced?0:sin(progress*pi),hurt:failed==p);
    if(pulses[p]>0&&!reduced){
-    final c=effect==0?palette[avatar.clamp(0,5).toInt()]:effect==1?Colors.amber:Colors.cyanAccent;
+    final c=effect==0?palette[avatar.clamp(0,palette.length-1).toInt()]:effect==1?Colors.amber:Colors.cyanAccent;
     drawAttack(canvas,offset,Offset(x,y),progress,c,avatar,radius);
    }
   }
@@ -95,7 +95,7 @@ class Arena extends FlameGame {
    canvas.drawOval(Rect.fromCenter(center:Offset(center.dx,y+radius*.75),width:radius*2.4,height:radius*.52),Paint()..color=base.withAlpha(80));
    drawAvatar(canvas,center,radius*(pulses[p]>0&&!reduced?1.08:1),avatar,action:reduced?0:sin(t*pi),hurt:failed==p);
    if(pulses[p]>0&&!reduced){
-    final c=effect==0?palette[avatar.clamp(0,5).toInt()]:effect==1?Colors.amber:Colors.cyanAccent;
+    final c=effect==0?palette[avatar.clamp(0,palette.length-1).toInt()]:effect==1?Colors.amber:Colors.cyanAccent;
     drawAttack(canvas,center,anchor,t,c,avatar,radius);
    }
   }

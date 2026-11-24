@@ -50,8 +50,8 @@ void drawAttack(Canvas canvas,Offset from,Offset to,double progress,Color color,
 void drawStage(Canvas canvas,Size size,int skin,double clock,bool reduced){
  final w=size.width,h=size.height;
  final horizon=h*.63;
- final colors=[const Color(0xff478fff),const Color(0xff63d9a7),const Color(0xffbc8aff)];
- final accent=colors[skin.clamp(0,2).toInt()];
+ final colors=[const Color(0xff478fff),const Color(0xff63d9a7),const Color(0xffbc8aff),const Color(0xffff743e),const Color(0xff9de8ff),const Color(0xffffcf54)];
+ final accent=colors[skin.clamp(0,5).toInt()];
  final floor=Paint()..color=const Color(0x55050a18);
  canvas.drawRect(Rect.fromLTWH(0,horizon,w,h-horizon),floor);
  if(skin==0){
@@ -66,9 +66,17 @@ void drawStage(Canvas canvas,Size size,int skin,double clock,bool reduced){
    final path=Path()..moveTo(x,horizon)..quadraticBezierTo(x-w*.07,h*.25,x-w*.035,h*.1)..quadraticBezierTo(x+w*.04,h*.3,x,horizon);
    canvas.drawPath(path,Paint()..color=accent.withAlpha(45));
   }
- }else{
+ }else if(skin==2){
   canvas.drawCircle(Offset(w*.78,h*.25),h*.18,Paint()..shader=RadialGradient(colors:[accent.withAlpha(100),const Color(0x11234080)]).createShader(Rect.fromCircle(center:Offset(w*.78,h*.25),radius:h*.18)));
   for(var i=0;i<30;i++){final x=(i*79.0)%w,y=(i*31.0)%(h*.62);canvas.drawCircle(Offset(x,y),i%4==0?1.8:.8,Paint()..color=Colors.white.withAlpha(80+i%4*25));}
+ }else if(skin==3){
+  for(var i=0;i<6;i++){final x=w*i/5;final path=Path()..moveTo(x-w*.15,horizon)..lineTo(x,h*.14)..lineTo(x+w*.15,horizon)..close();canvas.drawPath(path,Paint()..color=accent.withAlpha(45));}
+  for(var i=0;i<20;i++){final y=(i*17.0+(reduced?0:clock*8))%(h*.58);canvas.drawCircle(Offset((i*53.0)%w,h*.58-y),1.5,Paint()..color=accent.withAlpha(170));}
+ }else if(skin==4){
+  for(var i=0;i<9;i++){final x=i*w/8;final p=Path()..moveTo(x-w*.045,horizon)..lineTo(x,h*.12+(i%3)*h*.08)..lineTo(x+w*.055,horizon)..close();canvas.drawPath(p,Paint()..color=accent.withAlpha(75));}
+ }else{
+  for(var i=0;i<7;i++){final x=i*w/6;canvas.drawRect(Rect.fromLTWH(x-5,h*.12,10,horizon-h*.12),Paint()..color=accent.withAlpha(70));canvas.drawRect(Rect.fromLTWH(x-8,h*.11,16,4),Paint()..color=accent.withAlpha(140));}
+  canvas.drawCircle(Offset(w*.5,h*.24),h*.13,Paint()..color=accent.withAlpha(150));
  }
  canvas.drawLine(Offset(0,horizon),Offset(w,horizon),Paint()..color=accent.withAlpha(110)..strokeWidth=1);
  for(var i=0;i<11;i++){canvas.drawLine(Offset(w/2+(i-5)*w*.035,horizon),Offset(i*w/10,h),Paint()..color=accent.withAlpha(45)..strokeWidth=.7);}

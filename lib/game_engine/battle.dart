@@ -133,45 +133,7 @@ class Battle {
     final q=tasks[p];
     if(q.interaction==Interaction.signal&&!visible(p)&&locks[p]==ready[p]){misses[p]++;attempts.add(Attempt(q,p,0,false));locks[p]=ready[p]+850;if(rule==BattleRule.perfect||rule==BattleRule.hearts&&misses[p]>=3)finish(forcedWinner:1-p);return false;}
     if(!canAnswer(p))return null;
-    if(!q.options.contains(value)&&!(q.interaction==Interaction.recall&&RegExp(r'^\d+||mode==Mode.training&&p==0)&&q.world==World.math&&double.tryParse(value)?.isFinite==true))return null;
-    final good=value==q.answer||((numberEntry||mode==Mode.training)&&q.world==World.math&&double.tryParse(value)?.isFinite==true&&double.tryParse(value)==double.tryParse(q.answer));
-    if(mode!=Mode.solo||p==0)attempts.add(Attempt(q,p,elapsed-ready[p],good));
-    if(!good){misses[p]++;locks[p]=elapsed+850;if(rule==BattleRule.perfect&&(mode==Mode.duel||mode==Mode.solo)){finish(forcedWinner:1-p);return false;}if(rule==BattleRule.hearts&&(mode==Mode.duel||mode==Mode.solo)){updateRuleEnergy();if(misses[p]>=3){finish(forcedWinner:1-p);return false;}}if(p==1&&mode==Mode.solo)botAt=locks[p]+700;return false;}
-    if(shared) {
-      if(pendingPlayer!=null) {
-        if(pendingPlayer!=p&&elapsed-pendingAt<=100){pendingPlayer=null;advanceShared();return true;}
-        return null;
-      }
-      pendingPlayer=p;pendingAt=elapsed;
-    } else {score(p);if(phase==Phase.playing){setTask(p,(p==0?questions:opponentQuestions??questions).make(world,p==0?level:opponentLevel));if(p==1)scheduleBot();}}
-    return true;
-  }
-  void resolvePending(){final p=pendingPlayer;if(p==null)return;pendingPlayer=null;score(p);if(phase==Phase.playing)advanceShared();}
-  void advanceShared(){final q=questions.make(world,level);setTask(0,q);setTask(1,q);serial++;}
-  void score(int p){
-    points[p]++;
-    if(mode==Mode.training)return;
-    if((mode==Mode.duel||mode==Mode.solo)&&rule!=BattleRule.tug){updateRuleEnergy();if((rule==BattleRule.race&&points[p]>=5)||(rule==BattleRule.race10&&points[p]>=10)||(rule==BattleRule.speed&&points[p]>=1))finish(forcedWinner:p);return;}
-    energy=(energy+((mode==Mode.team||p==0)?5:-5)).clamp(0,100).toInt();
-    if(energy==0||energy==100)finish();
-  }
-  void updateRuleEnergy(){
-    if(rule==BattleRule.hearts){energy=(50+(misses[1]-misses[0])*16).clamp(0,100).toInt();}
-    else if(rule==BattleRule.race||rule==BattleRule.race10){energy=(50+(points[0]-points[1])*10).clamp(0,100).toInt();}
-    else{final total=points[0]+points[1];energy=total==0?50:(100*points[0]/total).round();}
-  }
-  void finish({int? forcedWinner}){
-    if(phase==Phase.ended)return;
-    phase=Phase.ended;
-    if(forcedWinner!=null){winner=forcedWinner;return;}
-    if((mode==Mode.duel||mode==Mode.solo)&&rule!=BattleRule.tug){
-      if(rule==BattleRule.hearts&&misses[0]!=misses[1]){winner=misses[0]<misses[1]?0:1;return;}
-      winner=points[0]==points[1]?null:points[0]>points[1]?0:1;return;
-    }
-    winner=mode==Mode.training?null:mode==Mode.team?(energy==100?0:1):energy==50?null:energy>50?0:1;
-  }
-}
-).hasMatch(value))&&!((numberEntry||mode==Mode.training&&p==0)&&q.world==World.math&&double.tryParse(value)?.isFinite==true))return null;
+    if(!q.options.contains(value)&&!(q.interaction==Interaction.recall&&RegExp(r'^\d+$').hasMatch(value))&&!((numberEntry||mode==Mode.training&&p==0)&&q.world==World.math&&double.tryParse(value)?.isFinite==true))return null;
     final good=value==q.answer||((numberEntry||mode==Mode.training)&&q.world==World.math&&double.tryParse(value)?.isFinite==true&&double.tryParse(value)==double.tryParse(q.answer));
     if(mode!=Mode.solo||p==0)attempts.add(Attempt(q,p,elapsed-ready[p],good));
     if(!good){misses[p]++;locks[p]=elapsed+850;if(rule==BattleRule.perfect&&(mode==Mode.duel||mode==Mode.solo)){finish(forcedWinner:1-p);return false;}if(rule==BattleRule.hearts&&(mode==Mode.duel||mode==Mode.solo)){updateRuleEnergy();if(misses[p]>=3){finish(forcedWinner:1-p);return false;}}if(p==1&&mode==Mode.solo)botAt=locks[p]+700;return false;}

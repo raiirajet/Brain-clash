@@ -1,7 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 
-const palette=[Color(0xff478de4),Color(0xffdbeafe),Color(0xff5e527c),Color(0xffff944e),Color(0xff30b89a),Color(0xffa28cf4)];
+const palette=[Color(0xff478de4),Color(0xffdbeafe),Color(0xff5e527c),Color(0xffff944e),Color(0xff30b89a),Color(0xffa28cf4),Color(0xff8de5fa),Color(0xfff25c45),Color(0xffa3a9bb),Color(0xffa682df),Color(0xff3986d2),Color(0xffffcb4c)];
 class AvatarArt extends StatelessWidget {
  final int index;final double size;
  const AvatarArt({super.key,required this.index,required this.size});
@@ -15,7 +15,7 @@ class AvatarPainter extends CustomPainter{
 }
 // Original vector sprites. Each has a silhouette, body, material highlights and equipment.
 void drawAvatar(Canvas c,Offset center,double r,int index,{double action=0,bool hurt=false}){
- final i=index.clamp(0,5).toInt(),base=palette[i];
+ final i=index.clamp(0,11).toInt(),base=palette[i];
  final dark=const Color(0xff122034),white=const Color(0xfff4fbff);
  c.save();c.translate(center.dx,center.dy);c.scale(r/50);
  c.drawOval(const Rect.fromLTWH(-35,40,70,9),Paint()..color=Colors.black38);
@@ -92,11 +92,43 @@ void drawAvatar(Canvas c,Offset center,double r,int index,{double action=0,bool 
   oval(const Rect.fromLTWH(-22,-3,44,19),const Color(0xffa6edc5));
   for(final x in [-13.0,13.0]){oval(Rect.fromCenter(center:Offset(x,-17),width:14,height:16),const Color(0xffe8ffb0),outline:false);dot(Offset(x,-16),hurt?2:4,dark);}
   for(final x in [-6.0,6.0])dot(Offset(x,3),2.5,dark);
- }else{
+ }else if(i==5){
   for(final x in [-16.0,16.0]){c.drawLine(Offset(x,-30),Offset(x*1.5,-45),Paint()..color=base..strokeWidth=4);dot(Offset(x*1.5,-45),5,const Color(0xffe5c4ff));}
   oval(const Rect.fromLTWH(-34,-40,68,54),base);
   for(final x in [-14.0,14.0]){oval(Rect.fromCenter(center:Offset(x,-18),width:19,height:hurt?5:22),dark,outline:false);dot(Offset(x-3,-22),3,white);}
   c.drawArc(const Rect.fromLTWH(-8,-3,16,10),0,pi,false,Paint()..color=dark..strokeWidth=2.2..style=PaintingStyle.stroke..strokeCap=StrokeCap.round);
+ }else{
+  // Six independent vector characters, with distinct silhouettes and equipment.
+  if(i==6){ // Frost, crystalline guardian
+   polygon([const Offset(-33,-16),const Offset(-15,-48),const Offset(0,-34),const Offset(19,-48),const Offset(34,-12),const Offset(20,15),const Offset(-22,15)],base);
+   polygon([const Offset(-22,-8),const Offset(0,-32),const Offset(23,-8),const Offset(0,13)],white);
+   for(final x in [-12.0,12.0])dot(Offset(x,-9),hurt?2:4,dark);
+  }else if(i==7){ // Ember, fire spirit
+   polygon([const Offset(-34,4),const Offset(-29,-34),const Offset(-12,-23),const Offset(3,-51),const Offset(14,-31),const Offset(34,-25),const Offset(32,5),const Offset(0,18)],base);
+   oval(const Rect.fromLTWH(-21,-20,42,34),const Color(0xffffc260));
+   for(final x in [-10.0,10.0])dot(Offset(x,-10),hurt?2:4,dark);
+  }else if(i==8){ // Titan, armoured knight
+   rounded(const Rect.fromLTWH(-35,-42,70,56),12,base);
+   rounded(const Rect.fromLTWH(-28,-20,56,16),6,dark);
+   for(var j=0;j<5;j++)rounded(Rect.fromLTWH(-21+j*9,-17,4,10),1,white,outline:false);
+   polygon([const Offset(-10,-42),const Offset(0,-51),const Offset(10,-42)],white);
+   rounded(const Rect.fromLTWH(28,6,18,29),7,base);
+  }else if(i==9){ // Luna, owl scout
+   for(final x in [-23.0,23.0])polygon([Offset(x-12,-23),Offset(x,-44),Offset(x+12,-23)],base);
+   oval(const Rect.fromLTWH(-36,-36,72,52),base);
+   for(final x in [-15.0,15.0]){oval(Rect.fromCenter(center:Offset(x,-15),width:25,height:25),white);dot(Offset(x,-15),hurt?2:7,dark);}
+   polygon([const Offset(-7,-2),const Offset(7,-2),const Offset(0,8)],Colors.orange);
+  }else if(i==10){ // Orion, deep space pilot
+   polygon([const Offset(-34,7),const Offset(-30,-26),const Offset(0,-47),const Offset(30,-26),const Offset(34,7),const Offset(0,18)],base);
+   rounded(const Rect.fromLTWH(-27,-28,54,25),9,dark);
+   for(final x in [-12.0,12.0])dot(Offset(x,-15),hurt?2:4,Colors.cyanAccent);
+   rounded(const Rect.fromLTWH(-8,-45,16,11),3,Colors.cyanAccent);
+  }else{ // Sol, solar king
+   for(var j=0;j<12;j++){final a=j*pi/6;final tip=Offset(cos(a)*45,sin(a)*45-13),left=Offset(cos(a-.13)*31,sin(a-.13)*31-13),right=Offset(cos(a+.13)*31,sin(a+.13)*31-13);polygon([left,tip,right],base);}
+   oval(const Rect.fromLTWH(-31,-44,62,62),base);
+   for(final x in [-12.0,12.0])dot(Offset(x,-16),hurt?2:5,dark);
+   c.drawArc(const Rect.fromLTWH(-9,-3,18,9),0,pi,false,Paint()..color=dark..style=PaintingStyle.stroke..strokeWidth=2);
+  }
  }
  c.restore();
 }
