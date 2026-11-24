@@ -6,3 +6,7 @@ android/local.properties
 *.keystore
 key.properties
 .idea/
+
+# Verified build-time font downloads
+/assets/fonts/*.ttf
+/assets/fonts/*-OFL.txt

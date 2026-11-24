@@ -22,7 +22,7 @@ void drawAttack(Canvas canvas,Offset from,Offset to,double progress,Color color,
  canvas.save();canvas.translate(tip.dx,tip.dy);canvas.rotate(angle);
  final fill=Paint()..color=color.withAlpha((fade*255).round());
  final core=Paint()..color=Colors.white.withAlpha((fade*255).round());
- switch(variant%6){
+ switch(variant%12){
   case 0: // robot: electric bolt
    final p=Path()..addPolygon([Offset(-width,-width),Offset(width*.5,-width),Offset(0,0),Offset(width*1.5,0),Offset(-width*.6,width*1.8),Offset(0,width*.5),Offset(-width*1.5,width*.5)],true);canvas.drawPath(p,core);break;
   case 1: // astronaut: comet
@@ -33,8 +33,20 @@ void drawAttack(Canvas canvas,Offset from,Offset to,double progress,Color color,
    final p=Path()..moveTo(width*2,0)..quadraticBezierTo(-width,-width*2,-width*2,0)..quadraticBezierTo(-width,width*2,width*2,0);canvas.drawPath(p,fill);canvas.drawCircle(Offset(width*.45,0),width*.65,core);break;
   case 4: // dragon: emerald orb
    canvas.drawCircle(Offset.zero,width*1.8,fill);canvas.drawCircle(Offset.zero,width,core);canvas.drawCircle(Offset.zero,width*2.2,Paint()..color=color.withAlpha(strength)..style=PaintingStyle.stroke..strokeWidth=1.3);break;
-  default: // alien: plasma ring
-   canvas.drawCircle(Offset.zero,width*1.65,Paint()..color=color.withAlpha(strength)..style=PaintingStyle.stroke..strokeWidth=width*.6);canvas.drawCircle(Offset.zero,width*.6,core);
+  case 5: // alien: plasma ring
+   canvas.drawCircle(Offset.zero,width*1.65,Paint()..color=color.withAlpha(strength)..style=PaintingStyle.stroke..strokeWidth=width*.6);canvas.drawCircle(Offset.zero,width*.6,core);break;
+  case 6: // Frost crystal
+   canvas.drawPath(Path()..addPolygon([Offset(width*2,0),Offset(0,-width),Offset(-width*2,0),Offset(0,width)],true),fill);canvas.drawLine(Offset(-width,0),Offset(width,0),core..strokeWidth=2);break;
+  case 7: // Ember sparks
+   for(var i=0;i<5;i++){final a=i*math.pi*2/5;canvas.drawCircle(Offset(math.cos(a)*width,math.sin(a)*width),width*.7,fill);}canvas.drawCircle(Offset.zero,width*.6,core);break;
+  case 8: // Titan shield
+   canvas.drawPath(Path()..addPolygon([Offset(-width,-width),Offset(width,-width),Offset(width,width*.2),Offset(0,width*1.6),Offset(-width,width*.2)],true),fill);canvas.drawCircle(Offset.zero,width*.45,core);break;
+  case 9: // Luna crescent
+   canvas.drawArc(Rect.fromCircle(center:Offset.zero,radius:width*1.6),-.7,4.0,false,fill..style=PaintingStyle.stroke..strokeWidth=width*.7);break;
+  case 10: // Orion laser
+   canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(-width*3,-width*.4,width*5,width*.8),Radius.circular(width*.4)),fill);canvas.drawLine(Offset(-width*2,0),Offset(width,0),core..strokeWidth=width*.3);break;
+  default: // Sol solar flare
+   for(var i=0;i<12;i++){final a=i*math.pi/6;canvas.drawLine(Offset(math.cos(a)*width,math.sin(a)*width),Offset(math.cos(a)*width*2.2,math.sin(a)*width*2.2),fill..strokeWidth=2);}canvas.drawCircle(Offset.zero,width,core);break;
  }
  canvas.restore();
  if(t>.48){

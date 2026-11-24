@@ -3,19 +3,19 @@ import 'package:flutter/material.dart';
 
 const palette=[Color(0xff478de4),Color(0xffdbeafe),Color(0xff5e527c),Color(0xffff944e),Color(0xff30b89a),Color(0xffa28cf4),Color(0xff8de5fa),Color(0xfff25c45),Color(0xffa3a9bb),Color(0xffa682df),Color(0xff3986d2),Color(0xffffcb4c)];
 class AvatarArt extends StatelessWidget {
- final int index;final double size;
- const AvatarArt({super.key,required this.index,required this.size});
- @override Widget build(BuildContext context)=>CustomPaint(size:Size.square(size),painter:AvatarPainter(index));
+ final int index,costume;final double size;
+ const AvatarArt({super.key,required this.index,required this.size,this.costume=0});
+ @override Widget build(BuildContext context)=>CustomPaint(size:Size.square(size),painter:AvatarPainter(index,costume:costume));
 }
 class AvatarPainter extends CustomPainter{
- final int index;
- AvatarPainter(this.index);
- @override void paint(Canvas canvas,Size size)=>drawAvatar(canvas,size.center(Offset.zero),min(size.width,size.height)*.47,index);
- @override bool shouldRepaint(covariant AvatarPainter oldDelegate)=>oldDelegate.index!=index;
+ final int index,costume;
+ AvatarPainter(this.index,{this.costume=0});
+ @override void paint(Canvas canvas,Size size)=>drawAvatar(canvas,size.center(Offset.zero),min(size.width,size.height)*.47,index,costume:costume);
+ @override bool shouldRepaint(covariant AvatarPainter oldDelegate)=>oldDelegate.index!=index||oldDelegate.costume!=costume;
 }
 // Original vector sprites. Each has a silhouette, body, material highlights and equipment.
-void drawAvatar(Canvas c,Offset center,double r,int index,{double action=0,bool hurt=false}){
- final i=index.clamp(0,11).toInt(),base=palette[i];
+void drawAvatar(Canvas c,Offset center,double r,int index,{double action=0,bool hurt=false,int costume=0}){
+ final i=index.clamp(0,11).toInt();final original=palette[i];final base=switch(costume){1=>Color.lerp(original,const Color(0xff89e6ff),.75)!,2=>Color.lerp(original,const Color(0xffff7052),.75)!,3=>Color.lerp(original,const Color(0xffffd36a),.85)!,4=>Color.lerp(original,const Color(0xffa17aff),.8)!,_=>original};
  final dark=const Color(0xff122034),white=const Color(0xfff4fbff);
  c.save();c.translate(center.dx,center.dy);c.scale(r/50);
  c.drawOval(const Rect.fromLTWH(-35,40,70,9),Paint()..color=Colors.black38);
@@ -134,10 +134,20 @@ void drawAvatar(Canvas c,Offset center,double r,int index,{double action=0,bool 
 }
 
 class VictoryAvatar extends StatelessWidget {
- final int index;final bool animate;
- const VictoryAvatar({super.key,required this.index,required this.animate});
- @override Widget build(BuildContext context)=>TweenAnimationBuilder<double>(
-  tween:Tween(begin:animate ? 0.55 : 1.0,end:1.0),duration:Duration(milliseconds:animate?650:0),curve:Curves.easeOutBack,
-  builder:(context,scale,child)=>Transform.scale(scale:scale,child:child),
-  child:AvatarArt(index:index,size:100));
+ final int index,costume;final bool animate,celebrate;
+ const VictoryAvatar({super.key,required this.index,required this.animate,this.costume=0,this.celebrate=true});
+ @override Widget build(BuildContext context)=>SizedBox(width:180,height:136,child:TweenAnimationBuilder<double>(
+  tween:Tween(begin:animate?0.0:1.0,end:1.0),duration:Duration(milliseconds:animate?1200:0),curve:Curves.easeOutCubic,
+  builder:(context,t,child)=>Stack(alignment:Alignment.center,children:[
+   if(celebrate&&animate)CustomPaint(size:const Size(180,136),painter:_VictoryParticles(t)),
+   Transform.scale(scale:animate ? .68+.32*t : 1.0,child:Transform.translate(offset:Offset(0,celebrate&&animate?-12*sin(t*pi):0),child:child)),
+  ]),child:AvatarArt(index:index,size:100,costume:costume)));
+}
+class _VictoryParticles extends CustomPainter{
+ final double t;_VictoryParticles(this.t);
+ @override void paint(Canvas c,Size s){
+  final colors=[const Color(0xff318bff),const Color(0xffff943c),const Color(0xff31d9a0),const Color(0xffffcf54)];
+  for(var i=0;i<22;i++){final a=i*2*pi/22;final r=12+t*(40+i%4*5);final center=s.center(Offset.zero)+Offset(cos(a)*r,sin(a)*r+t*t*14);c.save();c.translate(center.dx,center.dy);c.rotate(a+t*3);c.drawRRect(RRect.fromRectAndRadius(const Rect.fromLTWH(-2,-4,4,8),const Radius.circular(1)),Paint()..color=colors[i%4].withAlpha(((1-t)*240).round()));c.restore();}
+ }
+ @override bool shouldRepaint(covariant _VictoryParticles old)=>old.t!=t;
 }

@@ -7,7 +7,7 @@ import '../widgets/battle_effects.dart';
 class Arena extends FlameGame {
  double energy=.5,display=.5,clock=0;
  bool reduced=false,training=false,team=false;
- int leftAvatar=0,rightAvatar=5,score=0;
+ int leftAvatar=0,rightAvatar=5,score=0,leftCostume=0,rightCostume=0;
  double shake=0;
  int skin=0,effect=0,tint=0,background=0,failed=-1;
  int? victor;
@@ -57,7 +57,7 @@ class Arena extends FlameGame {
    final offset=Offset(p==0?w*.18+pulse:w*.82-pulse,y+bob+(failed==p&&!reduced?sin(clock*60)*3:0));
    canvas.drawOval(Rect.fromCenter(center:Offset(offset.dx,y+radius*.82),width:radius*2.7,height:radius*.58),Paint()..color=base.withAlpha(75));
    canvas.drawCircle(offset,radius*1.16,Paint()..color=base.withAlpha(30));
-   drawAvatar(canvas,offset,radius*(pulses[p]>0&&!reduced?1.08:1),avatar,action:reduced?0:sin(progress*pi),hurt:failed==p);
+   drawAvatar(canvas,offset,radius*(pulses[p]>0&&!reduced?1.08:1),avatar,action:reduced?0:sin(progress*pi),hurt:failed==p,costume:p==0?leftCostume:rightCostume);
    if(pulses[p]>0&&!reduced){
     final c=effect==0?palette[avatar.clamp(0,palette.length-1).toInt()]:effect==1?Colors.amber:Colors.cyanAccent;
     drawAttack(canvas,offset,Offset(x,y),progress,c,avatar,radius);
@@ -93,7 +93,7 @@ class Arena extends FlameGame {
    final jump=reduced?0.0:sin(t*pi)*8;
    final center=Offset(w*(team?(p==0 ? .14 : .37):.28)+jump,y+(reduced?0.0:sin(clock*3+p)*2));
    canvas.drawOval(Rect.fromCenter(center:Offset(center.dx,y+radius*.75),width:radius*2.4,height:radius*.52),Paint()..color=base.withAlpha(80));
-   drawAvatar(canvas,center,radius*(pulses[p]>0&&!reduced?1.08:1),avatar,action:reduced?0:sin(t*pi),hurt:failed==p);
+   drawAvatar(canvas,center,radius*(pulses[p]>0&&!reduced?1.08:1),avatar,action:reduced?0:sin(t*pi),hurt:failed==p,costume:p==0?leftCostume:rightCostume);
    if(pulses[p]>0&&!reduced){
     final c=effect==0?palette[avatar.clamp(0,palette.length-1).toInt()]:effect==1?Colors.amber:Colors.cyanAccent;
     drawAttack(canvas,center,anchor,t,c,avatar,radius);

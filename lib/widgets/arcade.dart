@@ -13,8 +13,8 @@ ThemeData arcadeTheme(Brightness brightness) {
  final surface=dark?const Color(0xff182338):const Color(0xfff4f7ff);
  final shape=RoundedRectangleBorder(borderRadius:BorderRadius.circular(16));
  return ThemeData(
-  useMaterial3:true,colorScheme:scheme,scaffoldBackgroundColor:dark?const Color(0xff080b15):const Color(0xffeaf0fa),
-  appBarTheme:AppBarTheme(backgroundColor:Colors.transparent,elevation:0,centerTitle:true,titleTextStyle:TextStyle(color:scheme.onSurface,fontSize:20,fontWeight:FontWeight.w800)),
+  useMaterial3:true,fontFamily:'Inter',colorScheme:scheme.copyWith(surface:surface),textTheme:Typography.material2021().black.apply(fontFamily:'Inter',bodyColor:scheme.onSurface,displayColor:scheme.onSurface).copyWith(headlineLarge:TextStyle(fontFamily:'Outfit',fontSize:32,fontWeight:FontWeight.w800,color:scheme.onSurface),headlineSmall:TextStyle(fontFamily:'Outfit',fontSize:24,fontWeight:FontWeight.w800,color:scheme.onSurface),titleLarge:TextStyle(fontFamily:'Outfit',fontSize:22,fontWeight:FontWeight.w800,color:scheme.onSurface),titleMedium:TextStyle(fontFamily:'Outfit',fontSize:16,fontWeight:FontWeight.w700,color:scheme.onSurface)),scaffoldBackgroundColor:dark?const Color(0xff080b15):const Color(0xffeaf0fa),
+  appBarTheme:AppBarTheme(backgroundColor:Colors.transparent,elevation:0,centerTitle:true,titleTextStyle:TextStyle(fontFamily:'Outfit',color:scheme.onSurface,fontSize:20,fontWeight:FontWeight.w800)),
   filledButtonTheme:FilledButtonThemeData(style:FilledButton.styleFrom(shape:shape,minimumSize:const Size(44,48),textStyle:const TextStyle(fontWeight:FontWeight.w800,fontSize:16))),
   outlinedButtonTheme:OutlinedButtonThemeData(style:OutlinedButton.styleFrom(shape:shape,minimumSize:const Size(44,48),textStyle:const TextStyle(fontWeight:FontWeight.w700))),
   inputDecorationTheme:InputDecorationTheme(filled:true,fillColor:surface,border:OutlineInputBorder(borderRadius:BorderRadius.circular(14),borderSide:BorderSide.none),contentPadding:const EdgeInsets.symmetric(horizontal:16,vertical:14)),

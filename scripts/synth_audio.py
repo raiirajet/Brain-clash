@@ -29,3 +29,8 @@ effects={
 }
 for name,notes in effects.items():write('bc_'+name,notes)
 write('bc_music',[(f,.25) for f in [262,330,392,330,294,349,440,349,330,392,494,392,294,349,440,349]*2],True)
+
+# Original arena loops, generated at build time. No network at runtime.
+for i,(root,tempo,scale) in enumerate([(262,.18,[0,7,12,7,3,7,10,7]),(220,.28,[0,3,7,10,7,3,5,7]),(196,.24,[0,7,14,12,7,3,10,5]),(147,.15,[0,0,7,3,0,10,7,3]),(330,.31,[0,7,12,14,12,7,5,3]),(294,.22,[0,4,7,11,12,7,4,2])]):
+    write('bc_arena'+str(i),[(root*2**(n/12),tempo) for n in scale*4],True)
+write('bc_result',[(f,.45) for f in [262,330,392,523,392,330,294,392]*2],True)
