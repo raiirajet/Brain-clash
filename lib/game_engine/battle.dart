@@ -44,6 +44,8 @@ class Battle {
   int? pendingPlayer;
   int pendingAt=0, botAt=0;
   bool finalRound=false;
+  int finalDeadline=0;
+  int get finalRemaining=>max(0,finalDeadline-elapsed);
   bool get shared=>mode==Mode.duel&&sameQuestions&&level==opponentLevel&&fuseMs==0&&ArcadeRules.kindFor(skillName)==null;
   bool get speedContest=>arcade==null&&rule==BattleRule.speed&&(mode==Mode.duel||mode==Mode.solo);
   bool get arbitrate=>shared||speedContest;
@@ -76,9 +78,10 @@ class Battle {
       if(ms==0)return;
     }
     if(phase!=Phase.playing)return;
-    final step=unlimited?ms:min(ms,remaining);
+    final step=finalRound?min(ms,finalRemaining):unlimited?ms:min(ms,remaining);
     elapsed+=step;
     if(!finalRound)time+=step;
+    if(finalRound&&finalRemaining==0){if(pendingPlayer!=null)resolvePending();if(phase==Phase.playing)finish(reason:FinishReason.time);return;}
     arcade?.tick(step,players:mode==Mode.training?1:2);
     checkArcade();if(phase==Phase.ended)return;
     // The deadline is authoritative: no new bot answer or fuse penalty after it.
@@ -86,7 +89,7 @@ class Battle {
       if(pendingPlayer!=null)resolvePending();
       if(phase!=Phase.playing)return;
       if(mode!=Mode.training&&arcade==null&&rule==BattleRule.finalClash&&points[0]==points[1]){
-        finalRound=true;
+        finalRound=true;finalDeadline=elapsed+30000;
         if(shared){advanceShared();}else{
           setTask(0,questions.make(world,level));setTask(1,(opponentQuestions??questions).make(world,opponentLevel));scheduleBot();
         }
@@ -124,6 +127,7 @@ class Battle {
     final q=tasks[p];
     if(q.interaction==Interaction.word){
       if(cell<0||cell>=q.board.length||matched[p].contains(cell))return null;
+      if(partial[p].length>=q.answer.length)return null;
       if(q.board[cell]!=q.answer[partial[p].length]){partial[p].clear();matched[p].clear();return answer(p,q.options.firstWhere((v)=>v!=q.answer));}
       matched[p].add(cell);partial[p].add(q.board[cell]);
       return partial[p].length==q.answer.length?answer(p,q.answer):null;
@@ -134,11 +138,12 @@ class Battle {
     }
     if(q.interaction==Interaction.tap){
       partial[p].add('tap');
-      return partial[p].length>=5?answer(p,q.answer):null;
+      return partial[p].length>=int.parse(q.answer)?answer(p,q.answer):null;
     }
     if(q.interaction==Interaction.sequence){
       if(cell<0||cell>8)return null;
       final v=cell.toString();
+      if(partial[p].length>=q.board.length)return null;
       if(v!=q.board[partial[p].length]){
         partial[p].clear();
         final result=answer(p,q.options.firstWhere((s)=>s!=q.answer));

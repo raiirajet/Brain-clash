@@ -81,7 +81,7 @@ class _StagePainter extends CustomPainter{
      c.drawCircle(center,math.min(n.toDouble()+2,r*.8),paint);
      break;
     case Challenge.mazeBattle:
-     final maze=rules?.maze;
+     final maze=rules?.mazeFor(p);
      final cell=math.min(half/6,h/5),ox=x0+(half-cell*5)/2,oy=(h-cell*4)/2;
      if(maze!=null){
        for(var i=0;i<20;i++){

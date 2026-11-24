@@ -42,7 +42,7 @@ class Questions {
           default:return number(world,'$a + $b × 2',a+b*2);
         }
       case World.logic:
-        final a=1+random.nextInt(9), b=2+random.nextInt(4);
+        final a=1+random.nextInt([9,19,39,79][level]), b=2+random.nextInt([4,8,12,20][level]);
         switch(random.nextInt(7)) {
           case 0:return number(world,'$a · ${a+b} · ${a+2*b} · ?',a+3*b);
           case 1:return number(world,'$a · ${a*2} · ${a*4} · ?',a*8);
@@ -114,7 +114,7 @@ class Questions {
           ['Ergänze: Schu_ (ein einzelner Schuh)','h','l','m','k'],
           ['Welches Wort passt zu 🐘?','Elefant','Tiger','Giraffe','Zebra'],
         ];
-        final row=bank[random.nextInt(level==0?8:bank.length)];
+        final row=bank[random.nextInt([8,12,16,20][level])];
         return pick(world,row[0],row[1],row.sublist(2));
       case World.mixed:throw StateError('Mixed must resolve');
     }

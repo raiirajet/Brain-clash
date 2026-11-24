@@ -14,9 +14,9 @@ class ArcadeControls extends StatelessWidget{
    if(rules.kind==ArcadeKind.maze){
     return Center(child:AspectRatio(aspectRatio:5/4,child:LayoutBuilder(builder:(context,grid){
      final width=grid.maxWidth/5,height=grid.maxHeight/4;
-     final neighbors=<int,Direction>{for(final dir in Direction.values)if(rules.maze.move(lane.cell,dir)!=null)rules.maze.move(lane.cell,dir)!:dir};
+     final neighbors=<int,Direction>{for(final dir in Direction.values)if(rules.mazeFor(player).move(lane.cell,dir)!=null)rules.mazeFor(player).move(lane.cell,dir)!:dir};
      return Stack(children:[
-      Positioned.fill(child:CustomPaint(painter:_MazePainter(rules.maze,lane.cell,neighbors.keys.toSet(),player))),
+      Positioned.fill(child:CustomPaint(painter:_MazePainter(rules.mazeFor(player),lane.cell,neighbors.keys.toSet(),player))),
       for(final entry in neighbors.entries)Positioned(left:entry.key%5*width,top:entry.key~/5*height,width:width,height:height,child:Semantics(button:true,label:L.text(['Oben','Rechts','Unten','Links'][entry.value.index]),child:Material(color:Colors.transparent,child:InkWell(onTap:()=>onMove(entry.value),child:const Center(child:Icon(Icons.arrow_circle_right,color:Colors.white,size:17)))))),
      ]);
     })));
