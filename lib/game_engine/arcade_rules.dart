@@ -39,11 +39,12 @@ class ArcadeRules {
  final ArcadeKind kind;
  final Maze maze;
  final lanes=[ArcadeLane(),ArcadeLane()];
- final bool cooperative;
+ final bool cooperative,repeatObjectives;
+ final completed=[0,0];
  int bossHp=120,teamHp=5,elapsed=0,nextStrike=12000;
  int? winner;
  bool ended=false;
- ArcadeRules(this.kind,{int seed=42,this.cooperative=false}):maze=Maze(seed);
+ ArcadeRules(this.kind,{int seed=42,this.cooperative=false,this.repeatObjectives=false}):maze=Maze(seed);
  bool get boss=>kind==ArcadeKind.boss;
  int get bossPhase=>bossHp>80?1:bossHp>40?2:3;
  bool waiting(int p)=>(kind==ArcadeKind.maze||kind==ArcadeKind.treasure)&&lanes[p].keys>0;
@@ -55,7 +56,7 @@ class ArcadeRules {
    case ArcadeKind.rocket:l.fuel=math.min(6.0,l.fuel+2.5);l.velocity=math.min(24.0,l.velocity+5);break;
    case ArcadeKind.treasure:case ArcadeKind.maze:l.keys=1;break;
    case ArcadeKind.escape:l.locks++;break;
-   case ArcadeKind.boss:l.charge++;bossHp=math.max(0,bossHp-(bossPhase==2?10:15));if(bossHp==0){ended=true;winner=0;}break;
+   case ArcadeKind.boss:l.charge++;bossHp=math.max(0,bossHp-(bossPhase==2?10:15));if(bossHp==0){if(repeatObjectives){completed[0]++;resetBoss();}else{ended=true;winner=0;}}break;
   }
   check();
  }
@@ -66,7 +67,7 @@ class ArcadeRules {
    case ArcadeKind.race:l.position=math.max(0.0,l.position-5);break;
    case ArcadeKind.rocket:l.fuel=math.max(0.0,l.fuel-1.5);l.velocity*=.55;break;
    case ArcadeKind.escape:l.locks=math.max(0,l.locks-1);break;
-   case ArcadeKind.boss:teamHp--;if(teamHp<=0){ended=true;winner=1;}break;
+   case ArcadeKind.boss:teamHp--;if(teamHp<=0){if(repeatObjectives){resetBoss();}else{ended=true;winner=1;}}break;
    default:break;
   }
  }
@@ -109,16 +110,18 @@ class ArcadeRules {
    if(!shield)teamHp--;
    for(final l in lanes){l.charge=0;}
    nextStrike=elapsed+(bossPhase==3?6500:12000);
-   if(teamHp<=0){ended=true;winner=1;}
+   if(teamHp<=0){if(repeatObjectives){resetBoss();}else{ended=true;winner=1;}}
   }
   check(players:players);
  }
  double progress(int p){
   final l=lanes[p];return switch(kind){ArcadeKind.tower=>l.blocks/10,ArcadeKind.race||ArcadeKind.rocket=>l.position/100,ArcadeKind.treasure=>l.gems/treasureGoal,ArcadeKind.maze=>1-maze.distance(l.cell)/math.max(1,maze.distance(0)),ArcadeKind.escape=>l.locks/6,ArcadeKind.boss=>1-bossHp/120};
  }
+ void resetBoss(){bossHp=120;teamHp=5;nextStrike=elapsed+12000;for(final l in lanes){l.charge=0;}}
  void check({int players=2}){
   if(ended||boss)return;final a=progress(0)>=1,b=players>1&&progress(1)>=1;
+  if(repeatObjectives){if(a){completed[0]++;lanes[0]=ArcadeLane();}if(b){completed[1]++;lanes[1]=ArcadeLane();}return;}
   if(a||b){ended=true;winner=a&&b?null:a?0:1;}
  }
- int? timeWinner(){if(boss)return bossHp==0?0:1;final a=progress(0),b=progress(1);return (a-b).abs()<.000001?null:a>b?0:1;}
+ int? timeWinner(){if(boss)return bossHp==0?0:1;final a=completed[0]+progress(0).clamp(0.0,1.0),b=completed[1]+progress(1).clamp(0.0,1.0);return (a-b).abs()<.000001?null:a>b?0:1;}
 }

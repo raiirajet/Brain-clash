@@ -11,14 +11,16 @@ class ArcadeStage extends StatelessWidget {
  final bool reduced;
  final ArcadeRules? rules;
  final List<int>? fuseRemaining,avatars;
- const ArcadeStage({super.key,required this.challenge,required this.points,required this.remaining,required this.reduced,this.rules,this.fuseRemaining,this.avatars});
- @override Widget build(BuildContext context)=>Semantics(label:'${challenge.label}: ${points[0]} zu ${points[1]}',child:CustomPaint(painter:_StagePainter(challenge,List<int>.of(points),remaining,rules,fuseRemaining,avatars),size:Size.infinite));
+ final int players;
+ const ArcadeStage({super.key,required this.challenge,required this.points,required this.remaining,required this.reduced,this.rules,this.fuseRemaining,this.avatars,this.players=2});
+ @override Widget build(BuildContext context)=>Semantics(label:players==1?'${challenge.label}: ${points[0]}':'${challenge.label}: ${points[0]} zu ${points[1]}',child:CustomPaint(painter:_StagePainter(challenge,List<int>.of(points),remaining,rules,fuseRemaining,avatars,players),size:Size.infinite));
 }
 class _StagePainter extends CustomPainter{
  final Challenge challenge;final List<int> points;final int remaining;
  final ArcadeRules? rules;
  final List<int>? fuseRemaining,avatars;
- _StagePainter(this.challenge,this.points,this.remaining,this.rules,this.fuseRemaining,this.avatars);
+ final int players;
+ _StagePainter(this.challenge,this.points,this.remaining,this.rules,this.fuseRemaining,this.avatars,this.players);
  @override void paint(Canvas c,Size s){
   final w=s.width,h=s.height;
   if(w<=0||h<=0)return;
@@ -26,8 +28,8 @@ class _StagePainter extends CustomPainter{
   c.drawRect(rect,Paint()..shader=const LinearGradient(colors:[Color(0xff162c50),Color(0xff080b15),Color(0xff493023)]).createShader(rect));
   if(rules?.boss==true){final a=rules!;final center=Offset(w*.5,h*.42);final r=math.min(h*.25,w*.11);c.drawCircle(center,r,Paint()..color=Colors.deepPurpleAccent);for(final dx in [-r*.35,r*.35])c.drawCircle(center+Offset(dx,-r*.1),r*.16,Paint()..color=Colors.white);c.drawRect(Rect.fromLTWH(w*.12,h*.79,w*.76,5),Paint()..color=Colors.white24);c.drawRect(Rect.fromLTWH(w*.12,h*.79,w*.76*a.bossHp/120,5),Paint()..color=Colors.redAccent);for(var i=0;i<a.teamHp;i++)c.drawCircle(Offset(w*.1+i*9,h*.2),3,Paint()..color=Colors.greenAccent);return;}
   final colors=[const Color(0xff318bff),const Color(0xffff943c)];
-  for(var p=0;p<2;p++){
-   final color=colors[p],n=points[p],x0=p*w/2,half=w/2;
+  for(var p=0;p<players;p++){
+   final color=colors[p],n=points[p],x0=p*w/players,half=w/players;
    final lane=rules?.lanes[p];
    final paint=Paint()..color=color;
    switch(challenge){
@@ -43,11 +45,22 @@ class _StagePainter extends CustomPainter{
      final y=h*.55;
      c.drawLine(Offset(x0+8,y),Offset(x0+half-8,y),Paint()..color=Colors.white24..strokeWidth=4);
      for(var i=0;i<10;i++)c.drawCircle(Offset(x0+8+i*(half-16)/9,y),1.3,Paint()..color=Colors.white54);
-     final x=x0+8+(half-16)*(lane==null?n.clamp(0,10)/10:lane.position/100);
-     final r=math.min(h*.24,12.0);
+     final r=math.min(h*.18,players==1?25.0:14.0);
+     final margin=r+8;
+     final x=x0+margin+math.max(0.0,half-2*margin)*(lane==null?n.clamp(0,10)/10:lane.position/100);
      if(challenge==Challenge.rocketRace){
-      final ship=Path()..moveTo(x+r,y)..lineTo(x-r,y-r*.65)..lineTo(x-r,y+r*.65)..close();
-      c.drawPath(ship,paint);c.drawCircle(Offset(x-r-3,y),3,Paint()..color=Colors.amber);
+      final active=(lane?.fuel??0)>0;
+      for(var i=0;i<18;i++){final sx=x0+half*((i*37%101)/101),sy=h*((i*19%83)/83);c.drawCircle(Offset(sx,sy),i%4==0?1.6:.7,Paint()..color=Colors.white.withAlpha(90));}
+      if(active){final flame=Path()..moveTo(x-r*.65,y-r*.27)..quadraticBezierTo(x-r*1.75,y,x-r*.65,y+r*.27)..close();c.drawPath(flame,Paint()..shader=LinearGradient(colors:[Colors.transparent,color,Colors.white]).createShader(Rect.fromLTWH(x-r*1.75,y-r*.3,r*1.1,r*.6)));}
+      final fin=Path()..addPolygon([Offset(x-r*.5,y-r*.32),Offset(x-r*.95,y-r*.87),Offset(x+r*.12,y-r*.35),Offset(x+r*.12,y+r*.35),Offset(x-r*.95,y+r*.87),Offset(x-r*.5,y+r*.32)],true);
+      c.drawPath(fin,paint);
+      final body=Path()..moveTo(x-r*.65,y-r*.42)..quadraticBezierTo(x+r*.38,y-r*.53,x+r,y)..quadraticBezierTo(x+r*.38,y+r*.53,x-r*.65,y+r*.42)..close();
+      c.drawPath(body,Paint()..shader=const LinearGradient(begin:Alignment.topCenter,end:Alignment.bottomCenter,colors:[Colors.white,Color(0xffb4d9fb),Color(0xff4c73a2)]).createShader(Rect.fromLTWH(x-r,y-r*.5,r*2,r)));
+      c.drawCircle(Offset(x+r*.28,y),r*.22,Paint()..color=color);
+      c.drawCircle(Offset(x+r*.32,y-r*.07),r*.07,Paint()..color=Colors.white);
+      final bar=Rect.fromLTWH(x0+margin,h*.82,math.max(1.0,half-2*margin),4);
+      c.drawRRect(RRect.fromRectAndRadius(bar,const Radius.circular(3)),Paint()..color=Colors.white24);
+      c.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(bar.left,bar.top,bar.width*((lane?.fuel??0)/6).clamp(0.0,1.0).toDouble(),4),const Radius.circular(3)),paint);
      }else{
       drawAvatar(c,Offset(x,y),r*1.25,avatars?[p]??p);
      }
@@ -89,7 +102,7 @@ class _StagePainter extends CustomPainter{
     default:break;
    }
   }
-  c.drawLine(Offset(w/2,0),Offset(w/2,h),Paint()..color=Colors.white24);
+  if(players==2)c.drawLine(Offset(w/2,0),Offset(w/2,h),Paint()..color=Colors.white24);
  }
- @override bool shouldRepaint(covariant _StagePainter old)=>rules!=null||fuseRemaining!=null||old.challenge!=challenge||old.remaining!=remaining||old.points[0]!=points[0]||old.points[1]!=points[1];
+ @override bool shouldRepaint(covariant _StagePainter old)=>rules!=null||fuseRemaining!=null||old.players!=players||old.challenge!=challenge||old.remaining!=remaining||old.points[0]!=points[0]||old.points[1]!=points[1];
 }
