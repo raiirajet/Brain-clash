@@ -131,7 +131,11 @@ class Progress {
     final weekBonus=WeeklyProgress.add(p,own.where((a)=>a.correct).map((a)=>a.question.world.name));
     final learned=b.mode==Mode.training?samples.where((a)=>a.correct&&previousDue.contains(a.question.key)).map((a)=>a.question.key).toSet().length:0;
     final qualified=samples.length>=5&&right>=3&&(b.elapsed>=10000||b.finishReason==FinishReason.goal);
-    final reward=right*10+(qualified?15:0)+(right>0&&b.mode!=Mode.training&&(b.mode==Mode.team?b.winner==0:b.winner==player)?25:0)+(qualified&&firstRight==samples.length?50:0)+dayBonus+weekBonus+(qualified&&newRecord?30:0)+learned*15;
+    final breakdown=<String,int>{
+     'Richtige Antworten':right*10,'Teilnahme':qualified?15:0,'Sieg':right>0&&b.mode!=Mode.training&&(b.mode==Mode.team?b.winner==0:b.winner==player)?25:0,
+     'Fehlerfrei':qualified&&firstRight==samples.length?50:0,'Tagesziel':dayBonus,'Wochenziel':weekBonus,'Rekord':qualified&&newRecord?30:0,'Fehlertraining':learned*15};
+    breakdown.removeWhere((k,v)=>v==0);
+    final reward=breakdown.values.fold<int>(0,(sum,n)=>sum+n);
     final skillMap=p.putIfAbsent('skills',()=> <String,dynamic>{}) as Map;
     final skill=skillMap.putIfAbsent(b.skillName,()=>{'right':0,'wrong':0,'digits':digit,'level':level}) as Map;
     skill['right']=(skill['right'] as int? ??0)+right;skill['wrong']=(skill['wrong'] as int? ??0)+own.length-right;
@@ -146,9 +150,9 @@ class Progress {
       final correct=group.where((a)=>a['ok']==true).length;
       final avg=group.fold<int>(0,(sum,a)=>sum+(a['ms'] as int))/20;
       final next=adapt(level,correct,20);
-      final digitNext=numeric&&next>level&&avg>4500?level:next;
+      final digitNext=correct<12?-1:correct>=18&&avg<=4500?1:0;
       skill['level']=next;
-      if(numeric){skill['digits']=(digit+(digitNext-level)).clamp(1,4).toInt();}
+      if(numeric){skill['digits']=(digit+digitNext).clamp(1,4).toInt();}
       skill['masteryAccuracy']=correct/20;
       window.removeRange(0,20);
      }
@@ -166,7 +170,7 @@ class Progress {
       var best=0,series=0;
       for(final a in own){series=a.correct?series+1:0;if(series>best)best=series;}
       if(best>(p['bestSeries'] as int? ??0))p['bestSeries']=best;
-      history.add({'date':DateTime.now().toIso8601String().substring(0,10),'world':b.world.name,'game':b.skillName,'points':b.points[player],'level':level,'digits':digit,'duration':b.duration,'mode':b.mode.name,'rule':b.rule.name,'firstRight':firstRight,'firstTotal':samples.length,'xp':reward,'right':right,'total':own.length,'ms':own.fold<int>(0,(sum,a)=>sum+a.ms),'attempts':[for(final a in own.take(30)){'prompt':a.question.prompt,'solution':a.question.answer,'response':a.response,'correct':a.correct,'ms':a.ms}]});
+      history.add({'date':DateTime.now().toIso8601String().substring(0,10),'world':b.world.name,'game':b.skillName,'points':b.points[player],'level':level,'digits':digit,'duration':b.duration,'mode':b.mode.name,'rule':b.rule.name,'firstRight':firstRight,'firstTotal':samples.length,'xp':reward,'xpBreakdown':breakdown,'right':right,'total':own.length,'ms':own.fold<int>(0,(sum,a)=>sum+a.ms),'attempts':[for(final a in own.take(30)){'prompt':a.question.prompt,'solution':a.question.answer,'response':a.response,'correct':a.correct,'ms':a.ms}]});
     }
     if(history.length>100)history.removeRange(0,history.length-100);
     active=previous;

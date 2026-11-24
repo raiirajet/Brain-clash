@@ -6,8 +6,11 @@ enum Direction { up, right, down, left }
 /// A seeded perfect maze. Both sides have the same layout.
 class Maze {
  static const width=5,height=4;
- final links=List.generate(width*height,(_)=><int>{});
- Maze(int seed){
+ final int columns,rows;
+ late final List<Set<int>> links;
+ int get end=>columns*rows-1;
+ Maze(int seed,{this.columns=width,this.rows=height}){
+  links=List.generate(columns*rows,(_)=><int>{});
   final rng=math.Random(seed),seen=<int>{0},stack=<int>[0];
   while(stack.isNotEmpty){
    final cell=stack.last;
@@ -16,14 +19,14 @@ class Maze {
    final n=next[rng.nextInt(next.length)];links[cell].add(n);links[n].add(cell);seen.add(n);stack.add(n);
   }
  }
- static int? neighbor(int cell,Direction d){
-  final x=cell%width,y=cell~/width;
-  return switch(d){Direction.up=>y>0?cell-width:null,Direction.right=>x<width-1?cell+1:null,Direction.down=>y<height-1?cell+width:null,Direction.left=>x>0?cell-1:null};
+ int? neighbor(int cell,Direction d){
+  final x=cell%columns,y=cell~/columns;
+  return switch(d){Direction.up=>y>0?cell-columns:null,Direction.right=>x<columns-1?cell+1:null,Direction.down=>y<rows-1?cell+columns:null,Direction.left=>x>0?cell-1:null};
  }
  int? move(int cell,Direction d){final n=neighbor(cell,d);return links[cell].contains(n)?n:null;}
  int distance(int start){
   final queue=<int>[start],depth=<int,int>{start:0};
-  for(var i=0;i<queue.length;i++){final c=queue[i];if(c==width*height-1)return depth[c]!;for(final n in links[c]){if(!depth.containsKey(n)){depth[n]=depth[c]!+1;queue.add(n);}}}
+  for(var i=0;i<queue.length;i++){final c=queue[i];if(c==end)return depth[c]!;for(final n in links[c]){if(!depth.containsKey(n)){depth[n]=depth[c]!+1;queue.add(n);}}}
   throw StateError('Disconnected maze');
  }
 }
@@ -37,19 +40,27 @@ class ArcadeRules {
  static ArcadeKind? kindFor(String skill)=>switch(skill){
  'mathTower'=>ArcadeKind.tower,'mathRace'=>ArcadeKind.race,'rocketRace'=>ArcadeKind.rocket,'treasureRush'=>ArcadeKind.treasure,'mazeBattle'=>ArcadeKind.maze,'logicEscape'=>ArcadeKind.escape,'bossBattle'=>ArcadeKind.boss,_=>null};
  final ArcadeKind kind;
- final int seed;
+ final int seed,difficulty;
+ int get tier=>difficulty.clamp(0,3).toInt();
+ int get towerGoal=>10+tier*2;
+ int get escapeGoal=>6+tier;
+ int get bossMaxHp=>120+tier*30;
+ int get bossStage=>completed[0]+1;
+ int get strikeInterval=>math.max(4000,(bossPhase==3?6500:12000)-tier*1000);
+ List<int> chests(int p)=>List<int>.of(chestValues)..shuffle(math.Random(seed+completed[p]));
  final List<Maze> mazes;
  Maze get maze=>mazes[0];
  Maze mazeFor(int p)=>mazes[p];
  final lanes=[ArcadeLane(),ArcadeLane()];
  final bool cooperative,repeatObjectives;
  final completed=[0,0];
- int bossHp=120,teamHp=5,elapsed=0,nextStrike=12000;
+ late int bossHp;
+ int teamHp=5,elapsed=0,nextStrike=12000;
  int? winner;
  bool ended=false;
- ArcadeRules(this.kind,{this.seed=42,this.cooperative=false,this.repeatObjectives=false}):mazes=[Maze(seed),Maze(seed)];
+ ArcadeRules(this.kind,{this.seed=42,this.difficulty=0,this.cooperative=false,this.repeatObjectives=false}):mazes=[for(var i=0;i<2;i++)Maze(seed,columns:5+difficulty.clamp(0,3).toInt(),rows:4+difficulty.clamp(0,3).toInt())]{bossHp=bossMaxHp;nextStrike=strikeInterval;}
  bool get boss=>kind==ArcadeKind.boss;
- int get bossPhase=>bossHp>80?1:bossHp>40?2:3;
+ int get bossPhase=>bossHp>bossMaxHp*2/3?1:bossHp>bossMaxHp/3?2:3;
  bool waiting(int p)=>(kind==ArcadeKind.maze||kind==ArcadeKind.treasure)&&lanes[p].keys>0;
  void correct(int p){
   if(ended)return;final l=lanes[p];
@@ -81,10 +92,11 @@ class ArcadeRules {
  }
  static const chestValues=[2,1,3,2,1,3];
  static const treasureGoal=9;
+ int chestReward(int p,int i)=>(difficulty==0&&completed[p]==0?chestValues:chests(p))[i];
  bool openChest(int p,int index){
   if(ended||kind!=ArcadeKind.treasure||index<0||index>=chestValues.length)return false;
   final l=lanes[p];if(l.keys==0||l.opened.contains(index))return false;
-  l.keys=0;l.opened.add(index);l.gems+=chestValues[index];check();return true;
+  l.keys=0;l.opened.add(index);l.gems+=(difficulty==0&&completed[p]==0?chestValues:chests(p))[index];check();return true;
  }
  void autoAction(int p){
   if(!waiting(p))return;
@@ -92,7 +104,7 @@ class ArcadeRules {
    final l=lanes[p],old=mazeFor(p).distance(lanes[p].cell);
    for(final d in Direction.values){final n=mazeFor(p).move(l.cell,d);if(n!=null&&mazeFor(p).distance(n)<old){move(p,d);return;}}
   }else{
-   final available=List.generate(chestValues.length,(i)=>i).where((i)=>!lanes[p].opened.contains(i)).toList()..sort((a,b)=>chestValues[b].compareTo(chestValues[a]));
+   final available=List.generate(chestValues.length,(i)=>i).where((i)=>!lanes[p].opened.contains(i)).toList()..sort((a,b)=>chestReward(p,b).compareTo(chestReward(p,a)));
    if(available.isNotEmpty)openChest(p,available.first);
   }
  }
@@ -112,18 +124,18 @@ class ArcadeRules {
    final shield=cooperative?lanes.every((l)=>l.charge>0):lanes[0].charge>0;
    if(!shield)teamHp--;
    for(final l in lanes){l.charge=0;}
-   nextStrike=elapsed+(bossPhase==3?6500:12000);
+   nextStrike=elapsed+strikeInterval;
    if(teamHp<=0){if(repeatObjectives){resetBoss();}else{ended=true;winner=1;}}
   }
   check(players:players);
  }
  double progress(int p){
-  final l=lanes[p];return switch(kind){ArcadeKind.tower=>l.blocks/10,ArcadeKind.race||ArcadeKind.rocket=>l.position/100,ArcadeKind.treasure=>l.gems/treasureGoal,ArcadeKind.maze=>1-mazeFor(p).distance(l.cell)/math.max(1,mazeFor(p).distance(0)),ArcadeKind.escape=>l.locks/6,ArcadeKind.boss=>1-bossHp/120};
+  final l=lanes[p];return switch(kind){ArcadeKind.tower=>l.blocks/towerGoal,ArcadeKind.race||ArcadeKind.rocket=>l.position/100,ArcadeKind.treasure=>l.gems/treasureGoal,ArcadeKind.maze=>1-mazeFor(p).distance(l.cell)/math.max(1,mazeFor(p).distance(0)),ArcadeKind.escape=>l.locks/escapeGoal,ArcadeKind.boss=>1-bossHp/bossMaxHp};
  }
- void resetBoss(){bossHp=120;teamHp=5;nextStrike=elapsed+12000;for(final l in lanes){l.charge=0;}}
+ void resetBoss(){bossHp=bossMaxHp;teamHp=5;nextStrike=elapsed+strikeInterval;for(final l in lanes){l.charge=0;}}
  void check({int players=2}){
   if(ended||boss)return;final a=progress(0)>=1,b=players>1&&progress(1)>=1;
-  if(repeatObjectives){if(a){completed[0]++;lanes[0]=ArcadeLane();if(kind==ArcadeKind.maze)mazes[0]=Maze(seed+completed[0]);}if(b){completed[1]++;lanes[1]=ArcadeLane();if(kind==ArcadeKind.maze)mazes[1]=Maze(seed+completed[1]);}return;}
+  if(repeatObjectives){if(a){completed[0]++;lanes[0]=ArcadeLane();if(kind==ArcadeKind.maze)mazes[0]=Maze(seed+completed[0],columns:5+tier,rows:4+tier);}if(b){completed[1]++;lanes[1]=ArcadeLane();if(kind==ArcadeKind.maze)mazes[1]=Maze(seed+completed[1],columns:5+tier,rows:4+tier);}return;}
   if(a||b){ended=true;winner=a&&b?null:a?0:1;}
  }
  int? timeWinner(){if(boss)return bossHp==0?0:1;final a=completed[0]+progress(0).clamp(0.0,1.0),b=completed[1]+progress(1).clamp(0.0,1.0);return (a-b).abs()<.000001?null:a>b?0:1;}

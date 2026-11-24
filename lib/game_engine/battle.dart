@@ -52,7 +52,7 @@ class Battle {
   bool get arbitrate=>shared||speedContest;
   Battle({required this.mode,required this.world,required this.duration,required this.level,required this.opponentLevel,Questions? questions,this.opponentQuestions,this.rule=BattleRule.tug,this.sameQuestions=true,this.numberEntry=false,this.timedArcade=false,this.fuseMs=0,this.digits=1,this.opponentDigits=1,this.skillName='mixed',this.settingsKey='',Random? random}):questions=questions??Questions(),rng=random??Random() {
     final kind=ArcadeRules.kindFor(skillName);
-    arcade=kind==null?null:ArcadeRules(kind,seed:rng.nextInt(1<<30),cooperative:mode==Mode.team,repeatObjectives:mode==Mode.training||timedArcade&&kind!=ArcadeKind.boss);
+    arcade=kind==null?null:ArcadeRules(kind,seed:rng.nextInt(1<<30),difficulty:level,cooperative:mode==Mode.team,repeatObjectives:mode==Mode.training||timedArcade&&kind!=ArcadeKind.boss);
     final first=this.questions.make(world,level);
     tasks=[first,mode==Mode.training||shared?first:(opponentQuestions??this.questions).make(world,opponentLevel)];
     if(shared||speedContest&&level==opponentLevel&&digits==opponentDigits) tasks[1]=tasks[0];
