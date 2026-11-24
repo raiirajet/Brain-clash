@@ -118,7 +118,7 @@ class _SetupState extends State<Setup>{
     section('Wähle dein Spiel'),
     Row(children:[for(var i=0;i<2;i++)Expanded(child:Padding(padding:const EdgeInsets.symmetric(horizontal:3),child:FilledButton.tonalIcon(onPressed:()=>setState((){tab=i;final list=i==0?mathGames:arcadeGames;if(!list.contains(challenge))challenge=list.first;}),icon:Icon(i==0?Icons.calculate_rounded:Icons.sports_esports_rounded),label:Text(i==0?'Rechen-Battles':'Arcade-Battles'),style:FilledButton.styleFrom(backgroundColor:tab==i?const Color(0xff2359c5):null,foregroundColor:tab==i?Colors.white:null,padding:const EdgeInsets.symmetric(horizontal:4)))))]),
     const SizedBox(height:8),
-    LayoutBuilder(builder:(context,box)=>GridView.builder(shrinkWrap:true,physics:const NeverScrollableScrollPhysics(),itemCount:games.length,gridDelegate:SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:box.maxWidth>=650?4:2,mainAxisExtent:67,mainAxisSpacing:7,crossAxisSpacing:7),itemBuilder:(context,i)=>ChallengeCard(challenge:games[i],selected:challenge==games[i],onTap:()=>setState((){challenge=games[i];if(challenge.arcadeStage&&competitive)rule=challenge==Challenge.numberBomb?BattleRule.hearts:BattleRule.race10;})))),
+    LayoutBuilder(builder:(context,box)=>GridView.builder(shrinkWrap:true,physics:const NeverScrollableScrollPhysics(),itemCount:games.length,gridDelegate:SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:box.maxWidth>=650?4:2,mainAxisExtent:142,mainAxisSpacing:9,crossAxisSpacing:9),itemBuilder:(context,i)=>ChallengeCard(challenge:games[i],selected:challenge==games[i],onTap:()=>setState((){challenge=games[i];if(challenge.arcadeStage&&competitive)rule=challenge==Challenge.numberBomb?BattleRule.hearts:BattleRule.race10;})))),
     ],
     if(step==1)...[
     if(challenge.usesDigits)...[
@@ -248,6 +248,6 @@ class _SettingsState extends State<Settings>{
   ListTile(leading:const Icon(Icons.restart_alt),title:const Text('Lernfortschritt zurücksetzen'),onTap:()async{final yes=await showDialog<bool>(context:context,builder:(c)=>AlertDialog(title:const Text('Fortschritt zurücksetzen?'),actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Abbrechen')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('Zurücksetzen'))]));if(yes==true){p.profiles[p.active]=p.fresh();await p.save();if(mounted)setState((){});}}),
   ListTile(leading:const Icon(Icons.storage),title:const Text('Lokale Datenspeicherung'),subtitle:Text(p.storageName)),
   ListTile(leading:const Icon(Icons.privacy_tip_outlined),title:const Text('Datenschutz'),onTap:()=>showDialog<void>(context:context,builder:(c)=>AlertDialog(title:const Text('Deine Daten'),content:const Text('Profile und Lernfortschritt werden auf diesem Gerät gespeichert. Kein Konto, keine Werbung, kein Tracking. Lösche Profile in der Profilverwaltung oder alle Daten in den Android-App-Einstellungen.'),actions:[TextButton(onPressed:()=>Navigator.pop(c),child:const Text('OK'))]))),
-  AboutListTile(applicationName:'Brain Clash',applicationVersion:'0.9.5 – Release Candidate',applicationLegalese:'Play. Think. Win.'),
+  AboutListTile(applicationName:'Brain Clash',applicationVersion:'0.9.6 – Release Candidate',applicationLegalese:'Play. Think. Win.'),
  ]));
 }
