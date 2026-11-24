@@ -3,6 +3,7 @@ import '../game_engine/battle.dart';
 import '../learning/progress.dart';
 import '../question_generators/questions.dart';
 import 'play.dart';
+import '../widgets/character.dart';
 
 const avatars=['🤖','👨‍🚀','🥷','🦊','🐉','👽'];
 const names=['Roboter','Astronaut','Ninja','Fuchs','Drache','Alien'];
@@ -27,7 +28,7 @@ class _HomeState extends State<Home>{
   final icons=[Icons.bolt,Icons.sports_esports,Icons.psychology,Icons.groups];
   return Scaffold(body:SafeArea(child:LayoutBuilder(builder:(context,box){
     return Center(child:ConstrainedBox(constraints:const BoxConstraints(maxWidth:760),child:Padding(padding:const EdgeInsets.all(18),child:Column(children:[
-      Row(children:[const Icon(Icons.bolt_rounded,color:Color(0xff4d9cff),size:35),const Spacer(),ActionChip(avatar:Text(avatars[p.current['avatar'] as int]),label:Text(p.active),onPressed:()=>open(Profiles(progress:p))) ]),
+      Row(children:[const Icon(Icons.bolt_rounded,color:Color(0xff4d9cff),size:35),const Spacer(),ActionChip(avatar:AvatarArt(index:p.current['avatar'] as int,size:24),label:Text(p.active),onPressed:()=>open(Profiles(progress:p))) ]),
       const SizedBox(height:10),
       Text('BRAIN CLASH',style:Theme.of(context).textTheme.headlineLarge?.copyWith(fontWeight:FontWeight.w900,letterSpacing:1.5)),
       const Text('PLAY. THINK. WIN.',style:TextStyle(letterSpacing:3,fontWeight:FontWeight.w600)),
@@ -81,6 +82,8 @@ class Stats extends StatelessWidget{
     ListTile(title:const Text('Runden'),trailing:Text('${p['rounds']}')),
     ListTile(title:const Text('Siege'),trailing:Text('${p['wins']}')),
     ListTile(title:const Text('Richtige Antworten'),trailing:Text('$right')),
+    ListTile(title:const Text('Rundenrekord'),trailing:Text('${p['best']??0}')),
+    ListTile(title:const Text('Fällige Wiederholungen'),trailing:Text('${progress.dueQuestions(World.mixed).length}')),
     ListTile(title:const Text('Trefferquote'),trailing:Text(right+wrong==0?'–':'${(100*right/(right+wrong)).round()} %')),
     for(final w in World.values.where((w)=>w!=World.mixed))category(w,p),
    ]
@@ -94,7 +97,7 @@ class CollectionPage extends StatefulWidget{
  @override State<CollectionPage> createState()=>_CollectionPageState();
 }
 class _CollectionPageState extends State<CollectionPage>{
- @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Meine Spielfiguren')),body:GridView.builder(padding:const EdgeInsets.all(16),gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:2,childAspectRatio:1.15,crossAxisSpacing:8,mainAxisSpacing:8),itemCount:6,itemBuilder:(c,i){final p=widget.progress.current;final unlocked=(p['xp'] as int)>=thresholds[i];return Card(child:InkWell(onTap:unlocked?()async{setState(()=>p['avatar']=i);await widget.progress.save();}:null,child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[Text(avatars[i],style:const TextStyle(fontSize:42)),Text(names[i]),Text(unlocked?(p['avatar']==i?'Ausgewählt':'Auswählen'):'🔒 ${thresholds[i]} XP')])));}));
+ @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Meine Spielfiguren')),body:GridView.builder(padding:const EdgeInsets.all(16),gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:2,childAspectRatio:1.15,crossAxisSpacing:8,mainAxisSpacing:8),itemCount:6,itemBuilder:(c,i){final p=widget.progress.current;final unlocked=(p['xp'] as int)>=thresholds[i];return Card(child:InkWell(onTap:unlocked?()async{setState(()=>p['avatar']=i);await widget.progress.save();}:null,child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[AvatarArt(index:i,size:66),Text(names[i]),Text(unlocked?(p['avatar']==i?'Ausgewählt':'Auswählen'):'🔒 ${thresholds[i]} XP')])));}));
 }
 class Profiles extends StatefulWidget{
  final Progress progress;

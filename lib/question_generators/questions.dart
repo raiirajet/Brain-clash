@@ -9,6 +9,9 @@ class Question {
   final String prompt, answer, explanation, preview;
   final List<String> options;
   const Question(this.world,this.prompt,this.answer,this.options,this.explanation,{this.preview=''});
+  String get key=>'${world.name}|$prompt|$answer|$preview';
+  Map<String,dynamic> toJson()=>{'world':world.name,'prompt':prompt,'answer':answer,'options':options,'explanation':explanation,'preview':preview};
+  factory Question.fromJson(Map data)=>Question(World.values.byName(data['world'] as String),data['prompt'] as String,data['answer'] as String,List<String>.from(data['options'] as List),data['explanation'] as String,preview:data['preview'] as String);
 }
 class Questions {
   final Random random;
@@ -20,7 +23,7 @@ class Questions {
       case World.math:
         final a=1+random.nextInt([10,30,70,120][level]);
         final b=1+random.nextInt([10,12,20,30][level]);
-        final op=random.nextInt(level<2?6:9);
+        final op=random.nextInt(level<2?7:10);
         switch(op) {
           case 0:return number(world,'$a + $b = ?',a+b);
           case 1:return number(world,'${a+b} − $b = ?',a);
@@ -28,17 +31,21 @@ class Questions {
           case 3:return number(world,'${a*b} ÷ $b = ?',a);
           case 4:return number(world,'? + $b = ${a+b}',a);
           case 5:return pick(world,'Welche Zahl ist grösser?',max(a,a+b).toString(),[a.toString(),(a-1).toString(),(a-2).toString()]);
-          case 6:return number(world,'25 % von ${a*4}',a);
-          case 7:return number(world,'½ von ${a*2}',a);
+          case 6:return number(world,'$a · ${a+b} · ${a+2*b} · ?',a+3*b);
+          case 7:return number(world,'25 % von ${a*4}',a);
+          case 8:return number(world,'½ von ${a*2}',a);
           default:return number(world,'$a + $b × 2',a+b*2);
         }
       case World.logic:
         final a=1+random.nextInt(9), b=2+random.nextInt(4);
-        switch(random.nextInt(4)) {
+        switch(random.nextInt(7)) {
           case 0:return number(world,'$a · ${a+b} · ${a+2*b} · ?',a+3*b);
           case 1:return number(world,'$a · ${a*2} · ${a*4} · ?',a*8);
           case 2:return pick(world,'● ▲ ■ ● ▲ ?', '■',['●','▲','◆']);
-          default:return pick(world,'Welches passt nicht?','🐟',['🐱','🐶','🐭']);
+          case 3:return pick(world,'Welches passt nicht?','🐟',['🐱','🐶','🐭']);
+          case 4:return pick(world,'Drehe ↑ um 90° im Uhrzeigersinn','→',['↑','↓','←']);
+          case 5:return pick(world,'Schlüssel gehört zu …','Schloss',['Schuh','Glas','Stift']);
+          default:return pick(world,'★ ◆ ◆ ★ ◆ ◆ ?', '★',['◆','■','▲']);
         }
       case World.memory:
         final length=3+level;
@@ -86,5 +93,14 @@ class Questions {
   Question pick(World w,String p,String a,List<String> wrong,{String preview=''}) {
     final choices=[a,...wrong.where((v)=>v!=a).toSet()]..shuffle(random);
     return Question(w,p,a,choices,'Richtig ist: $a',preview:preview);
+  }
+}
+
+class ReviewQuestions extends Questions {
+  final List<Question> due;
+  ReviewQuestions(Iterable<Question> due):due=List.of(due);
+  @override Question make(World world,int level){
+    final i=due.indexWhere((q)=>world==World.mixed||q.world==world);
+    return i<0?super.make(world,level):due.removeAt(i);
   }
 }

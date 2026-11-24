@@ -18,10 +18,10 @@ class _PlayState extends State<Play> with WidgetsBindingObserver{
  @override void initState(){super.initState();WidgetsBinding.instance.addObserver(this);reset();watch.start();timer=Timer.periodic(const Duration(milliseconds:32),(_){
   if(!mounted)return;final now=watch.elapsedMilliseconds;final delta=now-last;last=now;
   if(b.phase==Phase.paused||b.phase==Phase.ended)return;
-  setState((){b.tick(delta);arena.energy=b.energy/100;});
+  setState((){b.tick(delta);arena.energy=b.energy/100;arena.score=b.points[0]+b.points[1];});
   if(b.phase==Phase.ended)persist();
  });}
- void reset(){b=Battle(mode:widget.mode,world:widget.world,duration:widget.duration,level:widget.level,opponentLevel:widget.opponent);arena.energy=.5;arena.reduced=widget.progress.prefs.getBool('reduced')??false;saved=false;feedback[0]='';feedback[1]='';}
+ void reset(){b=Battle(mode:widget.mode,world:widget.world,duration:widget.duration,level:widget.level,opponentLevel:widget.opponent,questions:widget.mode==Mode.training?ReviewQuestions(widget.progress.dueQuestions(widget.world)):null);arena.energy=.5;arena.leftAvatar=widget.progress.current['avatar'] as int;arena.rightAvatar=widget.mode==Mode.team?4:5;arena.reduced=widget.progress.prefs.getBool('reduced')??false;saved=false;feedback[0]='';feedback[1]='';}
  void persist(){if(saved)return;saved=true;widget.progress.record(b);unawaited(widget.progress.save());}
  @override void didChangeAppLifecycleState(AppLifecycleState state){if(state!=AppLifecycleState.resumed&&mounted){setState(()=>b.pause());}}
  @override void dispose(){timer.cancel();watch.stop();WidgetsBinding.instance.removeObserver(this);super.dispose();}
@@ -44,11 +44,11 @@ class _PlayState extends State<Play> with WidgetsBindingObserver{
   final yes=await showDialog<bool>(context:context,builder:(c)=>AlertDialog(title:const Text('Runde verlassen?'),content:const Text('Diese Runde wird nicht gespeichert.'),actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Weiterspielen')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('Verlassen'))]));
   dialogOpen=false;
   if(!mounted)return;
-  if(yes==true){setState(()=>leaving=true);WidgetsBinding.instance.addPostFrameCallback((_){if(mounted)Navigator.pop(context);});}else if(!wasPaused){setState(()=>b.resume());}
+  if(yes==true){setState(()=>leaving=true);WidgetsBinding.instance.addPostFrameCallback((_){if(mounted)Navigator.pop(context);});}else if(!wasPaused){setState((){last=watch.elapsedMilliseconds;b.resume();});}
  }
  bool get two=>widget.mode==Mode.duel||widget.mode==Mode.team;
  @override Widget build(BuildContext context)=>PopScope(canPop:leaving||b.phase==Phase.ended,onPopInvokedWithResult:(didPop,result){if(!didPop&&!leaving)unawaited(leave());},child:Scaffold(
-  appBar:AppBar(title:Text(widget.world.label),leading:IconButton(icon:const Icon(Icons.arrow_back),onPressed:leave),actions:[if(b.phase!=Phase.ended)IconButton(icon:Icon(b.phase==Phase.paused?Icons.play_arrow:Icons.pause),onPressed:()=>setState((){if(b.phase==Phase.paused){b.resume();}else{b.pause();}}))]),
+  appBar:AppBar(title:Text(widget.world.label),leading:IconButton(icon:const Icon(Icons.arrow_back),onPressed:leave),actions:[if(b.phase!=Phase.ended)IconButton(icon:Icon(b.phase==Phase.paused?Icons.play_arrow:Icons.pause),onPressed:()=>setState((){if(b.phase==Phase.paused){last=watch.elapsedMilliseconds;b.resume();}else{b.pause();}}))]),
   body:SafeArea(child:b.phase==Phase.ended?result():Column(children:[
    if(two)Expanded(child:RotatedBox(quarterTurns:2,child:panel(1))),
    if(!two)const SizedBox(height:8),
