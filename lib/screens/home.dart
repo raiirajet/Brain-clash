@@ -47,9 +47,9 @@ class _HomeState extends State<Home>{
        ActionChip(avatar:AvatarArt(index:p.current['avatar'] as int,size:24),label:Text(p.active),onPressed:()=>open(Profiles(progress:p))),
       ]),
       const SizedBox(height:10),
-      if(!compact)Container(height:92,padding:const EdgeInsets.all(12),decoration:BoxDecoration(borderRadius:BorderRadius.circular(20),gradient:const LinearGradient(colors:[Color(0xff193e7f),Color(0xff161a33),Color(0xff63351f)]),border:Border.all(color:arcadeBlue.withAlpha(85))),child:Row(children:[
+      if(!compact)Container(padding:const EdgeInsets.all(12),decoration:BoxDecoration(borderRadius:BorderRadius.circular(20),gradient:const LinearGradient(colors:[Color(0xff193e7f),Color(0xff161a33),Color(0xff63351f)]),border:Border.all(color:arcadeBlue.withAlpha(85))),child:Row(children:[
        AvatarArt(index:p.current['avatar'] as int,size:76),
-       Expanded(child:Column(mainAxisAlignment:MainAxisAlignment.center,crossAxisAlignment:CrossAxisAlignment.start,children:[
+       Expanded(child:Column(mainAxisSize:MainAxisSize.min,mainAxisAlignment:MainAxisAlignment.center,crossAxisAlignment:CrossAxisAlignment.start,children:[
         Text('${p.current['xp']} XP',style:const TextStyle(fontSize:27,color:Colors.white,fontWeight:FontWeight.w900)),
         const SizedBox(height:6),
         LinearProgressIndicator(value:((p.current['xp'] as int)%100)/100,backgroundColor:Colors.white24,color:arcadeGreen,borderRadius:BorderRadius.circular(8)),
