@@ -33,7 +33,7 @@ class Progress {
         if(!progress.profiles.containsKey(progress.active))progress.active='Gast';
       }
       progress._store=store;
-      await progress.save();
+      if(stored==null||stored.revision<progress._revision)await progress.save();
     }catch(_){progress.storageFallback=true;}
     return progress;
   }
