@@ -90,10 +90,10 @@ class Questions {
           ['Englisch: Sonne','sun','sea','son','snow'],
           ['Englisch: Baum','tree','train','three','truck'],
           ['Gegenteil von laut','leise','gross','sauer','hell'],
-          ['Ergänze: Schu_e','h','l','m','k'],
+          ['Ergänze: Schu_e (Fussbekleidung)','h','l','m','k'],
           ['Welches Wort passt zu 🐘?','Elefant','Tiger','Giraffe','Zebra'],
         ];
-        final row=bank[random.nextInt(level<2?8:bank.length)];
+        final row=bank[random.nextInt(level==0?8:bank.length)];
         return pick(world,row[0],row[1],row.sublist(2));
       case World.mixed:throw StateError('Mixed must resolve');
     }

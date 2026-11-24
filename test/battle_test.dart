@@ -19,5 +19,15 @@ void main(){
   for(var i=0;i<10;i++){b.answer(0,b.tasks[0].answer);b.tick(101);}
   expect(b.energy,100);expect(b.phase,Phase.ended);expect(b.winner,0);
  });
+ test('numeric training accepts an unlisted incorrect number without scoring',(){
+  final b=Battle(mode:Mode.training,world:World.math,duration:0,level:0,opponentLevel:0);
+  b.tick(3000);
+  expect(b.answer(0,'99999'),isFalse);
+  expect(b.misses[0],1);
+  expect(b.points[0],0);
+  b.tick(900);
+  expect(b.answer(0,b.tasks[0].answer),isTrue);
+  expect(b.points[0],1);
+ });
  test('adapt only after sufficient sample',(){expect(Progress.adapt(1,19,19),1);expect(Progress.adapt(1,18,20),2);expect(Progress.adapt(1,12,20),0);});
 }

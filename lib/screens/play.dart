@@ -83,10 +83,10 @@ class _PlayState extends State<Play> with WidgetsBindingObserver{
   final enabled=b.canAnswer(0);
   return SizedBox(height:((available-60)*.68).clamp(115.0,285.0).toDouble(),child:Column(children:[
     Text(typed.isEmpty?'?':typed,style:const TextStyle(fontSize:24,fontWeight:FontWeight.w800)),
-    Expanded(child:GridView.count(physics:const NeverScrollableScrollPhysics(),crossAxisCount:3,childAspectRatio:2.1,mainAxisSpacing:3,crossAxisSpacing:4,children:['1','2','3','4','5','6','7','8','9','⌫','0','OK'].map((key)=>FilledButton(style:FilledButton.styleFrom(backgroundColor:color,padding:EdgeInsets.zero),onPressed:!enabled?null:(){
+    Expanded(child:LayoutBuilder(builder:(context,space)=>GridView.count(physics:const NeverScrollableScrollPhysics(),crossAxisCount:3,mainAxisExtent:((space.maxHeight-9)/4).clamp(15.0,100.0).toDouble(),mainAxisSpacing:3,crossAxisSpacing:4,children:['1','2','3','4','5','6','7','8','9','⌫','0','OK'].map((key)=>FilledButton(style:FilledButton.styleFrom(backgroundColor:color,padding:EdgeInsets.zero),onPressed:!enabled?null:(){
       if(key=='OK'){if(typed.isNotEmpty)answer(0,typed,q);return;}
       setState((){if(key=='⌫'){if(typed.isNotEmpty)typed=typed.substring(0,typed.length-1);}else if(typed.length<7){typed+=key;}});
-    },child:Text(key))).toList())),
+    },child:Text(key))).toList()))),
   ]));
  }
  Widget result(){
