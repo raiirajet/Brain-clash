@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import '../widgets/character.dart';
+import '../widgets/battle_effects.dart';
 
 class Arena extends FlameGame {
  double energy=.5,display=.5,clock=0;
@@ -28,9 +29,10 @@ class Arena extends FlameGame {
   final rect=Rect.fromLTWH(0,0,w,h);
   final blue=tints[tint.clamp(0,2).toInt()],orange=const Color(0xffffa04d);
   canvas.drawRect(rect,Paint()..shader=LinearGradient(colors:skins[skin.clamp(0,2).toInt()]).createShader(rect));
+  drawStage(canvas,Size(w,h),skin,clock,reduced);
   final y=h*.55,x=w*display;
   if(training||team){renderCooperative(canvas,w,h,blue,orange);return;}
-  final radius=min(h*.32,w*.13);
+  final radius=min(h*.39,w*.15);
   // Distinct coloured territories, a luminous front line and a perspective floor.
   canvas.drawRect(Rect.fromLTWH(0,0,x,h),Paint()..color=blue.withAlpha(26));
   canvas.drawRect(Rect.fromLTWH(x,0,w-x,h),Paint()..color=orange.withAlpha(24));
@@ -55,18 +57,10 @@ class Arena extends FlameGame {
    final offset=Offset(p==0?w*.18+pulse:w*.82-pulse,y+bob+(failed==p&&!reduced?sin(clock*60)*3:0));
    canvas.drawOval(Rect.fromCenter(center:Offset(offset.dx,y+radius*.82),width:radius*2.7,height:radius*.58),Paint()..color=base.withAlpha(75));
    canvas.drawCircle(offset,radius*1.16,Paint()..color=base.withAlpha(30));
-   drawAvatar(canvas,offset,radius*(pulses[p]>0&&!reduced?1.08:1),avatar);
+   drawAvatar(canvas,offset,radius*(pulses[p]>0&&!reduced?1.08:1),avatar,action:reduced?0:sin(progress*pi),hurt:failed==p);
    if(pulses[p]>0&&!reduced){
     final c=effect==0?palette[avatar.clamp(0,5).toInt()]:effect==1?Colors.amber:Colors.cyanAccent;
-    final target=Offset(offset.dx+(x-offset.dx)*progress,y);
-    canvas.drawLine(offset,target,Paint()..color=c.withAlpha(90)..strokeWidth=9..strokeCap=StrokeCap.round);
-    canvas.drawLine(offset,target,Paint()..color=Colors.white..strokeWidth=2..strokeCap=StrokeCap.round);
-    canvas.drawCircle(target,5+sin(progress*pi)*6,Paint()..color=c);
-    for(var i=0;i<10;i++){
-     final a=i*pi/5;final distance=progress*min(45.0,h*.36);
-     canvas.drawCircle(target+Offset(cos(a)*distance,sin(a)*distance),2.8*(1-progress)+.5,Paint()..color=c.withAlpha(((1-progress)*255).round()));
-    }
-    canvas.drawCircle(Offset(x,y),6+progress*min(30.0,h*.28),Paint()..color=c.withAlpha(((1-progress)*220).round())..style=PaintingStyle.stroke..strokeWidth=2);
+    drawAttack(canvas,offset,Offset(x,y),progress,c,avatar,radius);
    }
   }
   void label(String value,Offset center,Color color){
@@ -78,7 +72,7 @@ class Arena extends FlameGame {
  }
  void renderCooperative(Canvas canvas,double w,double h,Color blue,Color orange){
   final y=h*.49;
-  final radius=min(h*.29,w*.105);
+  final radius=min(h*.36,w*.12);
   final anchor=Offset(team?w*.78:w*.64,y);
   // A clear target for practice; a distinct monster for cooperative play.
   for(var i=0;i<7;i++){
@@ -99,13 +93,10 @@ class Arena extends FlameGame {
    final jump=reduced?0.0:sin(t*pi)*8;
    final center=Offset(w*(team?(p==0 ? .14 : .37):.28)+jump,y+(reduced?0.0:sin(clock*3+p)*2));
    canvas.drawOval(Rect.fromCenter(center:Offset(center.dx,y+radius*.75),width:radius*2.4,height:radius*.52),Paint()..color=base.withAlpha(80));
-   drawAvatar(canvas,center,radius*(pulses[p]>0&&!reduced?1.08:1),avatar);
+   drawAvatar(canvas,center,radius*(pulses[p]>0&&!reduced?1.08:1),avatar,action:reduced?0:sin(t*pi),hurt:failed==p);
    if(pulses[p]>0&&!reduced){
     final c=effect==0?palette[avatar.clamp(0,5).toInt()]:effect==1?Colors.amber:Colors.cyanAccent;
-    final point=Offset.lerp(center,anchor,t)!;
-    canvas.drawLine(center,point,Paint()..color=c.withAlpha(95)..strokeWidth=8..strokeCap=StrokeCap.round);
-    canvas.drawCircle(point,6,Paint()..color=Colors.white);
-    for(var k=0;k<8;k++){final angle=k*pi/4;canvas.drawCircle(point+Offset(cos(angle),sin(angle))*t*radius,2.3,Paint()..color=c.withAlpha(((1-t)*220).round()));}
+    drawAttack(canvas,center,anchor,t,c,avatar,radius);
    }
   }
   final bar=RRect.fromRectAndRadius(Rect.fromLTWH(15,h*.82,w-30,7),const Radius.circular(5));

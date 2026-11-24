@@ -9,6 +9,7 @@ import 'play.dart';
 import '../widgets/character.dart';
 import 'cosmetics.dart';
 import '../widgets/arcade.dart';
+import '../widgets/mode_art.dart';
 
 const avatars=['🤖','👨‍🚀','🥷','🦊','🐉','👽'];
 const names=['Roboter','Astronaut','Ninja','Fuchs','Drache','Alien'];
@@ -56,7 +57,7 @@ class _HomeState extends State<Home>{
         final wide=grid.maxWidth>=640&&compact;
         final cols=wide?4:2;
         final rows=(4/cols).ceil();
-        return GridView.builder(padding:EdgeInsets.zero,itemCount:4,gridDelegate:SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:cols,mainAxisSpacing:10,crossAxisSpacing:10,mainAxisExtent:((grid.maxHeight-(rows-1)*10)/rows).clamp(76.0,230.0).toDouble()),itemBuilder:(c,i)=>ArcadeTile(label:modeNames[i],icon:icons[i],color:colors[i],onTap:()=>open(Setup(progress:p,mode:Mode.values[i]))));
+        return GridView.builder(padding:EdgeInsets.zero,itemCount:4,gridDelegate:SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:cols,mainAxisSpacing:10,crossAxisSpacing:10,mainAxisExtent:((grid.maxHeight-(rows-1)*10)/rows).clamp(76.0,230.0).toDouble()),itemBuilder:(c,i)=>ArcadeTile(label:modeNames[i],icon:icons[i],color:colors[i],art:FittedBox(fit:BoxFit.contain,child:ModeArt(mode:i,avatar:p.current['avatar'] as int)),onTap:()=>open(Setup(progress:p,mode:Mode.values[i]))));
       })),
       const SizedBox(height:7),
       Container(decoration:BoxDecoration(color:Theme.of(context).colorScheme.surface.withAlpha(215),borderRadius:BorderRadius.circular(18),border:Border.all(color:Theme.of(context).colorScheme.outlineVariant.withAlpha(100))),child:Row(children:[
@@ -166,6 +167,6 @@ class _SettingsState extends State<Settings>{
   ListTile(leading:const Icon(Icons.help_outline),title:const Text('Einführung erneut anzeigen'),onTap:widget.intro),
   ListTile(leading:const Icon(Icons.restart_alt),title:const Text('Lernfortschritt zurücksetzen'),onTap:()async{final yes=await showDialog<bool>(context:context,builder:(c)=>AlertDialog(title:const Text('Fortschritt zurücksetzen?'),actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Abbrechen')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('Zurücksetzen'))]));if(yes==true){p.profiles[p.active]=p.fresh();await p.save();if(mounted)setState((){});}}),
   ListTile(leading:const Icon(Icons.privacy_tip_outlined),title:const Text('Datenschutz'),onTap:()=>showDialog<void>(context:context,builder:(c)=>AlertDialog(title:const Text('Deine Daten'),content:const Text('Profile und Lernfortschritt werden auf diesem Gerät gespeichert. Kein Konto, keine Werbung, kein Tracking. Lösche Profile in der Profilverwaltung oder alle Daten in den Android-App-Einstellungen.'),actions:[TextButton(onPressed:()=>Navigator.pop(c),child:const Text('OK'))]))),
-  AboutListTile(applicationName:'Brain Clash',applicationVersion:'0.3.0 – Testversion',applicationLegalese:'Play. Think. Win.'),
+  AboutListTile(applicationName:'Brain Clash',applicationVersion:'0.3.1 – Testversion',applicationLegalese:'Play. Think. Win.'),
  ]));
 }

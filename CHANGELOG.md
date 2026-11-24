@@ -19,3 +19,6 @@
 - Shared arcade theme, gradient mode/world tiles, XP progress, improved navigation surfaces, score HUD, answer feedback and combo display, coloured energy territories, directional attack particles, memory tile styling, and animated accuracy results. Existing game logic and storage retained.
 
 - Separate visual arenas for practice and cooperative modes, settings icons, and independent player pulse test.
+
+## 0.3.1 — Detailed arcade artwork
+- Full-body original vector characters with individual costumes, silhouettes and equipment; illustrated mode tiles; character-specific lightning, comet, shuriken, flame, orb and plasma animations; themed stage scenery; solved answer/equation feedback; profile names in game panels.
