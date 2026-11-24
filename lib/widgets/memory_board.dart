@@ -22,10 +22,11 @@ class MemoryBoard extends StatelessWidget {
       gridDelegate:SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:cols,mainAxisSpacing:4,crossAxisSpacing:4,mainAxisExtent:cell),
       itemBuilder:(context,i){
         final paired=battle.matched[player].contains(i),chosen=battle.selected[player]==i;
+        final mismatch=battle.elapsed<battle.locks[player]&&battle.mismatched[player].contains(i);
         final lit=highlight==i||paired||chosen;
-        final revealed=!sequence&&(preview||paired||chosen);
+        final revealed=!sequence&&(preview||paired||chosen||mismatch);
         return Semantics(label:L.text(sequence?'Feld ${i+1}':revealed?question.board[i]:'Verdeckte Karte ${i+1}'),button:true,
-          child:FilledButton(style:FilledButton.styleFrom(backgroundColor:lit?const Color(0xff139b8d):const Color(0xff304d90),disabledBackgroundColor:lit?const Color(0xff139b8d):const Color(0xff304d90),disabledForegroundColor:Colors.white,padding:EdgeInsets.zero),
+          child:FilledButton(style:FilledButton.styleFrom(backgroundColor:mismatch?const Color(0xffab3548):lit?const Color(0xff139b8d):const Color(0xff304d90),disabledBackgroundColor:mismatch?const Color(0xffab3548):lit?const Color(0xff139b8d):const Color(0xff304d90),disabledForegroundColor:Colors.white,padding:EdgeInsets.zero),
           onPressed:!preview&&battle.canAnswer(player)&&!paired?()=>onTap(i):null,
           child:Text(sequence?(lit?'●':'${i+1}'):revealed?question.board[i]:'?',style:TextStyle(fontSize:cell*.48,color:Colors.white))));
       });

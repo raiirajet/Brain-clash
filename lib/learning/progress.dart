@@ -34,10 +34,10 @@ class Progress {
     }
     return result;
   }
-  void updateReviews(Battle b,{DateTime? at}){
+  void updateReviews(Battle b,{DateTime? at,int player=0}){
     final now=at??DateTime.now();
     final grouped=<String,List<Attempt>>{};
-    for(final a in b.attempts.where((a)=>a.player==0)){
+    for(final a in b.attempts.where((a)=>a.player==player)){
       grouped.putIfAbsent(a.question.key,()=>[]).add(a);
     }
     for(final entry in grouped.entries){
@@ -54,16 +54,18 @@ class Progress {
       }
     }
   }
-  void record(Battle b){
+  void record(Battle b,{int player=0,String? profile}){
+    final previous=active;
+    if(profile!=null&&profiles.containsKey(profile))active=profile;
     final p=current;
-    updateReviews(b);
-    if(b.points[0]>(p['best'] as int? ??0))p['best']=b.points[0];
+    updateReviews(b,player:player);
+    if(b.points[player]>(p['best'] as int? ??0))p['best']=b.points[player];
     p['rounds']=(p['rounds'] as int)+1;
-    if(b.winner==0)p['wins']=(p['wins'] as int)+1;
-    for(final a in b.attempts.where((a)=>a.player==0)){
+    if(b.winner==player||(b.mode==Mode.team&&b.winner==0))p['wins']=(p['wins'] as int)+1;
+    for(final a in b.attempts.where((a)=>a.player==player)){
       final key=a.correct?'right':'wrong';p[key]=(p[key] as int)+1;
       final cats=p['categories'] as Map;
-      final c=cats.putIfAbsent(a.question.world.name,()=>{'right':0,'wrong':0,'ms':0,'level':b.level,'windowRight':0,'windowTotal':0}) as Map;
+      final c=cats.putIfAbsent(a.question.world.name,()=>{'right':0,'wrong':0,'ms':0,'level':player==0?b.level:b.opponentLevel,'windowRight':0,'windowTotal':0}) as Map;
       c[key]=(c[key] as int)+1;c['ms']=(c['ms'] as int)+a.ms;c['last']=a.question.prompt;if(a.correct&&(c['bestMs']==null||a.ms<(c['bestMs'] as int)))c['bestMs']=a.ms;
       c['windowTotal']=(c['windowTotal'] as int)+1;
       if(a.correct)c['windowRight']=(c['windowRight'] as int)+1;
@@ -71,6 +73,7 @@ class Progress {
     for(final c in (p['categories'] as Map).values.cast<Map>()){
       if((c['windowTotal'] as int)>=20){c['level']=adapt(c['level'] as int,c['windowRight'] as int,c['windowTotal'] as int);c['windowTotal']=0;c['windowRight']=0;}
     }
-    p['xp']=(p['xp'] as int)+b.points[0]*10;
+    p['xp']=(p['xp'] as int)+b.points[player]*10;
+    active=previous;
   }
 }

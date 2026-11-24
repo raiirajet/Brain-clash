@@ -11,7 +11,7 @@ class Question {
   final List<String> options;
   final Interaction interaction;
   final List<String> board;
-  int get previewMs=>interaction==Interaction.sequence?board.length*480+400:interaction==Interaction.pairs?2600:interaction==Interaction.signal?1800:preview.isEmpty?0:2200;
+  int get previewMs=>interaction==Interaction.sequence?board.length*480+400:interaction==Interaction.pairs?2600:interaction==Interaction.signal?(board.isEmpty?1800:int.parse(board.first)):preview.isEmpty?0:2200;
   const Question(this.world,this.prompt,this.answer,this.options,this.explanation,{this.preview='',this.interaction=Interaction.choices,this.board=const []});
   String get key=>'${world.name}|$prompt|$answer|$preview|${board.join(',')}';
   Map<String,dynamic> toJson()=>{'world':world.name,'prompt':prompt,'answer':answer,'options':options,'explanation':explanation,'preview':preview,'interaction':interaction.name,'board':board};
@@ -77,7 +77,7 @@ class Questions {
         return pick(world,'Welche Reihenfolge war sichtbar?',ans,wrong.toList(),preview:ans);
       case World.focus:
         final variant=random.nextInt(5);
-        if(variant==2){return const Question(World.focus,'JETZT! Tippe das Signal','●',['●','▲','■','◆'],'Reagiere erst auf das Signal.',preview:'Warte auf das Signal …',interaction:Interaction.signal);}
+        if(variant==2){final signals=['●','▲','■','◆']..shuffle(random);final target=signals[random.nextInt(4)];return Question(World.focus,'JETZT! Tippe $target',target,signals,'Reagiere erst auf das Signal.',preview:'Warte auf das Signal …',interaction:Interaction.signal,board:[(1100+random.nextInt(1400)).toString()]);}
         if(variant==3){return pick(world,'Welche Farbe hat der Kreis? 🔴 BLAU','Rot',['Blau','Grün','Gelb']);}
         if(variant==4){return pick(world,'Finde den blauen Kreis','🔵',['🔷','🔴','🟦']);}
         if(variant==0){

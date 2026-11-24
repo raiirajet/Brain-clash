@@ -5,8 +5,10 @@ class L {
  static String text(String value){
   if(language!='en')return value;
   final exact=english[value];if(exact!=null)return exact;
-  final patterns=<String,String>{'Start in ':'Starts in ','Monster-Energie: ':'Monster energy: ','Richtig: ':'Correct: ','Richtig ist: ':'Correct answer: ','Reihenfolge: ':'Sequence: ','Zähle ':'Count ','Welches Symbol ist anders?':'Which symbol is different?','Englisch: ':'English translation of: ','Verdeckte Karte ':'Hidden card ','Feld ':'Tile ','Spieler 2: ':'Player 2: '};
+  final patterns=<String,String>{'JETZT! Tippe ':'NOW! Tap ','Start in ':'Starts in ','Monster-Energie: ':'Monster energy: ','Richtig: ':'Correct: ','Richtig ist: ':'Correct answer: ','Reihenfolge: ':'Sequence: ','Zähle ':'Count ','Welches Symbol ist anders?':'Which symbol is different?','Englisch: ':'English translation of: ','Verdeckte Karte ':'Hidden card ','Feld ':'Tile ','Spieler 2: ':'Player 2: '};
   for(final entry in patterns.entries){if(value.startsWith(entry.key))return value.replaceFirst(entry.key,entry.value).replaceAll('Trefferquote:','Accuracy:').replaceAll(' Punkte',' points').replaceAll(' Fehler',' mistakes');}
+  if(value=='Profil für Spieler 2')return 'Player 2 profile';
+  if(value=='Ohne Profil')return 'No profile';
   if(value.endsWith(' löschen?'))return 'Delete ${value.substring(0,value.length-9)}?';
   return value;
  }

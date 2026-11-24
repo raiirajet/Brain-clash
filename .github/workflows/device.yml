@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'integration_test/**'
+      - 'lib/**'
+      - 'scripts/device_test.sh'
       - '.github/workflows/device.yml'
 permissions:
   contents: read

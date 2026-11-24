@@ -22,6 +22,7 @@ class Battle {
   final partial=[<String>[],<String>[]];
   final matched=[<int>{},<int>{}];
   final selected=[-1,-1];
+  final mismatched=[<int>{},<int>{}];
   late List<Question> tasks;
   int? pendingPlayer;
   int pendingAt=0, botAt=0;
@@ -36,7 +37,7 @@ class Battle {
   bool visible(int p)=>elapsed>=ready[p];
   bool canAnswer(int p)=>phase==Phase.playing&&visible(p)&&elapsed>=locks[p]&&!(shared&&pendingPlayer==p);
   void setTask(int p,Question q) {
-    tasks[p]=q;partial[p].clear();matched[p].clear();selected[p]=-1;shown[p]=elapsed;ready[p]=elapsed+q.previewMs;locks[p]=ready[p];
+    tasks[p]=q;partial[p].clear();matched[p].clear();mismatched[p].clear();selected[p]=-1;shown[p]=elapsed;ready[p]=elapsed+q.previewMs;locks[p]=ready[p];
   }
   void start() {
     phase=Phase.playing;
@@ -79,7 +80,8 @@ class Battle {
       if(cell<0||cell>=q.board.length||matched[p].contains(cell)||selected[p]==cell)return null;
       if(selected[p]<0){selected[p]=cell;return null;}
       final first=selected[p];selected[p]=-1;
-      if(q.board[first]!=q.board[cell])return answer(p,q.options.firstWhere((s)=>s!=q.answer));
+      if(q.board[first]!=q.board[cell]){mismatched[p].clear();mismatched[p].addAll([first,cell]);return answer(p,q.options.firstWhere((s)=>s!=q.answer));}
+      mismatched[p].clear();
       matched[p].addAll([first,cell]);
       if(matched[p].length==q.board.length)return answer(p,q.answer);
     }
