@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../question_generators/challenges.dart';
 import '../game_engine/arcade_rules.dart';
+import 'character.dart';
 
 class ArcadeStage extends StatelessWidget {
  final Challenge challenge;
@@ -9,13 +10,15 @@ class ArcadeStage extends StatelessWidget {
  final int remaining;
  final bool reduced;
  final ArcadeRules? rules;
- const ArcadeStage({super.key,required this.challenge,required this.points,required this.remaining,required this.reduced,this.rules});
- @override Widget build(BuildContext context)=>Semantics(label:'${challenge.label}: ${points[0]} zu ${points[1]}',child:CustomPaint(painter:_StagePainter(challenge,List<int>.of(points),remaining,rules),size:Size.infinite));
+ final List<int>? fuseRemaining,avatars;
+ const ArcadeStage({super.key,required this.challenge,required this.points,required this.remaining,required this.reduced,this.rules,this.fuseRemaining,this.avatars});
+ @override Widget build(BuildContext context)=>Semantics(label:'${challenge.label}: ${points[0]} zu ${points[1]}',child:CustomPaint(painter:_StagePainter(challenge,List<int>.of(points),remaining,rules,fuseRemaining,avatars),size:Size.infinite));
 }
 class _StagePainter extends CustomPainter{
  final Challenge challenge;final List<int> points;final int remaining;
  final ArcadeRules? rules;
- _StagePainter(this.challenge,this.points,this.remaining,this.rules);
+ final List<int>? fuseRemaining,avatars;
+ _StagePainter(this.challenge,this.points,this.remaining,this.rules,this.fuseRemaining,this.avatars);
  @override void paint(Canvas c,Size s){
   final w=s.width,h=s.height;
   if(w<=0||h<=0)return;
@@ -46,8 +49,7 @@ class _StagePainter extends CustomPainter{
       final ship=Path()..moveTo(x+r,y)..lineTo(x-r,y-r*.65)..lineTo(x-r,y+r*.65)..close();
       c.drawPath(ship,paint);c.drawCircle(Offset(x-r-3,y),3,Paint()..color=Colors.amber);
      }else{
-      c.drawRRect(RRect.fromRectAndRadius(Rect.fromCenter(center:Offset(x,y),width:r*2,height:r),const Radius.circular(4)),paint);
-      for(final dx in [-r*.6,r*.6])c.drawCircle(Offset(x+dx,y+r*.5),r*.25,Paint()..color=Colors.black);
+      drawAvatar(c,Offset(x,y),r*1.25,avatars?[p]??p);
      }
      break;
     case Challenge.treasureRush:
@@ -60,8 +62,9 @@ class _StagePainter extends CustomPainter{
      break;
     case Challenge.numberBomb:
      final center=Offset(x0+half*.5,h*.55),r=math.min(half*.21,h*.32);
+     final fuse=fuseRemaining?[p]??remaining;
      c.drawCircle(center,r,Paint()..color=color.withAlpha(80));
-     c.drawArc(Rect.fromCircle(center:center,radius:r),-math.pi/2,math.pi*2*(remaining/10000).clamp(0.0,1.0).toDouble(),false,Paint()..color=(remaining<3000?Colors.redAccent:color)..style=PaintingStyle.stroke..strokeWidth=4);
+     c.drawArc(Rect.fromCircle(center:center,radius:r),-math.pi/2,math.pi*2*(fuse/8000).clamp(0.0,1.0).toDouble(),false,Paint()..color=(fuse<3000?Colors.redAccent:color)..style=PaintingStyle.stroke..strokeWidth=4);
      c.drawCircle(center,math.min(n.toDouble()+2,r*.8),paint);
      break;
     case Challenge.mazeBattle:
@@ -88,5 +91,5 @@ class _StagePainter extends CustomPainter{
   }
   c.drawLine(Offset(w/2,0),Offset(w/2,h),Paint()..color=Colors.white24);
  }
- @override bool shouldRepaint(covariant _StagePainter old)=>rules!=null||old.challenge!=challenge||old.remaining!=remaining||old.points[0]!=points[0]||old.points[1]!=points[1];
+ @override bool shouldRepaint(covariant _StagePainter old)=>rules!=null||fuseRemaining!=null||old.challenge!=challenge||old.remaining!=remaining||old.points[0]!=points[0]||old.points[1]!=points[1];
 }

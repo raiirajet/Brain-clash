@@ -1,6 +1,6 @@
 import 'dart:math';
 
-enum Interaction { choices, sequence, pairs, signal, recall, stroop, target, tap, sort }
+enum Interaction { choices, sequence, pairs, signal, recall, stroop, target, tap, sort, word }
 enum World { math, logic, memory, focus, words, mixed }
 extension WorldLabel on World {
   String get label => const ['Mathematik','Logic Clash','Memory Arena','Focus Rush','Word Battle','Mixed Battle'][index];

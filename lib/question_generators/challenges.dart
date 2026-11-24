@@ -113,7 +113,7 @@ class ChallengeQuestions extends Questions{
     final word=bank[random.nextInt(bank.length)],letters=word.split('')..shuffle(random);
     if(letters.join()==word){final first=letters.removeAt(0);letters.add(first);}
     final wrong=<String>{};while(wrong.length<3){final copy=word.split('')..shuffle(random);if(copy.join()!=word)wrong.add(copy.join());}
-    return pick(World.words,'Ordne die Buchstaben: '+letters.join(' '),word,wrong.toList());
+    return Question(World.words,'Ordne die Buchstaben',word,[word,...wrong],'Richtig: '+word,interaction:Interaction.word,board:letters);
    case Challenge.logicEscape:return super.make(World.logic,level);
    case Challenge.bossBattle:return super.make(World.mixed,level);
    case Challenge.numberRecall:

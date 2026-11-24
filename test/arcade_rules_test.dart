@@ -25,6 +25,12 @@ void main(){
  test('boss retaliates unless team charges a shield',(){
   final r=ArcadeRules(ArcadeKind.boss,cooperative:true);r.correct(0);r.correct(1);r.tick(12000);expect(r.teamHp,5);r.tick(12000);expect(r.teamHp,4);while(!r.ended)r.correct(0);expect(r.bossHp,0);expect(r.winner,0);
  });
+ test('word sprint requires unused letter tiles in the correct order',(){
+  final b=Battle(mode:Mode.training,world:Challenge.wordSprint.world,duration:60,level:0,opponentLevel:0,questions:ChallengeQuestions(Challenge.wordSprint,1));
+  b.tick(3000);final q=b.tasks[0];final used=<int>{};
+  for(final letter in q.answer.split('')){final i=List.generate(q.board.length,(i)=>i).firstWhere((i)=>q.board[i]==letter&&!used.contains(i));used.add(i);b.tapCell(0,i);}
+  expect(b.points[0],1);
+ });
  test('battle waits for movement and respects pause',(){
   final b=Battle(mode:Mode.duel,world:Challenge.mazeBattle.world,duration:60,level:0,opponentLevel:0,skillName:'mazeBattle',questions:ChallengeQuestions(Challenge.mazeBattle,1));
   b.tick(3000);expect(b.answer(0,b.tasks[0].answer),true);expect(b.canAnswer(0),false);

@@ -76,6 +76,7 @@ class ArcadeRules {
   l.cell=n;l.keys=0;check();return true;
  }
  static const chestValues=[2,1,3,2,1,3];
+ static const treasureGoal=9;
  bool openChest(int p,int index){
   if(ended||kind!=ArcadeKind.treasure||index<0||index>=chestValues.length)return false;
   final l=lanes[p];if(l.keys==0||l.opened.contains(index))return false;
@@ -104,8 +105,8 @@ class ArcadeRules {
    }
   }
   if(boss&&elapsed>=nextStrike){
-   final charged=lanes.fold<int>(0,(sum,l)=>sum+l.charge);
-   if(charged<(cooperative?2:1))teamHp--;
+   final shield=cooperative?lanes.every((l)=>l.charge>0):lanes[0].charge>0;
+   if(!shield)teamHp--;
    for(final l in lanes){l.charge=0;}
    nextStrike=elapsed+(bossPhase==3?6500:12000);
    if(teamHp<=0){ended=true;winner=1;}
@@ -113,7 +114,7 @@ class ArcadeRules {
   check(players:players);
  }
  double progress(int p){
-  final l=lanes[p];return switch(kind){ArcadeKind.tower=>l.blocks/10,ArcadeKind.race||ArcadeKind.rocket=>l.position/100,ArcadeKind.treasure=>l.gems/12,ArcadeKind.maze=>1-maze.distance(l.cell)/math.max(1,maze.distance(0)),ArcadeKind.escape=>l.locks/6,ArcadeKind.boss=>1-bossHp/120};
+  final l=lanes[p];return switch(kind){ArcadeKind.tower=>l.blocks/10,ArcadeKind.race||ArcadeKind.rocket=>l.position/100,ArcadeKind.treasure=>l.gems/treasureGoal,ArcadeKind.maze=>1-maze.distance(l.cell)/math.max(1,maze.distance(0)),ArcadeKind.escape=>l.locks/6,ArcadeKind.boss=>1-bossHp/120};
  }
  void check({int players=2}){
   if(ended||boss)return;final a=progress(0)>=1,b=players>1&&progress(1)>=1;

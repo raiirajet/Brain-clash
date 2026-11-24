@@ -98,6 +98,12 @@ class Battle {
   bool? tapCell(int p,int cell){
     if(p<0||p>1||!canAnswer(p))return null;
     final q=tasks[p];
+    if(q.interaction==Interaction.word){
+      if(cell<0||cell>=q.board.length||matched[p].contains(cell))return null;
+      if(q.board[cell]!=q.answer[partial[p].length]){partial[p].clear();matched[p].clear();return answer(p,q.options.firstWhere((v)=>v!=q.answer));}
+      matched[p].add(cell);partial[p].add(q.board[cell]);
+      return partial[p].length==q.answer.length?answer(p,q.answer):null;
+    }
     if(q.interaction==Interaction.target){
       if(cell<0||cell>=q.board.length)return null;
       return answer(p,q.board[cell]==q.answer?q.answer:q.options.firstWhere((s)=>s!=q.answer));
