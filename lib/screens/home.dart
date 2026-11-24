@@ -13,6 +13,7 @@ import 'cosmetics.dart';
 import '../widgets/arcade.dart';
 import '../widgets/mode_art.dart';
 import '../learning/engagement.dart';
+import 'tournament.dart';
 
 const avatars=['🤖','👨‍🚀','🥷','🦊','🐉','👽'];
 const names=['Volt','Cosmo','Shadow','Blaze','Drako','Nova'];
@@ -36,7 +37,7 @@ class _HomeState extends State<Home>{
   final colors=[const Color(0xff2879e7),const Color(0xffbf4b12),const Color(0xff16856b),const Color(0xff7546bb)];
   final icons=[Icons.bolt_rounded,Icons.sports_esports_rounded,Icons.psychology_rounded,Icons.groups_rounded];
   return Scaffold(body:ArcadeBackdrop(child:SafeArea(child:LayoutBuilder(builder:(context,box){
-    final compact=box.maxHeight<510;
+    final compact=box.maxHeight<580;
     return Center(child:ConstrainedBox(constraints:const BoxConstraints(maxWidth:780),child:Padding(padding:const EdgeInsets.symmetric(horizontal:16,vertical:8),child:Column(children:[
       Row(children:[
        ClipRRect(borderRadius:BorderRadius.circular(13),child:Image.asset('assets/branding/brain_clash.webp',width:48,height:48)),
@@ -45,7 +46,7 @@ class _HomeState extends State<Home>{
        ActionChip(avatar:AvatarArt(index:p.current['avatar'] as int,size:24),label:Text(p.active),onPressed:()=>open(Profiles(progress:p))),
       ]),
       const SizedBox(height:10),
-      if(!compact)Container(height:105,padding:const EdgeInsets.all(12),decoration:BoxDecoration(borderRadius:BorderRadius.circular(20),gradient:const LinearGradient(colors:[Color(0xff193e7f),Color(0xff161a33),Color(0xff63351f)]),border:Border.all(color:arcadeBlue.withAlpha(85))),child:Row(children:[
+      if(!compact)Container(height:92,padding:const EdgeInsets.all(12),decoration:BoxDecoration(borderRadius:BorderRadius.circular(20),gradient:const LinearGradient(colors:[Color(0xff193e7f),Color(0xff161a33),Color(0xff63351f)]),border:Border.all(color:arcadeBlue.withAlpha(85))),child:Row(children:[
        AvatarArt(index:p.current['avatar'] as int,size:76),
        Expanded(child:Column(mainAxisAlignment:MainAxisAlignment.center,crossAxisAlignment:CrossAxisAlignment.start,children:[
         Text('${p.current['xp']} XP',style:const TextStyle(fontSize:27,color:Colors.white,fontWeight:FontWeight.w900)),
@@ -66,6 +67,7 @@ class _HomeState extends State<Home>{
       Row(children:[Expanded(child:OutlinedButton.icon(onPressed:()=>open(Setup(progress:p,mode:Mode.training,daily:true)),icon:const Icon(Icons.calendar_today,size:17),label:Text('${DailyProgress.count(p.current)}/10 · Tages-Challenge',maxLines:1,overflow:TextOverflow.ellipsis))),const SizedBox(width:6),IconButton(tooltip:'Schnellstart',onPressed:p.prefs.containsKey('lastGame')?()=>open(Setup(progress:p,mode:Mode.values[(p.prefs.getInt('lastMode')??1).clamp(0,3).toInt()],quick:true)):null,icon:const Icon(Icons.flash_on))]),
       Container(decoration:BoxDecoration(color:Theme.of(context).colorScheme.surface.withAlpha(215),borderRadius:BorderRadius.circular(18),border:Border.all(color:Theme.of(context).colorScheme.outlineVariant.withAlpha(100))),child:Row(children:[
        nav(Icons.insights,'Fortschritt',()=>open(Stats(progress:p))),
+       nav(Icons.account_tree,'Turnier',()=>open(TournamentPage(progress:p))),
        nav(Icons.face,'Sammlung',()=>open(CollectionPage(progress:p))),
        nav(Icons.emoji_events,'Erfolge',()=>open(Stats(progress:p,achievements:true))),
        nav(Icons.settings,'Einstellungen',()=>open(Settings(progress:p,themeChanged:widget.themeChanged,intro:intro))),
@@ -85,20 +87,20 @@ class _SetupState extends State<Setup>{
  Challenge challenge=Challenge.addition;
  BattleRule rule=BattleRule.tug;
  int level=1,opponent=1,duration=60,digits=1,otherDigits=1;
- bool automatic=false,numberEntry=false,customDigits=false,advanced=false;
+ bool automatic=false,numberEntry=false,customDigits=false;
  String age='Individuell',secondProfile='';
- int tab=0,step=0,range=0,table=0,factorDigits=0,choiceCount=4;
+ int tab=0,step=0,range=0,table=0,factorDigits=0,choiceCount=4,seriesLength=1;
  bool negative=false,noCarry=false;
  DivisionStyle division=DivisionStyle.exact;
  MathOptions get config=>MathOptions(range:range,table:table,factorDigits:factorDigits,choiceCount:choiceCount,negative:negative,noCarry:noCarry,division:division);
  bool get competitive=>widget.mode==Mode.duel||widget.mode==Mode.solo;
  static const mathGames=[Challenge.addition,Challenge.subtraction,Challenge.timesTable,Challenge.division,Challenge.multiplication,Challenge.arithmeticMix,Challenge.compare,Challenge.missing,Challenge.targetNumber,Challenge.mathClassic,Challenge.bigTable,Challenge.numberSeries,Challenge.fractions,Challenge.percent,Challenge.decimals,Challenge.precedence,Challenge.estimate];
- static const arcadeGames=[Challenge.reaction,Challenge.odd,Challenge.sequence,Challenge.pairs,Challenge.trueFalse,Challenge.logic,Challenge.memory,Challenge.focus,Challenge.words,Challenge.mixed,Challenge.mathTower,Challenge.mathRace,Challenge.rocketRace,Challenge.treasureRush,Challenge.numberBomb,Challenge.mazeBattle,Challenge.colorConfusion,Challenge.numberRecall,Challenge.shapeClash,Challenge.patternMaster,Challenge.spellingDuel];
- @override void initState(){super.initState();level=widget.progress.prefs.getInt('difficulty')??1;opponent=level;duration=widget.progress.prefs.getInt('duration')??60;if(widget.daily){challenge=Challenge.addition;duration=60;level=0;step=1;}if(widget.quick){final prefs=widget.progress.prefs;challenge=Challenge.values.byName(prefs.getString('lastGame')??'addition');digits=prefs.getInt('lastDigits')??1;duration=prefs.getInt('lastDuration')??60;rule=BattleRule.values.byName(prefs.getString('lastRule')??'tug');tab=mathGames.contains(challenge)?0:1;step=2;}}
+ static const arcadeGames=[Challenge.reaction,Challenge.odd,Challenge.sequence,Challenge.pairs,Challenge.trueFalse,Challenge.logic,Challenge.memory,Challenge.focus,Challenge.words,Challenge.mixed,Challenge.mathTower,Challenge.mathRace,Challenge.rocketRace,Challenge.treasureRush,Challenge.numberBomb,Challenge.mazeBattle,Challenge.colorConfusion,Challenge.numberRecall,Challenge.shapeClash,Challenge.patternMaster,Challenge.spellingDuel,Challenge.targetHunt,Challenge.tapBattle,Challenge.numberSort];
+ @override void initState(){super.initState();level=widget.progress.prefs.getInt('difficulty')??1;opponent=level;duration=widget.progress.prefs.getInt('duration')??60;if(widget.daily){challenge=Challenge.addition;duration=60;level=0;step=1;}if(widget.quick){final prefs=widget.progress.prefs;challenge=Challenge.values.byName(prefs.getString('lastGame')??'addition');digits=prefs.getInt('lastDigits')??1;duration=prefs.getInt('lastDuration')??60;rule=BattleRule.values.byName(prefs.getString('lastRule')??'tug');seriesLength=prefs.getInt('lastSeries')??1;otherDigits=prefs.getInt('lastOtherDigits')??digits;level=prefs.getInt('lastLevel')??1;opponent=prefs.getInt('lastOpponent')??level;range=prefs.getInt('lastRange')??0;table=prefs.getInt('lastTable')??0;factorDigits=prefs.getInt('lastFactorDigits')??0;choiceCount=prefs.getInt('lastChoices')??4;division=DivisionStyle.values[(prefs.getInt('lastDivision')??0).clamp(0,2).toInt()];negative=prefs.getBool('lastNegative')??false;noCarry=prefs.getBool('lastNoCarry')??false;numberEntry=prefs.getBool('lastNumberEntry')??false;customDigits=prefs.getBool('lastCustomDigits')??false;automatic=prefs.getBool('lastAutomatic')??false;final stored=prefs.getString('lastSecondProfile')??'';secondProfile=widget.progress.profiles.containsKey(stored)&&stored!=widget.progress.active?stored:'';tab=mathGames.contains(challenge)?0:1;step=2;}}
  void start(){
-  final prefs=widget.progress.prefs;unawaited(prefs.setString('lastGame',challenge.name));unawaited(prefs.setInt('lastDigits',digits));unawaited(prefs.setInt('lastDuration',duration));unawaited(prefs.setString('lastRule',rule.name));unawaited(prefs.setInt('lastMode',widget.mode.index));
+  final prefs=widget.progress.prefs;unawaited(prefs.setString('lastGame',challenge.name));unawaited(prefs.setInt('lastSeries',seriesLength));unawaited(prefs.setInt('lastOtherDigits',otherDigits));unawaited(prefs.setInt('lastLevel',level));unawaited(prefs.setInt('lastOpponent',opponent));unawaited(prefs.setInt('lastRange',range));unawaited(prefs.setInt('lastTable',table));unawaited(prefs.setInt('lastFactorDigits',factorDigits));unawaited(prefs.setInt('lastChoices',choiceCount));unawaited(prefs.setInt('lastDivision',division.index));unawaited(prefs.setBool('lastNegative',negative));unawaited(prefs.setBool('lastNoCarry',noCarry));unawaited(prefs.setBool('lastNumberEntry',numberEntry));unawaited(prefs.setBool('lastCustomDigits',customDigits));unawaited(prefs.setBool('lastAutomatic',automatic));unawaited(prefs.setString('lastSecondProfile',secondProfile));unawaited(prefs.setInt('lastDigits',digits));unawaited(prefs.setInt('lastDuration',duration));unawaited(prefs.setString('lastRule',rule.name));unawaited(prefs.setInt('lastMode',widget.mode.index));
   final actual=automatic?widget.progress.levelFor(challenge.world.name,level):level;
-  Navigator.push<void>(context,MaterialPageRoute(builder:(_)=>Play(progress:widget.progress,mode:widget.mode,world:challenge.world,duration:duration,level:actual,opponent:opponent,numberEntry:numberEntry&&challenge.canType&&division!=DivisionStyle.remainder,mathConfig:customDigits?config.withDigitsOnly():config,secondProfile:secondProfile,challenge:challenge,digits:digits,opponentDigits:customDigits&&challenge.usesDigits?otherDigits:digits,rule:competitive?rule:BattleRule.tug)));
+  Navigator.push<void>(context,MaterialPageRoute(builder:(_)=>Play(progress:widget.progress,mode:widget.mode,world:challenge.world,duration:duration,level:actual,opponent:opponent,numberEntry:numberEntry&&challenge.canType&&!(challenge==Challenge.division&&division==DivisionStyle.remainder),seriesLength:seriesLength,mathConfig:customDigits?config.withDigitsOnly():config,secondProfile:secondProfile,challenge:challenge,digits:digits,opponentDigits:customDigits&&challenge.usesDigits?otherDigits:digits,rule:competitive?rule:BattleRule.tug)));
  }
  Widget section(String text)=>Padding(padding:const EdgeInsets.only(top:16,bottom:8),child:Text(text,style:Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight:FontWeight.w900)));
  Widget digitRow(int value,ValueChanged<int> set)=>Wrap(spacing:6,children:[for(var i=1;i<=4;i++)ChoiceChip(label:Text(i==1?'1 Ziffer':'$i Ziffern'),selected:value==i,onSelected:(_)=>set(i))]);
@@ -112,12 +114,12 @@ class _SetupState extends State<Setup>{
     section('Wähle dein Spiel'),
     Row(children:[for(var i=0;i<2;i++)Expanded(child:Padding(padding:const EdgeInsets.symmetric(horizontal:3),child:FilledButton.tonalIcon(onPressed:()=>setState((){tab=i;final list=i==0?mathGames:arcadeGames;if(!list.contains(challenge))challenge=list.first;}),icon:Icon(i==0?Icons.calculate_rounded:Icons.sports_esports_rounded),label:Text(i==0?'Rechen-Battles':'Arcade-Battles'),style:FilledButton.styleFrom(backgroundColor:tab==i?const Color(0xff2359c5):null,foregroundColor:tab==i?Colors.white:null,padding:const EdgeInsets.symmetric(horizontal:4)))))]),
     const SizedBox(height:8),
-    LayoutBuilder(builder:(context,box)=>GridView.builder(shrinkWrap:true,physics:const NeverScrollableScrollPhysics(),itemCount:games.length,gridDelegate:SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:box.maxWidth>=650?4:2,mainAxisExtent:67,mainAxisSpacing:7,crossAxisSpacing:7),itemBuilder:(context,i)=>ChallengeCard(challenge:games[i],selected:challenge==games[i],onTap:()=>setState(()=>challenge=games[i])))),
+    LayoutBuilder(builder:(context,box)=>GridView.builder(shrinkWrap:true,physics:const NeverScrollableScrollPhysics(),itemCount:games.length,gridDelegate:SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:box.maxWidth>=650?4:2,mainAxisExtent:67,mainAxisSpacing:7,crossAxisSpacing:7),itemBuilder:(context,i)=>ChallengeCard(challenge:games[i],selected:challenge==games[i],onTap:()=>setState((){challenge=games[i];if(challenge.arcadeStage&&competitive)rule=challenge==Challenge.numberBomb?BattleRule.hearts:BattleRule.race10;})))),
     ],
     if(step==1)...[
     if(challenge.usesDigits)...[
      section('Zahlenbereich'),digitRow(digits,(v)=>setState(()=>digits=v)),
-     Text(challenge==Challenge.division?'Die erste Zahl hat die gewählte Ziffernzahl. Division ohne Rest.':challenge==Challenge.targetNumber||challenge==Challenge.missing?'Ziffernzahl der erzeugten Zahlen.':'Ziffernzahl der Ausgangszahlen.',style:const TextStyle(fontSize:11)),
+     Text(challenge==Challenge.division?'Die erste Zahl hat die gewählte Ziffernzahl. Divisionsart unten wählen.':challenge==Challenge.targetNumber||challenge==Challenge.missing?'Ziffernzahl der erzeugten Zahlen.':'Ziffernzahl der Ausgangszahlen.',style:const TextStyle(fontSize:11)),
      if(widget.mode==Mode.duel||widget.mode==Mode.team)...[
       SwitchListTile(contentPadding:EdgeInsets.zero,title:const Text('Eigene Ziffernstufe für Spieler 2'),value:customDigits,onChanged:(v)=>setState(()=>customDigits=v)),
       if(customDigits)digitRow(otherDigits,(v)=>setState(()=>otherDigits=v)),
@@ -134,12 +136,13 @@ class _SetupState extends State<Setup>{
      GridView.count(shrinkWrap:true,physics:const NeverScrollableScrollPhysics(),crossAxisCount:2,mainAxisSpacing:7,crossAxisSpacing:7,childAspectRatio:1.65,children:BattleRule.values.map((r)=>ArcadeTile(label:r.label,icon:[Icons.bolt,Icons.flag,Icons.timer,Icons.favorite,Icons.flag_circle,Icons.verified,Icons.speed][r.index],color:[const Color(0xff2464bc),const Color(0xffa95a22),const Color(0xff187b65),const Color(0xffa74468),const Color(0xff2464bc),const Color(0xff8052c6),const Color(0xff187b65)][r.index],selected:r==rule,onTap:()=>setState((){rule=r;if(r==BattleRule.sprint)duration=30;}))).toList()),
      Padding(padding:const EdgeInsets.only(top:7),child:Text(rule.description,style:const TextStyle(fontSize:12))),
     ],
+    if(competitive)Wrap(spacing:8,children:[for(final n in [1,3,5])ChoiceChip(label:Text(n==1?'Einzelrunde':'Best of $n'),selected:seriesLength==n,onSelected:(_)=>setState(()=>seriesLength=n))]),
     section('Rundendauer'),
     Wrap(spacing:8,children:[30,60,90,120,if(widget.mode==Mode.training)0].map((t)=>ChoiceChip(label:Text(t==0?'Ohne Limit':'$t s'),selected:duration==t,onSelected:(_)=>setState(()=>duration=t))).toList()),
-    if(challenge.canType&&division!=DivisionStyle.remainder)SwitchListTile(title:const Text('Zahlentastatur statt Antwortvorgaben'),contentPadding:EdgeInsets.zero,value:numberEntry,onChanged:(v)=>setState(()=>numberEntry=v)),
+    if(challenge.canType&&!(challenge==Challenge.division&&division==DivisionStyle.remainder))SwitchListTile(title:const Text('Zahlentastatur statt Antwortvorgaben'),contentPadding:EdgeInsets.zero,value:numberEntry,onChanged:(v)=>setState(()=>numberEntry=v)),
     Wrap(spacing:8,children:[for(final n in [2,4])ChoiceChip(label:Text('$n Antworten'),selected:choiceCount==n,onSelected:(_)=>setState(()=>choiceCount=n))]),
     ],
-    if(step==2)Card(child:ExpansionTile(initiallyExpanded:true,onExpansionChanged:(v)=>advanced=v,leading:const Icon(Icons.tune),title:const Text('Spieler & Schwierigkeit'),childrenPadding:const EdgeInsets.all(12),children:[
+    if(step==2)Card(child:ExpansionTile(initiallyExpanded:true,leading:const Icon(Icons.tune),title:const Text('Spieler & Schwierigkeit'),childrenPadding:const EdgeInsets.all(12),children:[
      DropdownButtonFormField<String>(value:age,decoration:InputDecoration(labelText:L.text('Altersgruppe (freiwillig)')),items:['8–9 Jahre','10–11 Jahre','12–14 Jahre','15 Jahre und älter','Individuell','Automatisch'].map((a)=>DropdownMenuItem(value:a,child:Text(a))).toList(),onChanged:(v)=>setState((){age=v!;final ages=['8–9 Jahre','10–11 Jahre','12–14 Jahre','15 Jahre und älter'];if(ages.contains(age)){level=ages.indexOf(age);automatic=false;}if(age=='Automatisch')automatic=true;})),
      const SizedBox(height:8),
      DropdownButtonFormField<int>(value:level,decoration:InputDecoration(labelText:L.text('Deine Schwierigkeit')),items:levels(),onChanged:(v)=>setState(()=>level=v!)),

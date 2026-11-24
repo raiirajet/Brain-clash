@@ -35,7 +35,7 @@ class _StagePainter extends CustomPainter{
      final y=h*.55;
      c.drawLine(Offset(x0+8,y),Offset(x0+half-8,y),Paint()..color=Colors.white24..strokeWidth=4);
      for(var i=0;i<10;i++)c.drawCircle(Offset(x0+8+i*(half-16)/9,y),1.3,Paint()..color=Colors.white54);
-     final x=x0+8+(half-16)*(n%11)/10;
+     final x=x0+8+(half-16)*n.clamp(0,10)/10;
      final r=math.min(h*.24,12.0);
      if(challenge==Challenge.rocketRace){
       final ship=Path()..moveTo(x+r,y)..lineTo(x-r,y-r*.65)..lineTo(x-r,y+r*.65)..close();
@@ -49,14 +49,14 @@ class _StagePainter extends CustomPainter{
      for(var i=0;i<5;i++){
       final x=x0+half*(i+.5)/5,r=math.min(half/12,h*.22);
       final box=RRect.fromRectAndRadius(Rect.fromCenter(center:Offset(x,h*.55),width:r*2,height:r*1.4),const Radius.circular(3));
-      c.drawRRect(box,Paint()..color=i<n%6?Colors.amber:color.withAlpha(90));
+      c.drawRRect(box,Paint()..color=i<n.clamp(0,5)?Colors.amber:color.withAlpha(90));
       c.drawCircle(Offset(x,h*.55),2,Paint()..color=Colors.white);
      }
      break;
     case Challenge.numberBomb:
      final center=Offset(x0+half*.5,h*.55),r=math.min(half*.21,h*.32);
      c.drawCircle(center,r,Paint()..color=color.withAlpha(80));
-     c.drawArc(Rect.fromCircle(center:center,radius:r),-math.pi/2,math.pi*2*(remaining/10000).clamp(0.0,1.0),false,Paint()..color=remaining<3000?Colors.redAccent:color..style=PaintingStyle.stroke..strokeWidth=4);
+     c.drawArc(Rect.fromCircle(center:center,radius:r),-math.pi/2,math.pi*2*(remaining/10000).clamp(0.0,1.0).toDouble(),false,Paint()..color=(remaining<3000?Colors.redAccent:color)..style=PaintingStyle.stroke..strokeWidth=4);
      c.drawCircle(center,math.min(n.toDouble()+2,r*.8),paint);
      break;
     case Challenge.mazeBattle:
@@ -64,7 +64,7 @@ class _StagePainter extends CustomPainter{
      final ox=x0+(half-cell*6)/2,oy=(h-cell*3)/2;
      for(var i=0;i<7;i++)c.drawLine(Offset(ox+i*cell,oy),Offset(ox+i*cell,oy+cell*3),Paint()..color=Colors.white24);
      for(var i=0;i<4;i++)c.drawLine(Offset(ox,oy+i*cell),Offset(ox+cell*6,oy+i*cell),Paint()..color=Colors.white24);
-     final index=n%18,row=index~/6,col=row.isEven?index%6:5-index%6;
+     final index=n.clamp(0,17).toInt(),row=index~/6,col=row.isEven?index%6:5-index%6;
      c.drawCircle(Offset(ox+(col+.5)*cell,oy+(row+.5)*cell),cell*.32,paint);
      break;
     default:break;

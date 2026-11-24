@@ -31,6 +31,15 @@ void main(){
   final b=Battle(mode:Mode.duel,world:Challenge.reaction.world,duration:60,level:0,opponentLevel:0,questions:ChallengeQuestions(Challenge.reaction,1));
   b.tick(3000);expect(b.answer(0,b.tasks[0].answer),isFalse);expect(b.answer(0,b.tasks[0].answer),isNull);expect(b.misses[0],1);
  });
+ test('sort and target games require the correct interaction',(){
+  final b=Battle(mode:Mode.training,world:Challenge.numberSort.world,duration:0,level:0,opponentLevel:0,questions:ChallengeQuestions(Challenge.numberSort,1,random:Random(9)));
+  b.tick(3000);expect(b.sorted[0].join(' '),isNot(b.tasks[0].answer));
+  final desired=b.tasks[0].answer.split(' ');
+  for(var i=0;i<desired.length;i++){final old=b.sorted[0].indexOf(desired[i]);if(old!=i)b.moveCell(0,old,i);}
+  expect(b.submitSort(0),true);expect(b.points[0],1);
+  final target=Battle(mode:Mode.training,world:Challenge.targetHunt.world,duration:0,level:0,opponentLevel:0,questions:ChallengeQuestions(Challenge.targetHunt,1));
+  target.tick(3000);expect(target.tapCell(0,target.tasks[0].board.indexOf(target.tasks[0].answer)),true);
+ });
  test('perfect battle ends on the first wrong answer',(){
   final b=Battle(mode:Mode.duel,world:Challenge.addition.world,duration:60,level:0,opponentLevel:0,rule:BattleRule.perfect,questions:ChallengeQuestions(Challenge.addition,1));
   b.tick(3000);b.answer(0,b.tasks[0].options.firstWhere((s)=>s!=b.tasks[0].answer));expect(b.winner,1);expect(b.phase,Phase.ended);
