@@ -5,7 +5,7 @@ enum Mode { solo, duel, training, team }
 enum BattleRule { tug, race, sprint, hearts, race10, perfect, speed, finalClash }
 extension RuleInfo on BattleRule {
  String get label=>const ['Energie-Duell','5er-Rennen','Punkte-Sprint','3 Herzen','First to 10','Perfect Battle','Speed Battle','Final Clash'][index];
- String get description=>const ['Ziehe die Energie auf deine Seite.','Wer zuerst 5 Punkte hat, gewinnt.','Die meisten Punkte vor Ablauf der Zeit gewinnen.','Drei Fehler kosten das Duell.','Wer zuerst zehn Punkte erreicht, gewinnt.','Der erste Fehler entscheidet.','Schnellste richtige Antwort gewinnt; Gleichstand innerhalb 100 ms.','Bei Gleichstand entscheidet eine letzte Aufgabe.'][index];
+ String get description=>const ['Ziehe die Energie auf deine Seite.','Wer zuerst 5 Punkte hat, gewinnt.','Die meisten Punkte vor Ablauf der Zeit gewinnen.','Drei Fehler kosten das Duell.','Wer zuerst zehn Punkte erreicht, gewinnt.','Der erste Fehler entscheidet.','Schnellste richtige Antwort gewinnt; Gleichstand innerhalb 100 ms.','Bei Gleichstand folgen maximal 30 Sekunden Entscheidungsrunde.'][index];
 }
 enum Phase { countdown, playing, paused, ended }
 enum FinishReason { time, goal, defeat, hearts, mistake, speed, finalClash, manual }
@@ -55,7 +55,7 @@ class Battle {
     arcade=kind==null?null:ArcadeRules(kind,seed:rng.nextInt(1<<30),cooperative:mode==Mode.team,repeatObjectives:mode==Mode.training||timedArcade&&kind!=ArcadeKind.boss);
     final first=this.questions.make(world,level);
     tasks=[first,mode==Mode.training||shared?first:(opponentQuestions??this.questions).make(world,opponentLevel)];
-    if(shared) tasks[1]=tasks[0];
+    if(shared||speedContest&&level==opponentLevel&&digits==opponentDigits) tasks[1]=tasks[0];
   }
   int get remaining=>max(0,duration*1000-time);
   bool get unlimited=>duration==0||finalRound;
@@ -196,7 +196,7 @@ class Battle {
     return true;
   }
   void resolvePending(){final p=pendingPlayer;if(p==null)return;pendingPlayer=null;score(p);if(phase==Phase.playing){if(shared){advanceShared();}else{advanceIndependent();}}}
-  void advanceIndependent(){setTask(0,questions.make(world,level));setTask(1,(opponentQuestions??questions).make(world,opponentLevel));scheduleBot();serial++;}
+  void advanceIndependent(){setTask(0,questions.make(world,level));setTask(1,speedContest&&level==opponentLevel&&digits==opponentDigits?tasks[0]:(opponentQuestions??questions).make(world,opponentLevel));scheduleBot();serial++;}
   void advanceShared(){final q=questions.make(world,level);setTask(0,q);setTask(1,q);serial++;}
   void score(int p){
     points[p]++;

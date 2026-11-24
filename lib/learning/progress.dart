@@ -137,16 +137,18 @@ class Progress {
     skill['right']=(skill['right'] as int? ??0)+right;skill['wrong']=(skill['wrong'] as int? ??0)+own.length-right;
     final numeric=Challenge.values.where((c)=>c.name==b.skillName).firstOrNull?.usesDigits??false;
     final signature='$digit|$level|${b.settingsKey}';
-    if(skill['sampleKey']!=signature){skill['sampleKey']=signature;skill['sampleWindow']=<dynamic>[];}
+    if(b.mode==Mode.training&&skill['sampleKey']!=signature){skill['sampleKey']=signature;skill['sampleWindow']=<dynamic>[];}
     final window=skill.putIfAbsent('sampleWindow',()=> <dynamic>[]) as List;
     if(b.mode==Mode.training){
      for(final a in samples){window.add({'ok':a.correct,'ms':a.ms});}
      while(window.length>=20){
       final group=window.take(20).cast<Map>().toList();
       final correct=group.where((a)=>a['ok']==true).length;
+      final avg=group.fold<int>(0,(sum,a)=>sum+(a['ms'] as int))/20;
       final next=adapt(level,correct,20);
+      final digitNext=numeric&&next>level&&avg>4500?level:next;
       skill['level']=next;
-      if(numeric){skill['digits']=(digit+(next-level)).clamp(1,4).toInt();}
+      if(numeric){skill['digits']=(digit+(digitNext-level)).clamp(1,4).toInt();}
       skill['masteryAccuracy']=correct/20;
       window.removeRange(0,20);
      }

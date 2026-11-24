@@ -50,6 +50,7 @@ class ChallengeQuestions extends Questions{
   final choices=[q.answer,wrong.first]..shuffle(random);
   return Question(q.world,q.prompt,q.answer,choices,q.explanation,preview:q.preview,interaction:q.interaction,board:q.board);
  }
+ static const wordClues={'HAUS':'Gebäude zum Wohnen','MAUS':'Kleines Nagetier','BAUM':'Hat Stamm und Blätter','FROSCH':'Quakendes Tier','APFEL':'Runde Frucht','LAMPE':'Macht Licht','WOLKE':'Am Himmel','TIGER':'Gestreifte Raubkatze','BLUME':'Blüht im Garten','STERN':'Leuchtet nachts','FISCH':'Schwimmt im Wasser','PFERD':'Tier zum Reiten','BANANE':'Gelbe Frucht','GARTEN':'Ort für Pflanzen','PIRAT':'Seeräuber','KAMERA':'Macht Fotos','RAKETE':'Fliegt ins All','PLANET':'Umkreist einen Stern','ELEFANT':'Tier mit Rüssel','SCHULE':'Ort zum Lernen','GIRAFFE':'Tier mit langem Hals','VULKAN':'Berg mit Lava','KROKUS':'Frühlingsblume','KOMPASS':'Zeigt die Himmelsrichtung'};
  String decimal(int n)=>n%10==0?'${n~/10}':'${n~/10}.${n%10}';
  Question generate(World world,int level){
   level=level.clamp(0,3).toInt();
@@ -69,7 +70,7 @@ class ChallengeQuestions extends Questions{
     if(config.noCarry){
      // Keep the requested operand width, including at the most significant digit.
      final minValue=minDigit;
-     if(a.toString()[0]=='9')a=minValue;
+     if(a.toString()[0]=='9'||config.range>0&&a%10==9)a=minValue;
      var x=a,y=b,m=1,total=0;
      while(x>0||y>0){total+=min(y%10,9-x%10)*m;x~/=10;y~/=10;m*=10;}
      b=max(minValue,total);
@@ -129,7 +130,7 @@ class ChallengeQuestions extends Questions{
     final bank=banks[level],word=bank[random.nextInt(bank.length)],letters=word.split('')..shuffle(random);
     if(letters.join()==word){final first=letters.removeAt(0);letters.add(first);}
     final wrong=<String>{};while(wrong.length<3){final copy=word.split('')..shuffle(random);if(copy.join()!=word)wrong.add(copy.join());}
-    return Question(World.words,'Ordne die Buchstaben · ${word[0]}…',word,[word,...wrong],'Richtig: '+word,interaction:Interaction.word,board:letters);
+    return Question(World.words,'Ordne die Buchstaben · ${wordClues[word]}',word,[word,...wrong],'Richtig: '+word,interaction:Interaction.word,board:letters);
    case Challenge.logicEscape:return super.make(World.logic,level);
    case Challenge.bossBattle:return super.make(World.mixed,level);
    case Challenge.numberRecall:

@@ -1,0 +1,7 @@
+# 0.9.7 audit remediation candidate
+
+Implemented: per-game arithmetic option normalization, difficulty-sensitive generator variants, clue-based Word Sprint, variable target/tap tasks, new maze per stage, bounded 30-second overtime, comparable Speed Battle setup, arcade objective result, first-attempt mastery (20 comparable training samples), no XP for wrong-only/empty rounds, separate competitive rating and configuration records, game-tagged review queue, save retry, both-player summary, guarded setup navigation, selectable tournament game/rule/time/level, persisted bracket validation, shared-rank and replay disclosure.
+
+Intentional compatibility: old XP, profiles, assets, database schema, package id and test APK workflow retained. Fixed digit choices remain user-controlled; skill tiers do not silently override manual numeric operands. Existing masterplan and prior audit remain historical records.
+
+Outstanding: complete per-game level curriculum and calibrated learning thresholds, larger maze geometry, variable boss designs/chest distributions/fuse settings, persistent interrupted rounds and best-of-series, fully profile-specific quick-start, complete tournament execution matrix, accessibility and localization review, code formatting/lint cleanup, physical-device performance and signed upgrade. New tests and CI must pass before release. Production signing needs owner key. No claim of full remediation until evidence.
