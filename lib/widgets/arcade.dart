@@ -2,18 +2,18 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../localization/strings.dart' show L;
 
-const arcadeBlue=Color(0xff3698ff);
-const arcadeOrange=Color(0xffff9b42);
-const arcadeGreen=Color(0xff36dfaa);
-const arcadeRed=Color(0xffff7186);
+const arcadeBlue=Color(0xff318bff);
+const arcadeOrange=Color(0xffff943c);
+const arcadeGreen=Color(0xff31d9a0);
+const arcadeRed=Color(0xffff5277);
 
 ThemeData arcadeTheme(Brightness brightness) {
  final dark=brightness==Brightness.dark;
  final scheme=ColorScheme.fromSeed(seedColor:const Color(0xff377cf7),brightness:brightness);
- final surface=dark?const Color(0xff101827):const Color(0xfff4f7ff);
+ final surface=dark?const Color(0xff182338):const Color(0xfff4f7ff);
  final shape=RoundedRectangleBorder(borderRadius:BorderRadius.circular(16));
  return ThemeData(
-  useMaterial3:true,colorScheme:scheme,scaffoldBackgroundColor:dark?const Color(0xff070b14):const Color(0xffeaf0fa),
+  useMaterial3:true,colorScheme:scheme,scaffoldBackgroundColor:dark?const Color(0xff080b15):const Color(0xffeaf0fa),
   appBarTheme:AppBarTheme(backgroundColor:Colors.transparent,elevation:0,centerTitle:true,titleTextStyle:TextStyle(color:scheme.onSurface,fontSize:20,fontWeight:FontWeight.w800)),
   filledButtonTheme:FilledButtonThemeData(style:FilledButton.styleFrom(shape:shape,minimumSize:const Size(44,48),textStyle:const TextStyle(fontWeight:FontWeight.w800,fontSize:16))),
   outlinedButtonTheme:OutlinedButtonThemeData(style:OutlinedButton.styleFrom(shape:shape,minimumSize:const Size(44,48),textStyle:const TextStyle(fontWeight:FontWeight.w700))),
@@ -29,7 +29,7 @@ class ArcadeBackdrop extends StatelessWidget {
  const ArcadeBackdrop({super.key,required this.child});
  @override Widget build(BuildContext context){
   final dark=Theme.of(context).brightness==Brightness.dark;
-  return DecoratedBox(decoration:BoxDecoration(gradient:LinearGradient(begin:Alignment.topLeft,end:Alignment.bottomRight,colors:dark?const [Color(0xff101d36),Color(0xff070b14),Color(0xff20142a)]:const [Color(0xffd9e9ff),Color(0xfff3f7ff),Color(0xffffe9db)])),child:child);
+  return DecoratedBox(decoration:BoxDecoration(gradient:LinearGradient(begin:Alignment.topLeft,end:Alignment.bottomRight,colors:dark?const [Color(0xff101d36),Color(0xff080b15),Color(0xff20142a)]:const [Color(0xffd9e9ff),Color(0xfff3f7ff),Color(0xffffe9db)])),child:child);
  }
 }
 

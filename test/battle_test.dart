@@ -29,5 +29,5 @@ void main(){
   expect(b.answer(0,b.tasks[0].answer),isTrue);
   expect(b.points[0],1);
  });
- test('adapt only after sufficient sample',(){expect(Progress.adapt(1,19,19),1);expect(Progress.adapt(1,18,20),2);expect(Progress.adapt(1,12,20),0);});
+ test('adapt only after sufficient sample',(){expect(Progress.adapt(1,19,19),1);expect(Progress.adapt(1,18,20),2);expect(Progress.adapt(1,12,20),1);expect(Progress.adapt(1,11,20),0);});
 }

@@ -1,10 +1,10 @@
 import 'dart:math';
 import '../question_generators/questions.dart';
 enum Mode { solo, duel, training, team }
-enum BattleRule { tug, race, sprint, hearts }
+enum BattleRule { tug, race, sprint, hearts, race10, perfect, speed }
 extension RuleInfo on BattleRule {
- String get label=>const ['Energie-Duell','5er-Rennen','Punkte-Sprint','3 Herzen'][index];
- String get description=>const ['Ziehe die Energie auf deine Seite.','Wer zuerst 5 Punkte hat, gewinnt.','Die meisten Punkte vor Ablauf der Zeit gewinnen.','Drei Fehler kosten das Duell.'][index];
+ String get label=>const ['Energie-Duell','5er-Rennen','Punkte-Sprint','3 Herzen','First to 10','Perfect Battle','Speed Battle'][index];
+ String get description=>const ['Ziehe die Energie auf deine Seite.','Wer zuerst 5 Punkte hat, gewinnt.','Die meisten Punkte vor Ablauf der Zeit gewinnen.','Drei Fehler kosten das Duell.','Wer zuerst zehn Punkte erreicht, gewinnt.','Der erste Fehler entscheidet.','Schnellste richtige Antwort gewinnt; Gleichstand innerhalb 100 ms.'][index];
 }
 enum Phase { countdown, playing, paused, ended }
 class Attempt {
@@ -21,6 +21,7 @@ class Battle {
   final Questions? opponentQuestions;
   final BattleRule rule;
   final bool sameQuestions;
+  final bool numberEntry;
   final Random rng;
   Phase phase=Phase.countdown, previous=Phase.countdown;
   int time=0, countdown=3000, energy=50, elapsed=0, serial=0;
@@ -35,7 +36,7 @@ class Battle {
   int? pendingPlayer;
   int pendingAt=0, botAt=0;
   bool get shared=>mode==Mode.duel&&sameQuestions&&level==opponentLevel;
-  Battle({required this.mode,required this.world,required this.duration,required this.level,required this.opponentLevel,Questions? questions,this.opponentQuestions,this.rule=BattleRule.tug,this.sameQuestions=true,Random? random}):questions=questions??Questions(),rng=random??Random() {
+  Battle({required this.mode,required this.world,required this.duration,required this.level,required this.opponentLevel,Questions? questions,this.opponentQuestions,this.rule=BattleRule.tug,this.sameQuestions=true,this.numberEntry=false,Random? random}):questions=questions??Questions(),rng=random??Random() {
     final first=this.questions.make(world,level);
     tasks=[first,mode==Mode.training||shared?first:(opponentQuestions??this.questions).make(world,opponentLevel)];
     if(shared) tasks[1]=tasks[0];
@@ -96,12 +97,14 @@ class Battle {
     return null;
   }
   bool? answer(int p,String value) {
-    if(p<0||p>1||!canAnswer(p))return null;
+    if(p<0||p>1||phase!=Phase.playing)return null;
     final q=tasks[p];
-    if(!q.options.contains(value)&&!(mode==Mode.training&&p==0&&q.world==World.math&&int.tryParse(value)!=null))return null;
-    final good=value==q.answer||(mode==Mode.training&&q.world==World.math&&int.tryParse(value)!=null&&int.tryParse(value)==int.tryParse(q.answer));
+    if(q.interaction==Interaction.signal&&!visible(p)&&locks[p]==ready[p]){misses[p]++;attempts.add(Attempt(q,p,0,false));locks[p]=ready[p]+850;if(rule==BattleRule.perfect||rule==BattleRule.hearts&&misses[p]>=3)finish(forcedWinner:1-p);return false;}
+    if(!canAnswer(p))return null;
+    if(!q.options.contains(value)&&!((numberEntry||mode==Mode.training&&p==0)&&q.world==World.math&&double.tryParse(value)?.isFinite==true))return null;
+    final good=value==q.answer||((numberEntry||mode==Mode.training)&&q.world==World.math&&double.tryParse(value)?.isFinite==true&&double.tryParse(value)==double.tryParse(q.answer));
     if(mode!=Mode.solo||p==0)attempts.add(Attempt(q,p,elapsed-ready[p],good));
-    if(!good){misses[p]++;locks[p]=elapsed+850;if(rule==BattleRule.hearts&&(mode==Mode.duel||mode==Mode.solo)){updateRuleEnergy();if(misses[p]>=3){finish(forcedWinner:1-p);return false;}}if(p==1&&mode==Mode.solo)botAt=locks[p]+700;return false;}
+    if(!good){misses[p]++;locks[p]=elapsed+850;if(rule==BattleRule.perfect&&(mode==Mode.duel||mode==Mode.solo)){finish(forcedWinner:1-p);return false;}if(rule==BattleRule.hearts&&(mode==Mode.duel||mode==Mode.solo)){updateRuleEnergy();if(misses[p]>=3){finish(forcedWinner:1-p);return false;}}if(p==1&&mode==Mode.solo)botAt=locks[p]+700;return false;}
     if(shared) {
       if(pendingPlayer!=null) {
         if(pendingPlayer!=p&&elapsed-pendingAt<=100){pendingPlayer=null;advanceShared();return true;}
@@ -116,13 +119,13 @@ class Battle {
   void score(int p){
     points[p]++;
     if(mode==Mode.training)return;
-    if((mode==Mode.duel||mode==Mode.solo)&&rule!=BattleRule.tug){updateRuleEnergy();if(rule==BattleRule.race&&points[p]>=5)finish(forcedWinner:p);return;}
+    if((mode==Mode.duel||mode==Mode.solo)&&rule!=BattleRule.tug){updateRuleEnergy();if((rule==BattleRule.race&&points[p]>=5)||(rule==BattleRule.race10&&points[p]>=10)||(rule==BattleRule.speed&&points[p]>=1))finish(forcedWinner:p);return;}
     energy=(energy+((mode==Mode.team||p==0)?5:-5)).clamp(0,100).toInt();
     if(energy==0||energy==100)finish();
   }
   void updateRuleEnergy(){
     if(rule==BattleRule.hearts){energy=(50+(misses[1]-misses[0])*16).clamp(0,100).toInt();}
-    else if(rule==BattleRule.race){energy=(50+(points[0]-points[1])*10).clamp(0,100).toInt();}
+    else if(rule==BattleRule.race||rule==BattleRule.race10){energy=(50+(points[0]-points[1])*10).clamp(0,100).toInt();}
     else{final total=points[0]+points[1];energy=total==0?50:(100*points[0]/total).round();}
   }
   void finish({int? forcedWinner}){

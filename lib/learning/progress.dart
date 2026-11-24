@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../game_engine/battle.dart';
 import '../question_generators/questions.dart';
+import 'engagement.dart';
 class Progress {
   final SharedPreferences prefs;
   String active='Gast';
@@ -18,7 +19,7 @@ class Progress {
   static int adapt(int level,int right,int total){
     if(total<20)return level;
     final rate=right/total;
-    return (level+(rate>=.9?1:rate<.7?-1:0)).clamp(0,3).toInt();
+    return (level+(rate>=.9?1:rate<.6?-1:0)).clamp(0,3).toInt();
   }
   Map get reviews=>current.putIfAbsent('review',()=> <String,dynamic>{}) as Map;
   List<Question> dueQuestions(World world,{DateTime? at}){
@@ -73,7 +74,14 @@ class Progress {
     for(final c in (p['categories'] as Map).values.cast<Map>()){
       if((c['windowTotal'] as int)>=20){c['level']=adapt(c['level'] as int,c['windowRight'] as int,c['windowTotal'] as int);c['windowTotal']=0;c['windowRight']=0;}
     }
-    p['xp']=(p['xp'] as int)+b.points[player]*10;
+    final own=b.attempts.where((a)=>a.player==player).toList();
+    final right=own.where((a)=>a.correct).length;
+    final dayBonus=DailyProgress.add(p,right);
+    final reward=own.isEmpty?0:right*10+15+(b.mode!=Mode.training&&b.winner==player?25:0)+(right==own.length?50:0)+dayBonus;
+    p['xp']=(p['xp'] as int)+reward;
+    final history=p.putIfAbsent('history',()=> <dynamic>[]) as List;
+    if(own.isNotEmpty)history.add({'date':DateTime.now().toIso8601String().substring(0,10),'world':b.world.name,'points':b.points[player],'right':right,'total':own.length});
+    if(history.length>100)history.removeRange(0,history.length-100);
     active=previous;
   }
 }

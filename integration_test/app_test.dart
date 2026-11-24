@@ -11,11 +11,12 @@ void main(){
   await prefs.clear();await prefs.setBool('intro',true);
   await tester.pumpWidget(BrainClash(progress:Progress(prefs)));
   await tester.pumpAndSettle();
-  for(final name in ['Solo Battle','2 Spieler','Training','Team Battle']){
+  for(final name in ['Solo Battle','1 VS 1','Training','Team Battle']){
    expect(find.text(name),findsOneWidget);
   }
   await tester.tap(find.text('Training'));await tester.pumpAndSettle();
-  await tester.scrollUntilVisible(find.text('BATTLE STARTEN'),200,scrollable:find.byType(Scrollable).first);
+  await tester.tap(find.text('Weiter'));await tester.pumpAndSettle();
+  await tester.tap(find.text('Weiter'));await tester.pumpAndSettle();
   await tester.tap(find.text('BATTLE STARTEN'));await tester.pump(const Duration(milliseconds:500));
   await tester.pump(const Duration(seconds:4));
   expect(find.text('Training beenden'),findsOneWidget);

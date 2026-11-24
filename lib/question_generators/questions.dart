@@ -123,7 +123,7 @@ class Questions {
     final wrong=<String>{};
     while(wrong.length<3) {
       final d=random.nextInt(13)-6;
-      if(d!=0&&n+d>=0) wrong.add((n+d).toString());
+      if(d!=0&&(n<0||n+d>=0)) wrong.add((n+d).toString());
     }
     return pick(w,p,n.toString(),wrong.toList());
   }
