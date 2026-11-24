@@ -80,7 +80,7 @@ class Setup extends StatefulWidget{
  @override State<Setup> createState()=>_SetupState();
 }
 class _SetupState extends State<Setup>{
- Challenge challenge=Challenge.mathClassic;
+ Challenge challenge=Challenge.addition;
  BattleRule rule=BattleRule.tug;
  int level=1,opponent=1,duration=60,digits=1,otherDigits=1;
  bool automatic=false,numberEntry=false,customDigits=false,advanced=false;
@@ -102,9 +102,9 @@ class _SetupState extends State<Setup>{
    Expanded(child:ListView(padding:const EdgeInsets.fromLTRB(14,0,14,12),children:[
     if(competitive)Container(height:76,padding:const EdgeInsets.all(8),decoration:BoxDecoration(borderRadius:BorderRadius.circular(18),gradient:const LinearGradient(colors:[Color(0xff173c7a),Color(0xff16172c),Color(0xff70381d)])),child:Row(mainAxisAlignment:MainAxisAlignment.spaceEvenly,children:[AvatarArt(index:widget.progress.current['avatar'] as int,size:58),const Text('1  VS  1',style:TextStyle(color:Colors.white,fontSize:25,fontWeight:FontWeight.w900)),const AvatarArt(index:5,size:58)])),
     section('Wähle dein Spiel'),
-    Row(children:[for(var i=0;i<2;i++)Expanded(child:Padding(padding:const EdgeInsets.symmetric(horizontal:3),child:FilledButton.tonalIcon(onPressed:()=>setState(()=>tab=i),icon:Icon(i==0?Icons.calculate_rounded:Icons.sports_esports_rounded),label:Text(i==0?'Rechen-Battles':'Arcade-Battles'),style:FilledButton.styleFrom(backgroundColor:tab==i?const Color(0xff2359c5):null,foregroundColor:tab==i?Colors.white:null,padding:const EdgeInsets.symmetric(horizontal:4)))))]),
+    Row(children:[for(var i=0;i<2;i++)Expanded(child:Padding(padding:const EdgeInsets.symmetric(horizontal:3),child:FilledButton.tonalIcon(onPressed:()=>setState((){tab=i;final list=i==0?mathGames:arcadeGames;if(!list.contains(challenge))challenge=list.first;}),icon:Icon(i==0?Icons.calculate_rounded:Icons.sports_esports_rounded),label:Text(i==0?'Rechen-Battles':'Arcade-Battles'),style:FilledButton.styleFrom(backgroundColor:tab==i?const Color(0xff2359c5):null,foregroundColor:tab==i?Colors.white:null,padding:const EdgeInsets.symmetric(horizontal:4)))))]),
     const SizedBox(height:8),
-    LayoutBuilder(builder:(context,box)=>GridView.builder(shrinkWrap:true,physics:const NeverScrollableScrollPhysics(),itemCount:games.length,gridDelegate:SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:box.maxWidth>=650?4:2,mainAxisExtent:76,mainAxisSpacing:7,crossAxisSpacing:7),itemBuilder:(context,i)=>ChallengeCard(challenge:games[i],selected:challenge==games[i],onTap:()=>setState(()=>challenge=games[i])))),
+    LayoutBuilder(builder:(context,box)=>GridView.builder(shrinkWrap:true,physics:const NeverScrollableScrollPhysics(),itemCount:games.length,gridDelegate:SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:box.maxWidth>=650?4:2,mainAxisExtent:67,mainAxisSpacing:7,crossAxisSpacing:7),itemBuilder:(context,i)=>ChallengeCard(challenge:games[i],selected:challenge==games[i],onTap:()=>setState(()=>challenge=games[i])))),
     if(challenge.usesDigits)...[
      section('Zahlenbereich'),digitRow(digits,(v)=>setState(()=>digits=v)),
      Text(challenge==Challenge.division?'Die erste Zahl hat die gewählte Ziffernzahl. Division ohne Rest.':challenge==Challenge.targetNumber||challenge==Challenge.missing?'Ziffernzahl der erzeugten Zahlen.':'Ziffernzahl der Ausgangszahlen.',style:const TextStyle(fontSize:11)),
@@ -115,7 +115,8 @@ class _SetupState extends State<Setup>{
     ],
     if(competitive)...[
      section('Spielregeln'),
-     for(final r in BattleRule.values)Card(child:ListTile(dense:true,selected:rule==r,leading:Icon([Icons.bolt,Icons.flag,Icons.timer,Icons.favorite][r.index],color:rule==r?arcadeOrange:null),title:Text(r.label),subtitle:Text(r.description),trailing:Icon(rule==r?Icons.check_circle:Icons.circle_outlined),onTap:()=>setState((){rule=r;if(r==BattleRule.sprint)duration=30;}))),
+     GridView.count(shrinkWrap:true,physics:const NeverScrollableScrollPhysics(),crossAxisCount:2,mainAxisSpacing:7,crossAxisSpacing:7,childAspectRatio:1.65,children:BattleRule.values.map((r)=>ArcadeTile(label:r.label,icon:[Icons.bolt,Icons.flag,Icons.timer,Icons.favorite][r.index],color:[const Color(0xff2464bc),const Color(0xffa95a22),const Color(0xff187b65),const Color(0xffa74468)][r.index],selected:r==rule,onTap:()=>setState((){rule=r;if(r==BattleRule.sprint)duration=30;}))).toList()),
+     Padding(padding:const EdgeInsets.only(top:7),child:Text(rule.description,style:const TextStyle(fontSize:12))),
     ],
     section('Rundendauer'),
     Wrap(spacing:8,children:[30,60,90,120,if(widget.mode==Mode.training)0].map((t)=>ChoiceChip(label:Text(t==0?'Ohne Limit':'$t s'),selected:duration==t,onSelected:(_)=>setState(()=>duration=t))).toList()),

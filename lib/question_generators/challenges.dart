@@ -53,7 +53,8 @@ class ChallengeQuestions extends Questions{
    case Challenge.targetNumber:
     final target=a+b;
     final correct='$a + $b';
-    final wrong=List.generate(3,(i)=>'$a + ${b+i+1}');
+    final alternatives=<int>{};while(alternatives.length<3){final n=operand();if(n!=b)alternatives.add(n);}
+    final wrong=alternatives.map((n)=>'$a + $n').toList();
     return pick(World.math,'Erreiche die Zahl $target',correct,wrong);
    case Challenge.trueFalse:
     final correct=random.nextBool();
