@@ -133,7 +133,7 @@ class _SetupState extends State<Setup>{
     if(challenge==Challenge.addition)SwitchListTile(title:const Text('Ohne Zehnerübergang'),value:noCarry,onChanged:(v)=>setState(()=>noCarry=v)),
     if(challenge==Challenge.subtraction)SwitchListTile(title:const Text('Negative Ergebnisse erlauben'),value:negative,onChanged:(v)=>setState(()=>negative=v)),
     if(challenge==Challenge.multiplication&&!customDigits)DropdownButtonFormField<int>(value:factorDigits,decoration:InputDecoration(labelText:L.text('Ziffern zweiter Faktor')),items:[for(final n in [0,1,2,3,4])DropdownMenuItem(value:n,child:Text(n==0?'Gleich': '$n'))],onChanged:(v)=>setState(()=>factorDigits=v!)),
-    if(challenge==Challenge.timesTable||challenge==Challenge.bigTable)DropdownButtonFormField<int>(value:table,decoration:InputDecoration(labelText:L.text('Einmaleins-Reihe')),items:[for(var n=0;n<=20;n++)DropdownMenuItem(value:n,child:Text(n==0?'Alle':'$n'))],onChanged:(v)=>setState(()=>table=v!)),
+    if(challenge==Challenge.timesTable||challenge==Challenge.bigTable)DropdownButtonFormField<int>(value:table.clamp(0,challenge==Challenge.timesTable?10:20).toInt(),decoration:InputDecoration(labelText:L.text('Einmaleins-Reihe')),items:[for(var n=0;n<=(challenge==Challenge.timesTable?10:20);n++)DropdownMenuItem(value:n,child:Text(n==0?'Alle':'$n'))],onChanged:(v)=>setState(()=>table=v!)),
     if(challenge==Challenge.division)DropdownButtonFormField<DivisionStyle>(value:division,decoration:InputDecoration(labelText:L.text('Division')),items:[for(final style in DivisionStyle.values)DropdownMenuItem(value:style,child:Text(['Ganzzahlig','Mit Rest','Dezimal'][style.index]))],onChanged:(v)=>setState(()=>division=v!)),
     if(challenge.specialRules)Card(child:ListTile(leading:const Icon(Icons.sports_esports),title:const Text('Eigene Spielregeln'),subtitle:Text(arcadeInstructions(challenge))))
     else if(competitive)...[
@@ -165,6 +165,7 @@ class _SetupState extends State<Setup>{
    ])),
    Padding(padding:const EdgeInsets.fromLTRB(14,5,14,10),child:Column(mainAxisSize:MainAxisSize.min,children:[
     Text('${L.text(challenge.label)} · ${challenge.usesDigits?digits==1?L.text('1 Ziffer'):L.text('$digits Ziffern'):L.text(competitive?rule.label:modeNames[widget.mode.index])}',style:const TextStyle(fontWeight:FontWeight.w700,fontSize:12)),
+    if(step>0)Text(duration==0?L.text('Ohne Limit'):'${L.text('Rundendauer')}: $duration s',style:const TextStyle(fontSize:11)),
     const SizedBox(height:5),SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:step==2?start:()=>setState(()=>step++),icon:Icon(step==2?Icons.play_arrow_rounded:Icons.arrow_forward),label:Text(step==2?'BATTLE STARTEN':'Weiter'))),
    ])),
   ]))));

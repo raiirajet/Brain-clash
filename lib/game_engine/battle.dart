@@ -8,7 +8,7 @@ extension RuleInfo on BattleRule {
  String get description=>const ['Ziehe die Energie auf deine Seite.','Wer zuerst 5 Punkte hat, gewinnt.','Die meisten Punkte vor Ablauf der Zeit gewinnen.','Drei Fehler kosten das Duell.','Wer zuerst zehn Punkte erreicht, gewinnt.','Der erste Fehler entscheidet.','Schnellste richtige Antwort gewinnt; Gleichstand innerhalb 100 ms.','Bei Gleichstand entscheidet eine letzte Aufgabe.'][index];
 }
 enum Phase { countdown, playing, paused, ended }
-enum FinishReason { time, goal, hearts, mistake, speed, finalClash, manual }
+enum FinishReason { time, goal, defeat, hearts, mistake, speed, finalClash, manual }
 class Attempt {
   final Question question;
   final int player, ms;
@@ -44,7 +44,9 @@ class Battle {
   int? pendingPlayer;
   int pendingAt=0, botAt=0;
   bool finalRound=false;
-  bool get shared=>mode==Mode.duel&&sameQuestions&&level==opponentLevel&&ArcadeRules.kindFor(skillName)==null;
+  bool get shared=>mode==Mode.duel&&sameQuestions&&level==opponentLevel&&fuseMs==0&&ArcadeRules.kindFor(skillName)==null;
+  bool get speedContest=>arcade==null&&rule==BattleRule.speed&&(mode==Mode.duel||mode==Mode.solo);
+  bool get arbitrate=>shared||speedContest;
   Battle({required this.mode,required this.world,required this.duration,required this.level,required this.opponentLevel,Questions? questions,this.opponentQuestions,this.rule=BattleRule.tug,this.sameQuestions=true,this.numberEntry=false,this.timedArcade=false,this.fuseMs=0,this.digits=1,this.opponentDigits=1,this.skillName='mixed',Random? random}):questions=questions??Questions(),rng=random??Random() {
     final kind=ArcadeRules.kindFor(skillName);
     arcade=kind==null?null:ArcadeRules(kind,seed:rng.nextInt(1<<30),cooperative:mode==Mode.team,repeatObjectives:mode==Mode.training||timedArcade&&kind!=ArcadeKind.boss);
@@ -56,7 +58,7 @@ class Battle {
   bool get unlimited=>duration==0||finalRound;
   bool visible(int p)=>elapsed>=ready[p];
   bool activePlayer(int p)=>p>=0&&p<(mode==Mode.training?1:2);
-  bool canAnswer(int p)=>activePlayer(p)&&phase==Phase.playing&&arcade?.waiting(p)!=true&&visible(p)&&elapsed>=locks[p]&&!(shared&&pendingPlayer==p);
+  bool canAnswer(int p)=>activePlayer(p)&&phase==Phase.playing&&arcade?.waiting(p)!=true&&visible(p)&&elapsed>=locks[p]&&!(arbitrate&&pendingPlayer==p);
   void setTask(int p,Question q) {
     tasks[p]=q;sorted[p]=List.of(q.board);partial[p].clear();matched[p].clear();mismatched[p].clear();selected[p]=-1;shown[p]=elapsed;ready[p]=elapsed+q.previewMs;locks[p]=ready[p];
   }
@@ -111,7 +113,7 @@ class Battle {
       answer(1,good?q.answer:q.options.firstWhere((x)=>x!=q.answer));
     }
   }
-  void checkArcade(){if(arcade?.ended==true&&phase==Phase.playing)finish(reason:FinishReason.goal);}
+  void checkArcade(){if(arcade?.ended==true&&phase==Phase.playing)finish(reason:arcade!.boss&&arcade!.winner==1?FinishReason.defeat:FinishReason.goal);}
   void restartArcadeQuestion(int p){shown[p]=elapsed;ready[p]=elapsed+tasks[p].previewMs;locks[p]=ready[p];}
   bool arcadeMove(int p,Direction d){if(phase!=Phase.playing||!activePlayer(p))return false;final ok=arcade?.move(p,d)??false;if(ok)restartArcadeQuestion(p);checkArcade();return ok;}
   bool arcadeChest(int p,int index){if(phase!=Phase.playing||!activePlayer(p))return false;final ok=arcade?.openChest(p,index)??false;if(ok)restartArcadeQuestion(p);checkArcade();return ok;}
@@ -178,16 +180,17 @@ class Battle {
     final good=value==q.answer||((numberEntry||mode==Mode.training)&&q.world==World.math&&double.tryParse(value)?.isFinite==true&&double.tryParse(value)==double.tryParse(q.answer));
     if(mode!=Mode.solo||p==0)attempts.add(Attempt(q,p,elapsed-ready[p],good,response:value));
     if(!good){misses[p]++;locks[p]=elapsed+850;if(arcade!=null){arcade!.wrong(p);checkArcade();if(p==1&&mode==Mode.solo)botAt=locks[p]+700;return false;}if(rule==BattleRule.perfect&&(mode==Mode.duel||mode==Mode.solo)){finish(forcedWinner:1-p,reason:FinishReason.mistake);return false;}if(rule==BattleRule.hearts&&(mode==Mode.duel||mode==Mode.solo)){updateRuleEnergy();if(misses[p]>=3){finish(forcedWinner:1-p,reason:FinishReason.hearts);return false;}}if(fuseMs>0&&!shared){setTask(p,(p==0?questions:opponentQuestions??questions).make(world,p==0?level:opponentLevel));ready[p]+=850;locks[p]=ready[p];if(p==1)scheduleBot();}else if(p==1&&mode==Mode.solo)botAt=locks[p]+700;return false;}
-    if(shared) {
+    if(arbitrate) {
       if(pendingPlayer!=null) {
-        if(pendingPlayer!=p&&elapsed-pendingAt<=100){pendingPlayer=null;advanceShared();return true;}
+        if(pendingPlayer!=p&&elapsed-pendingAt<=100){pendingPlayer=null;if(shared){advanceShared();}else{advanceIndependent();}return true;}
         return null;
       }
       pendingPlayer=p;pendingAt=elapsed;
     } else {score(p);if(phase==Phase.playing){setTask(p,(p==0?questions:opponentQuestions??questions).make(world,p==0?level:opponentLevel));if(p==1)scheduleBot();}}
     return true;
   }
-  void resolvePending(){final p=pendingPlayer;if(p==null)return;pendingPlayer=null;score(p);if(phase==Phase.playing)advanceShared();}
+  void resolvePending(){final p=pendingPlayer;if(p==null)return;pendingPlayer=null;score(p);if(phase==Phase.playing){if(shared){advanceShared();}else{advanceIndependent();}}}
+  void advanceIndependent(){setTask(0,questions.make(world,level));setTask(1,(opponentQuestions??questions).make(world,opponentLevel));scheduleBot();serial++;}
   void advanceShared(){final q=questions.make(world,level);setTask(0,q);setTask(1,q);serial++;}
   void score(int p){
     points[p]++;

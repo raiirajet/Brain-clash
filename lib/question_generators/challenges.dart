@@ -86,7 +86,7 @@ class ChallengeQuestions extends Questions{
    case Challenge.bigTable:
    case Challenge.timesTable:
     final limit=challenge==Challenge.bigTable?20:10;
-    final x=config.table>0?config.table:1+random.nextInt(limit),y=1+random.nextInt(limit);
+    final x=config.table>0?config.table.clamp(1,limit).toInt():1+random.nextInt(limit),y=1+random.nextInt(limit);
     return number(World.math,'$x × $y = ?',x*y);
    case Challenge.numberSeries:
     final step=1+random.nextInt(12),start=1+random.nextInt(30);
