@@ -71,7 +71,7 @@ class _SetupState extends State<Setup>{
   const SizedBox(height:18),const Text('Rundendauer'),
   Wrap(spacing:8,children:[30,60,90,120,if(widget.mode==Mode.training)0].map((t)=>ChoiceChip(label:Text(t==0?'Ohne Limit':'$t s'),selected:duration==t,onSelected:(_)=>setState(()=>duration=t))).toList()),
   const SizedBox(height:24),
-  FilledButton(onPressed:(){final actual=automatic?widget.progress.levelFor(world.name,level):level;Navigator.pushReplacement<void,void>(context,MaterialPageRoute(builder:(_)=>Play(progress:widget.progress,mode:widget.mode,world:world,duration:duration,level:actual,opponent:opponent,numberEntry:numberEntry)));},child:const Padding(padding:EdgeInsets.all(14),child:Text('BATTLE STARTEN'))),
+  FilledButton(onPressed:(){final actual=automatic?widget.progress.levelFor(world.name,level):level;Navigator.push<void>(context,MaterialPageRoute(builder:(_)=>Play(progress:widget.progress,mode:widget.mode,world:world,duration:duration,level:actual,opponent:opponent,numberEntry:numberEntry)));},child:const Padding(padding:EdgeInsets.all(14),child:Text('BATTLE STARTEN'))),
  ])));
  List<DropdownMenuItem<int>> levels()=>List.generate(4,(i)=>DropdownMenuItem(value:i,child:Text(['Einfach','Normal','Schwer','Experte'][i])));
 }

@@ -27,7 +27,7 @@ class Questions {
       case World.math:
         final a=1+random.nextInt([10,30,70,120][level]);
         final b=1+random.nextInt([10,12,20,30][level]);
-        final op=random.nextInt(level<2?7:10);
+        final op=random.nextInt(level<2?8:11);
         switch(op) {
           case 0:return number(world,'$a + $b = ?',a+b);
           case 1:return number(world,'${a+b} − $b = ?',a);
@@ -36,8 +36,9 @@ class Questions {
           case 4:return number(world,'? + $b = ${a+b}',a);
           case 5:return pick(world,'Welche Zahl ist grösser?',max(a,a+b).toString(),[a.toString(),(a-1).toString(),(a-2).toString()]);
           case 6:return number(world,'$a · ${a+b} · ${a+2*b} · ?',a+3*b);
-          case 7:return number(world,'25 % von ${a*4}',a);
-          case 8:return number(world,'½ von ${a*2}',a);
+          case 7:final x=1+random.nextInt(10),y=1+random.nextInt(10);return number(world,'$x × $y = ?',x*y);
+          case 8:return number(world,'25 % von ${a*4}',a);
+          case 9:return number(world,'½ von ${a*2}',a);
           default:return number(world,'$a + $b × 2',a+b*2);
         }
       case World.logic:

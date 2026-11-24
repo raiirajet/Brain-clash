@@ -20,3 +20,5 @@ Training supports typed numeric answers, voluntary age-based starting levels, au
 
 ## 0.2.0 candidate
 Interactive sequence and pair boards, focus signals, unlockable cosmetics and approved launcher branding. CI builds a universal optimized TEST APK with a non-production key and publishes a marked prerelease. A production signing key is still required.
+
+German/English UI language selection; German spelling and vocabulary content remains available in both UI languages. Device CI includes an emulator offline-start smoke test. Physical multi-touch, performance and update testing remain required before a production release.

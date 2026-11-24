@@ -15,5 +15,5 @@ class L {
 class Text extends m.StatelessWidget {
  final String data;final m.TextStyle? style;final m.TextAlign? textAlign;
  const Text(this.data,{super.key,this.style,this.textAlign});
- @override m.Widget build(m.BuildContext context)=>m.Text(L.text(data),style:style,textAlign:textAlign);
+ @override m.Widget build(m.BuildContext context){m.Localizations.localeOf(context);return m.Text(L.text(data),style:style,textAlign:textAlign);}
 }

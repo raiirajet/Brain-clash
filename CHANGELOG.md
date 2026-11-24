@@ -12,3 +12,5 @@
 
 ## 0.2.0 – test candidate
 - Interactive memory boards, focus signal, unlockable arenas and effects, new icon and splash, optimized test APK.
+
+- German/English UI, extended stats, Android emulator smoke test and expanded multiplication practice.
