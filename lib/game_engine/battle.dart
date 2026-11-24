@@ -59,8 +59,8 @@ class Battle {
   bool? answer(int p,String value) {
     if(p<0||p>1||!canAnswer(p))return null;
     final q=tasks[p];
-    if(!q.options.contains(value))return null;
-    final good=value==q.answer;
+    if(!q.options.contains(value)&&!(mode==Mode.training&&p==0&&q.world==World.math&&int.tryParse(value)!=null))return null;
+    final good=value==q.answer||(mode==Mode.training&&q.world==World.math&&int.tryParse(value)!=null&&int.tryParse(value)==int.tryParse(q.answer));
     if(mode!=Mode.solo||p==0)attempts.add(Attempt(q,p,elapsed-ready[p],good));
     if(!good){misses[p]++;locks[p]=elapsed+850;if(p==1&&mode==Mode.solo)botAt=locks[p]+700;return false;}
     if(shared) {

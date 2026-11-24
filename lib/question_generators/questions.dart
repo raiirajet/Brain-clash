@@ -49,14 +49,22 @@ class Questions {
         }
       case World.memory:
         final length=3+level;
-        final seq=List.generate(length,(_)=>1+random.nextInt(9));
-        final ans=seq.join(' ');
+        final symbols=[['1','2','3','4','5','6','7','8','9'],['●','▲','■','◆','★','✚'],['🔴','🔵','🟢','🟡','🟣','🟠']][random.nextInt(3)];
+        final seq=List.generate(length,(_)=>random.nextInt(symbols.length));
+        String encode(List<int> s)=>s.map((i)=>symbols[i]).join(' ');
+        final ans=encode(seq);
         final wrong=<String>{};
         for(var i=0;i<length&&wrong.length<3;i++) {
-          final copy=[...seq];copy[i]=copy[i]%9+1;wrong.add(copy.join(' '));
+          final copy=[...seq];copy[i]=(copy[i]+1)%symbols.length;wrong.add(encode(copy));
         }
         return pick(world,'Welche Reihenfolge war sichtbar?',ans,wrong.toList(),preview:ans);
       case World.focus:
+        if(random.nextBool()){
+          final icons=['▲','●','■','◆','★','✚']..shuffle(random);
+          final repeated=icons[0],odd=icons[1];
+          final grid=List.filled(6+level*3,repeated);grid[random.nextInt(grid.length)]=odd;
+          return pick(world,'Welches Symbol ist anders?\n${grid.join(' ')}',odd,[repeated,icons[2],icons[3]]);
+        }
         final symbols=['▲','●','■','◆','★','✚'];
         final target=symbols[random.nextInt(symbols.length)];
         final count=1+random.nextInt(4);
@@ -76,6 +84,14 @@ class Questions {
           ['Wie schreibt man es?','Rhythmus','Rytmus','Rhytmus','Rythmuss'],
           ['Englisch: Wolke','cloud','crowd','clown','clock'],
           ['Englisch: Brücke','bridge','bright','bread','brick'],
+          ['Gegenteil von öffnen','schliessen','halten','zeigen','lesen'],
+          ['Wie schreibt man es?','Bibliothek','Biblioteck','Bibliohthek','Biblothek'],
+          ['Englisch: Fenster','window','winter','water','wall'],
+          ['Englisch: Sonne','sun','sea','son','snow'],
+          ['Englisch: Baum','tree','train','three','truck'],
+          ['Gegenteil von laut','leise','gross','sauer','hell'],
+          ['Ergänze: Schu_e','h','l','m','k'],
+          ['Welches Wort passt zu 🐘?','Elefant','Tiger','Giraffe','Zebra'],
         ];
         final row=bank[random.nextInt(level<2?8:bank.length)];
         return pick(world,row[0],row[1],row.sublist(2));

@@ -7,3 +7,5 @@
 - Original vector avatars and animated energy pulse, Android launcher icon, spaced practice queue and round records.
 
 - Original synthesized sound effects, optional music, volume controls and native Android audio adapter.
+
+- Age-based starting difficulty, optional number pad and broader memory/focus/word tasks.

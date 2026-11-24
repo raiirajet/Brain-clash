@@ -9,13 +9,13 @@ import '../learning/progress.dart';
 import '../question_generators/questions.dart';
 
 class Play extends StatefulWidget{
- final Progress progress;final Mode mode;final World world;final int duration,level,opponent;
- const Play({super.key,required this.progress,required this.mode,required this.world,required this.duration,required this.level,required this.opponent});
+ final Progress progress;final Mode mode;final World world;final int duration,level,opponent;final bool numberEntry;
+ const Play({super.key,required this.progress,required this.mode,required this.world,required this.duration,required this.level,required this.opponent,this.numberEntry=false});
  @override State<Play> createState()=>_PlayState();
 }
 class _PlayState extends State<Play> with WidgetsBindingObserver{
  late Battle b;late Timer timer;final arena=Arena();final watch=Stopwatch();
- int last=0,streak=0;int lastCountdown=3;bool saved=false,leaving=false,dialogOpen=false;final feedback=['',''];
+ int last=0,streak=0;int lastCountdown=3;bool saved=false,leaving=false,dialogOpen=false;final feedback=['',''];String typed='';
  @override void initState(){super.initState();WidgetsBinding.instance.addObserver(this);reset();watch.start();timer=Timer.periodic(const Duration(milliseconds:32),(_){
   if(!mounted)return;final now=watch.elapsedMilliseconds;final delta=now-last;last=now;
   if(b.phase==Phase.paused||b.phase==Phase.ended)return;
@@ -26,7 +26,7 @@ class _PlayState extends State<Play> with WidgetsBindingObserver{
   if(b.points[0]+b.points[1]>oldScore&&b.phase==Phase.playing)unawaited(GameAudio(widget.progress.prefs).effect('energy'));
   if(b.phase==Phase.ended)persist();
  });}
- void reset(){b=Battle(mode:widget.mode,world:widget.world,duration:widget.duration,level:widget.level,opponentLevel:widget.opponent,questions:widget.mode==Mode.training?ReviewQuestions(widget.progress.dueQuestions(widget.world)):null);arena.energy=.5;arena.leftAvatar=widget.progress.current['avatar'] as int;arena.rightAvatar=widget.mode==Mode.team?4:5;arena.reduced=widget.progress.prefs.getBool('reduced')??false;saved=false;streak=0;lastCountdown=3;arena.score=0;feedback[0]='';feedback[1]='';}
+ void reset(){b=Battle(mode:widget.mode,world:widget.world,duration:widget.duration,level:widget.level,opponentLevel:widget.opponent,questions:widget.mode==Mode.training?ReviewQuestions(widget.progress.dueQuestions(widget.world)):null);arena.energy=.5;arena.leftAvatar=widget.progress.current['avatar'] as int;arena.rightAvatar=widget.mode==Mode.team?4:5;arena.reduced=widget.progress.prefs.getBool('reduced')??false;saved=false;typed='';streak=0;lastCountdown=3;arena.score=0;feedback[0]='';feedback[1]='';}
  void persist(){if(saved)return;saved=true;final before=widget.progress.current['xp'] as int;widget.progress.record(b);final after=widget.progress.current['xp'] as int;unawaited(widget.progress.save());final audio=GameAudio(widget.progress.prefs);unawaited(audio.effect(widget.mode==Mode.training?'right':b.winner==null?'draw':b.winner==0?'win':'loss'));if([50,150,300,600,1000].any((n)=>before<n&&after>=n))unawaited(audio.effect('unlock'));}
  @override void didChangeAppLifecycleState(AppLifecycleState state){if(state!=AppLifecycleState.resumed&&mounted){setState(()=>b.pause());}}
  @override void dispose(){timer.cancel();watch.stop();WidgetsBinding.instance.removeObserver(this);super.dispose();}
@@ -34,6 +34,7 @@ class _PlayState extends State<Play> with WidgetsBindingObserver{
   // Synchronise the monotonic clock at the input, not just the display frame.
   final now=watch.elapsedMilliseconds;
   setState((){b.tick(now-last);last=now;final result=identical(b.tasks[p],expected)?b.answer(p,v):null;if(result!=null){
+    if(p==0)typed='';
     feedback[p]=result?'Richtig!':widget.mode==Mode.training?'Richtig: ${expected.answer}':'Noch einmal versuchen';
     final audio=GameAudio(widget.progress.prefs);
     if(p==0){streak=result?streak+1:0;}
@@ -73,9 +74,20 @@ class _PlayState extends State<Play> with WidgetsBindingObserver{
   return Padding(padding:const EdgeInsets.all(8),child:LayoutBuilder(builder:(c,box)=>Column(children:[
    Row(mainAxisAlignment:MainAxisAlignment.spaceBetween,children:[Text(p==0?'🔵 Spieler 1':'🟠 Spieler 2'),Text('${b.points[p]} ✓')]),
    Expanded(child:Center(child:Text(!running?(b.phase==Phase.paused?'Pausiert':'Bereit?'):!visible?q.preview:q.prompt,style:TextStyle(fontSize:box.maxHeight<230?18:25,fontWeight:FontWeight.w800),textAlign:TextAlign.center))),
-   if(running&&visible)SizedBox(height:((box.maxHeight-80)*.62).clamp(62.0,145.0).toDouble(),child:GridView.count(physics:const NeverScrollableScrollPhysics(),crossAxisCount:2,childAspectRatio:(box.maxWidth/2)/(((box.maxHeight-80)*.62).clamp(62.0,145.0)/2),mainAxisSpacing:3,crossAxisSpacing:5,children:q.options.map((v)=>FilledButton(style:FilledButton.styleFrom(backgroundColor:color,padding:const EdgeInsets.symmetric(horizontal:4)),onPressed:b.canAnswer(p)?()=>answer(p,v,q):null,child:FittedBox(fit:BoxFit.scaleDown,child:Text(v,style:const TextStyle(fontSize:19))))).toList())),
+   if(running&&visible&&widget.numberEntry&&p==0&&q.world==World.math)numberPad(q,box.maxHeight,color)
+   else if(running&&visible)SizedBox(height:((box.maxHeight-80)*.62).clamp(62.0,145.0).toDouble(),child:GridView.count(physics:const NeverScrollableScrollPhysics(),crossAxisCount:2,childAspectRatio:(box.maxWidth/2)/(((box.maxHeight-80)*.62).clamp(62.0,145.0)/2),mainAxisSpacing:3,crossAxisSpacing:5,children:q.options.map((v)=>FilledButton(style:FilledButton.styleFrom(backgroundColor:color,padding:const EdgeInsets.symmetric(horizontal:4)),onPressed:b.canAnswer(p)?()=>answer(p,v,q):null,child:FittedBox(fit:BoxFit.scaleDown,child:Text(v,style:const TextStyle(fontSize:19))))).toList())),
    SizedBox(height:21,child:Text(!running?'':b.locks[p]>b.elapsed?feedback[p]:b.pendingPlayer==p?'Warte …':'',style:const TextStyle(fontSize:13))),
   ])));
+ }
+ Widget numberPad(Question q,double available,Color color){
+  final enabled=b.canAnswer(0);
+  return SizedBox(height:((available-60)*.68).clamp(115.0,285.0).toDouble(),child:Column(children:[
+    Text(typed.isEmpty?'?':typed,style:const TextStyle(fontSize:24,fontWeight:FontWeight.w800)),
+    Expanded(child:GridView.count(physics:const NeverScrollableScrollPhysics(),crossAxisCount:3,childAspectRatio:2.1,mainAxisSpacing:3,crossAxisSpacing:4,children:['1','2','3','4','5','6','7','8','9','⌫','0','OK'].map((key)=>FilledButton(style:FilledButton.styleFrom(backgroundColor:color,padding:EdgeInsets.zero),onPressed:!enabled?null:(){
+      if(key=='OK'){if(typed.isNotEmpty)answer(0,typed,q);return;}
+      setState((){if(key=='⌫'){if(typed.isNotEmpty)typed=typed.substring(0,typed.length-1);}else if(typed.length<7){typed+=key;}});
+    },child:Text(key))).toList())),
+  ]));
  }
  Widget result(){
   final a=b.attempts.where((a)=>a.player==0).toList(),correct=a.where((a)=>a.correct).length;

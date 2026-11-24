@@ -54,20 +54,22 @@ class Setup extends StatefulWidget{
  @override State<Setup> createState()=>_SetupState();
 }
 class _SetupState extends State<Setup>{
- World world=World.math;int level=1,opponent=1,duration=60;bool automatic=false;
+ World world=World.math;int level=1,opponent=1,duration=60;bool automatic=false,numberEntry=false;String age='Individuell';
  @override void initState(){super.initState();level=widget.progress.prefs.getInt('difficulty')??1;duration=widget.progress.prefs.getInt('duration')??60;}
  @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:Text(modeNames[widget.mode.index])),body:SafeArea(child:ListView(padding:const EdgeInsets.all(18),children:[
   Text('Lernwelt',style:Theme.of(context).textTheme.titleLarge),
   const SizedBox(height:8),
   Wrap(spacing:8,runSpacing:8,children:World.values.map((w)=>ChoiceChip(avatar:Icon(worldIcons[w.index],size:18),label:Text(w.label),selected:w==world,onSelected:(_)=>setState(()=>world=w))).toList()),
   const SizedBox(height:20),
+  DropdownButtonFormField<String>(value:age,decoration:const InputDecoration(labelText:'Altersgruppe (freiwillig)'),items:['8–9 Jahre','10–11 Jahre','12–14 Jahre','15 Jahre und älter','Individuell','Automatisch'].map((a)=>DropdownMenuItem(value:a,child:Text(a))).toList(),onChanged:(v)=>setState((){age=v!;final ages=['8–9 Jahre','10–11 Jahre','12–14 Jahre','15 Jahre und älter'];if(ages.contains(age)){level=ages.indexOf(age);automatic=false;}if(age=='Automatisch')automatic=true;})),
   DropdownButtonFormField<int>(value:level,decoration:const InputDecoration(labelText:'Deine Schwierigkeit'),items:levels(),onChanged:(v)=>setState(()=>level=v!)),
   SwitchListTile(contentPadding:EdgeInsets.zero,title:const Text('Automatische Anpassung'),value:automatic,onChanged:(v)=>setState(()=>automatic=v)),
   if(widget.mode!=Mode.training)DropdownButtonFormField<int>(value:opponent,decoration:InputDecoration(labelText:widget.mode==Mode.solo?'Virtueller Gegner':'Spieler 2'),items:levels(),onChanged:(v)=>setState(()=>opponent=v!)),
+  if(widget.mode==Mode.training&&world==World.math)SwitchListTile(title:const Text('Zahlentastatur statt Antwortvorgaben'),contentPadding:EdgeInsets.zero,value:numberEntry,onChanged:(v)=>setState(()=>numberEntry=v)),
   const SizedBox(height:18),const Text('Rundendauer'),
   Wrap(spacing:8,children:[30,60,90,120,if(widget.mode==Mode.training)0].map((t)=>ChoiceChip(label:Text(t==0?'Ohne Limit':'$t s'),selected:duration==t,onSelected:(_)=>setState(()=>duration=t))).toList()),
   const SizedBox(height:24),
-  FilledButton(onPressed:(){final actual=automatic?widget.progress.levelFor(world.name,level):level;Navigator.pushReplacement<void,void>(context,MaterialPageRoute(builder:(_)=>Play(progress:widget.progress,mode:widget.mode,world:world,duration:duration,level:actual,opponent:opponent)));},child:const Padding(padding:EdgeInsets.all(14),child:Text('BATTLE STARTEN'))),
+  FilledButton(onPressed:(){final actual=automatic?widget.progress.levelFor(world.name,level):level;Navigator.pushReplacement<void,void>(context,MaterialPageRoute(builder:(_)=>Play(progress:widget.progress,mode:widget.mode,world:world,duration:duration,level:actual,opponent:opponent,numberEntry:numberEntry)));},child:const Padding(padding:EdgeInsets.all(14),child:Text('BATTLE STARTEN'))),
  ])));
  List<DropdownMenuItem<int>> levels()=>List.generate(4,(i)=>DropdownMenuItem(value:i,child:Text(['Einfach','Normal','Schwer','Experte'][i])));
 }
