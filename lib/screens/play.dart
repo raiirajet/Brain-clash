@@ -7,6 +7,7 @@ import '../audio/audio.dart';
 import '../game_engine/battle.dart';
 import '../learning/progress.dart';
 import '../question_generators/questions.dart';
+import '../widgets/memory_board.dart';
 
 class Play extends StatefulWidget{
  final Progress progress;final Mode mode;final World world;final int duration,level,opponent;final bool numberEntry;
@@ -30,17 +31,17 @@ class _PlayState extends State<Play> with WidgetsBindingObserver{
  void persist(){if(saved)return;saved=true;final before=widget.progress.current['xp'] as int;widget.progress.record(b);final after=widget.progress.current['xp'] as int;unawaited(widget.progress.save());final audio=GameAudio(widget.progress.prefs);unawaited(audio.effect(widget.mode==Mode.training?'right':b.winner==null?'draw':b.winner==0?'win':'loss'));if([50,150,300,600,1000].any((n)=>before<n&&after>=n))unawaited(audio.effect('unlock'));}
  @override void didChangeAppLifecycleState(AppLifecycleState state){if(state!=AppLifecycleState.resumed&&mounted){setState(()=>b.pause());}}
  @override void dispose(){timer.cancel();watch.stop();WidgetsBinding.instance.removeObserver(this);super.dispose();}
- void answer(int p,String v,Question expected){
+ void answer(int p,String v,Question expected,{int? cell}){
   // Synchronise the monotonic clock at the input, not just the display frame.
   final now=watch.elapsedMilliseconds;
-  setState((){b.tick(now-last);last=now;final result=identical(b.tasks[p],expected)?b.answer(p,v):null;if(result!=null){
+  setState((){b.tick(now-last);last=now;final result=identical(b.tasks[p],expected)?(cell==null?b.answer(p,v):b.tapCell(p,cell)):null;if(result!=null){
     if(p==0)typed='';
     feedback[p]=result?'Richtig!':widget.mode==Mode.training?'Richtig: ${expected.answer}':'Noch einmal versuchen';
     final audio=GameAudio(widget.progress.prefs);
     if(p==0){streak=result?streak+1:0;}
     unawaited(audio.effect(result?(p==0&&streak%5==0?'streak':'right'):'wrong'));
     if(widget.progress.prefs.getBool('haptics')??true)unawaited(result?HapticFeedback.selectionClick():HapticFeedback.lightImpact());
-  }arena.energy=b.energy/100;});
+  }arena.energy=b.energy/100;arena.score=b.points[0]+b.points[1];});
   if(b.phase==Phase.ended)persist();
  }
  Future<void> leave()async{
@@ -73,8 +74,9 @@ class _PlayState extends State<Play> with WidgetsBindingObserver{
   final color=p==0?const Color(0xff2359c5):const Color(0xffb44818);
   return Padding(padding:const EdgeInsets.all(8),child:LayoutBuilder(builder:(c,box)=>Column(children:[
    Row(mainAxisAlignment:MainAxisAlignment.spaceBetween,children:[Text(p==0?'🔵 Spieler 1':'🟠 Spieler 2'),Text('${b.points[p]} ✓')]),
-   Expanded(child:Center(child:Text(!running?(b.phase==Phase.paused?'Pausiert':'Bereit?'):!visible?q.preview:q.prompt,style:TextStyle(fontSize:box.maxHeight<230?18:25,fontWeight:FontWeight.w800),textAlign:TextAlign.center))),
-   if(running&&visible&&widget.numberEntry&&p==0&&q.world==World.math)numberPad(q,box.maxHeight,color)
+   Expanded(child:Center(child:Text(!running?(b.phase==Phase.paused?'Pausiert':'Bereit?'):!visible?(q.interaction==Interaction.sequence||q.interaction==Interaction.pairs?'Merke dir die Felder':q.preview):q.prompt,style:TextStyle(fontSize:box.maxHeight<230?18:25,fontWeight:FontWeight.w800),textAlign:TextAlign.center))),
+   if(running&&(q.interaction==Interaction.sequence||q.interaction==Interaction.pairs))Expanded(flex:3,child:MemoryBoard(question:q,battle:b,player:p,onTap:(i)=>answer(p,'',q,cell:i)))
+   else if(running&&visible&&widget.numberEntry&&p==0&&q.world==World.math)numberPad(q,box.maxHeight,color)
    else if(running&&visible)SizedBox(height:((box.maxHeight-80)*.62).clamp(62.0,145.0).toDouble(),child:GridView.count(physics:const NeverScrollableScrollPhysics(),crossAxisCount:2,childAspectRatio:(box.maxWidth/2)/(((box.maxHeight-80)*.62).clamp(62.0,145.0)/2),mainAxisSpacing:3,crossAxisSpacing:5,children:q.options.map((v)=>FilledButton(style:FilledButton.styleFrom(backgroundColor:color,padding:const EdgeInsets.symmetric(horizontal:4)),onPressed:b.canAnswer(p)?()=>answer(p,v,q):null,child:FittedBox(fit:BoxFit.scaleDown,child:Text(v,style:const TextStyle(fontSize:19))))).toList())),
    SizedBox(height:21,child:Text(!running?'':b.locks[p]>b.elapsed?feedback[p]:b.pendingPlayer==p?'Warte …':'',style:const TextStyle(fontSize:13))),
   ])));

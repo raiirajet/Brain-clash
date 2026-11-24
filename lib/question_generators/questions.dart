@@ -1,5 +1,6 @@
 import 'dart:math';
 
+enum Interaction { choices, sequence, pairs, signal }
 enum World { math, logic, memory, focus, words, mixed }
 extension WorldLabel on World {
   String get label => const ['Mathematik','Logic Clash','Memory Arena','Focus Rush','Word Battle','Mixed Battle'][index];
@@ -8,10 +9,13 @@ class Question {
   final World world;
   final String prompt, answer, explanation, preview;
   final List<String> options;
-  const Question(this.world,this.prompt,this.answer,this.options,this.explanation,{this.preview=''});
+  final Interaction interaction;
+  final List<String> board;
+  int get previewMs=>interaction==Interaction.sequence?board.length*480+400:interaction==Interaction.pairs?2600:interaction==Interaction.signal?1800:preview.isEmpty?0:2200;
+  const Question(this.world,this.prompt,this.answer,this.options,this.explanation,{this.preview='',this.interaction=Interaction.choices,this.board=const []});
   String get key=>'${world.name}|$prompt|$answer|$preview';
-  Map<String,dynamic> toJson()=>{'world':world.name,'prompt':prompt,'answer':answer,'options':options,'explanation':explanation,'preview':preview};
-  factory Question.fromJson(Map data)=>Question(World.values.byName(data['world'] as String),data['prompt'] as String,data['answer'] as String,List<String>.from(data['options'] as List),data['explanation'] as String,preview:data['preview'] as String);
+  Map<String,dynamic> toJson()=>{'world':world.name,'prompt':prompt,'answer':answer,'options':options,'explanation':explanation,'preview':preview,'interaction':interaction.name,'board':board};
+  factory Question.fromJson(Map data)=>Question(World.values.byName(data['world'] as String),data['prompt'] as String,data['answer'] as String,List<String>.from(data['options'] as List),data['explanation'] as String,preview:data['preview'] as String,interaction:Interaction.values.byName(data['interaction'] as String? ?? 'choices'),board:List<String>.from(data['board'] as List? ?? []));
 }
 class Questions {
   final Random random;
@@ -49,6 +53,18 @@ class Questions {
         }
       case World.memory:
         final length=3+level;
+        final variant=random.nextInt(5);
+        if(variant==3){
+          final cells=List.generate(length,(_)=>random.nextInt(9).toString());
+          final correct=cells.join(' ');
+          final wrong=List.generate(3,(i){final copy=[...cells];copy[i]=((int.parse(copy[i])+1)%9).toString();return copy.join(' ');});
+          return Question(world,'Tippe die Felder in derselben Reihenfolge',correct,[correct,...wrong],'Reihenfolge: $correct',preview:correct,interaction:Interaction.sequence,board:cells);
+        }
+        if(variant==4){
+          final faces=['🐱','🐶','🦊','🐼','🐸','🐯']..shuffle(random);
+          final cards=faces.take(2+level).expand((f)=>[f,f]).toList()..shuffle(random);
+          return Question(world,'Finde alle Bildpaare','Paare gefunden',const ['Paare gefunden','Nicht gleich','Falsch','Noch nicht'],'Gleiche Bilder bilden ein Paar.',preview:'Merke die Karten',interaction:Interaction.pairs,board:cards);
+        }
         final symbols=[['1','2','3','4','5','6','7','8','9'],['●','▲','■','◆','★','✚'],['🔴','🔵','🟢','🟡','🟣','🟠']][random.nextInt(3)];
         final seq=List.generate(length,(_)=>random.nextInt(symbols.length));
         String encode(List<int> s)=>s.map((i)=>symbols[i]).join(' ');
@@ -59,7 +75,11 @@ class Questions {
         }
         return pick(world,'Welche Reihenfolge war sichtbar?',ans,wrong.toList(),preview:ans);
       case World.focus:
-        if(random.nextBool()){
+        final variant=random.nextInt(5);
+        if(variant==2){return const Question(World.focus,'JETZT! Tippe das Signal','●',['●','▲','■','◆'],'Reagiere erst auf das Signal.',preview:'Warte auf das Signal …',interaction:Interaction.signal);}
+        if(variant==3){return pick(world,'Welche Farbe hat der Kreis? 🔴 BLAU','Rot',['Blau','Grün','Gelb']);}
+        if(variant==4){return pick(world,'Finde den blauen Kreis','🔵',['🔷','🔴','🟦']);}
+        if(variant==0){
           final icons=['▲','●','■','◆','★','✚']..shuffle(random);
           final repeated=icons[0],odd=icons[1];
           final grid=List.filled(6+level*3,repeated);grid[random.nextInt(grid.length)]=odd;
@@ -90,7 +110,7 @@ class Questions {
           ['Englisch: Sonne','sun','sea','son','snow'],
           ['Englisch: Baum','tree','train','three','truck'],
           ['Gegenteil von laut','leise','gross','sauer','hell'],
-          ['Ergänze: Schu_e (Fussbekleidung)','h','l','m','k'],
+          ['Ergänze: Schu_ (ein einzelner Schuh)','h','l','m','k'],
           ['Welches Wort passt zu 🐘?','Elefant','Tiger','Giraffe','Zebra'],
         ];
         final row=bank[random.nextInt(level==0?8:bank.length)];

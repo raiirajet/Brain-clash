@@ -49,3 +49,23 @@ for manifest in android/app/src/debug/AndroidManifest.xml android/app/src/profil
     sed -i '/<uses-permission android:name="android.permission.INTERNET"/d' "$manifest"
   fi
 done
+
+python3 - <<'PY'
+from pathlib import Path
+import shutil
+res=Path('android/app/src/main/res')
+target=res/'drawable-nodpi'
+target.mkdir(exist_ok=True)
+shutil.copyfile('assets/branding/brain_clash.webp',target/'brain_clash_logo.webp')
+(res/'mipmap-anydpi'/'brain_clash_launcher.xml').write_text('<bitmap xmlns:android="http://schemas.android.com/apk/res/android" android:src="@drawable/brain_clash_logo" android:gravity="fill"/>')
+(res/'drawable'/'brain_clash_inset.xml').write_text('<inset xmlns:android="http://schemas.android.com/apk/res/android" android:drawable="@drawable/brain_clash_logo" android:inset="20dp"/>')
+(res/'mipmap-anydpi-v26'/'brain_clash_launcher.xml').write_text('<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android"><background android:drawable="@android:color/black"/><foreground android:drawable="@drawable/brain_clash_inset"/></adaptive-icon>')
+for folder in ['drawable','drawable-v21']:
+ p=res/folder/'launch_background.xml'
+ if p.exists():
+  p.write_text('<layer-list xmlns:android="http://schemas.android.com/apk/res/android"><item android:drawable="@android:color/black"/><item android:width="96dp" android:height="96dp" android:gravity="center" android:drawable="@drawable/brain_clash_logo"/></layer-list>')
+for folder in ['values-v31','values-night-v31']:
+ p=res/folder/'styles.xml'
+ p.parent.mkdir(exist_ok=True)
+ p.write_text('<resources><style name="LaunchTheme" parent="@android:style/Theme.Material.NoActionBar"><item name="android:windowSplashScreenBackground">#080B13</item><item name="android:windowSplashScreenAnimatedIcon">@drawable/brain_clash_inset</item><item name="android:windowBackground">@drawable/launch_background</item></style><style name="NormalTheme" parent="@android:style/Theme.Material.NoActionBar"><item name="android:windowBackground">?android:colorBackground</item></style></resources>')
+PY

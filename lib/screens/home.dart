@@ -30,7 +30,7 @@ class _HomeState extends State<Home>{
   final icons=[Icons.bolt,Icons.sports_esports,Icons.psychology,Icons.groups];
   return Scaffold(body:SafeArea(child:LayoutBuilder(builder:(context,box){
     return Center(child:ConstrainedBox(constraints:const BoxConstraints(maxWidth:760),child:Padding(padding:const EdgeInsets.all(18),child:Column(children:[
-      Row(children:[const Icon(Icons.bolt_rounded,color:Color(0xff4d9cff),size:35),const Spacer(),ActionChip(avatar:AvatarArt(index:p.current['avatar'] as int,size:24),label:Text(p.active),onPressed:()=>open(Profiles(progress:p))) ]),
+      Row(children:[Image.asset('assets/branding/brain_clash.webp',width:54,height:54),const Spacer(),ActionChip(avatar:AvatarArt(index:p.current['avatar'] as int,size:24),label:Text(p.active),onPressed:()=>open(Profiles(progress:p))) ]),
       const SizedBox(height:10),
       Text('BRAIN CLASH',style:Theme.of(context).textTheme.headlineLarge?.copyWith(fontWeight:FontWeight.w900,letterSpacing:1.5)),
       const Text('PLAY. THINK. WIN.',style:TextStyle(letterSpacing:3,fontWeight:FontWeight.w600)),
@@ -137,6 +137,6 @@ class _SettingsState extends State<Settings>{
   ListTile(title:const Text('Einführung erneut anzeigen'),onTap:widget.intro),
   ListTile(title:const Text('Lernfortschritt zurücksetzen'),onTap:()async{final yes=await showDialog<bool>(context:context,builder:(c)=>AlertDialog(title:const Text('Fortschritt zurücksetzen?'),actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Abbrechen')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('Zurücksetzen'))]));if(yes==true){p.profiles[p.active]=p.fresh();await p.save();if(mounted)setState((){});}}),
   ListTile(title:const Text('Datenschutz'),onTap:()=>showDialog<void>(context:context,builder:(c)=>AlertDialog(title:const Text('Deine Daten'),content:const Text('Profile und Lernfortschritt werden auf diesem Gerät gespeichert. Kein Konto, keine Werbung, kein Tracking. Lösche Profile in der Profilverwaltung oder alle Daten in den Android-App-Einstellungen.'),actions:[TextButton(onPressed:()=>Navigator.pop(c),child:const Text('OK'))]))),
-  AboutListTile(applicationName:'Brain Clash',applicationVersion:'0.1.0 – Entwicklung',applicationLegalese:'Play. Think. Win.'),
+  AboutListTile(applicationName:'Brain Clash',applicationVersion:'0.2.0 – Testversion',applicationLegalese:'Play. Think. Win.'),
  ]));
 }

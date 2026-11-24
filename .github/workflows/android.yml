@@ -24,17 +24,17 @@ jobs:
       - run: flutter pub get
       - run: flutter analyze --no-fatal-infos
       - run: flutter test
-      - run: flutter build apk --debug
+      - run: flutter build apk --release
       - name: Verify and prepare APK
         run: |
           mkdir -p output
-          cp build/app/outputs/flutter-apk/app-debug.apk output/BrainClash-v0.1.0-TEST.apk
+          cp build/app/outputs/flutter-apk/app-release.apk output/BrainClash-v0.2.0-TEST.apk
           SDK_TOOLS="$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)"
-          "$SDK_TOOLS" verify --verbose --print-certs output/BrainClash-v0.1.0-TEST.apk
-          "$(dirname "$SDK_TOOLS")/aapt" dump badging output/BrainClash-v0.1.0-TEST.apk
+          "$SDK_TOOLS" verify --verbose --print-certs output/BrainClash-v0.2.0-TEST.apk
+          "$(dirname "$SDK_TOOLS")/aapt" dump badging output/BrainClash-v0.2.0-TEST.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: BrainClash-v0.1.0-TEST
+          name: BrainClash-v0.2.0-TEST
           path: output/*.apk
       - uses: actions/upload-artifact@v4
         with:

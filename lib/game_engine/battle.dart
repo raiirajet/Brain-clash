@@ -19,6 +19,9 @@ class Battle {
   int? winner;
   final points=[0,0], misses=[0,0], locks=[0,0], shown=[0,0], ready=[0,0];
   final List<Attempt> attempts=[];
+  final partial=[<String>[],<String>[]];
+  final matched=[<int>{},<int>{}];
+  final selected=[-1,-1];
   late List<Question> tasks;
   int? pendingPlayer;
   int pendingAt=0, botAt=0;
@@ -33,7 +36,7 @@ class Battle {
   bool visible(int p)=>elapsed>=ready[p];
   bool canAnswer(int p)=>phase==Phase.playing&&visible(p)&&elapsed>=locks[p]&&!(shared&&pendingPlayer==p);
   void setTask(int p,Question q) {
-    tasks[p]=q;shown[p]=elapsed;ready[p]=elapsed+(q.preview.isEmpty?0:2200);locks[p]=ready[p];
+    tasks[p]=q;partial[p].clear();matched[p].clear();selected[p]=-1;shown[p]=elapsed;ready[p]=elapsed+q.previewMs;locks[p]=ready[p];
   }
   void start() {
     phase=Phase.playing;
@@ -56,6 +59,32 @@ class Battle {
   }
   void pause(){if(phase==Phase.playing||phase==Phase.countdown){previous=phase;phase=Phase.paused;}}
   void resume(){if(phase==Phase.paused)phase=previous;}
+  bool? tapCell(int p,int cell){
+    if(p<0||p>1||!canAnswer(p))return null;
+    final q=tasks[p];
+    if(q.interaction==Interaction.sequence){
+      if(cell<0||cell>8)return null;
+      final v=cell.toString();
+      if(v!=q.board[partial[p].length]){
+        partial[p].clear();
+        final result=answer(p,q.options.firstWhere((s)=>s!=q.answer));
+        shown[p]=elapsed;ready[p]=elapsed+q.previewMs;locks[p]=ready[p];
+        return result;
+      }
+      partial[p].add(v);
+      if(partial[p].length==q.board.length)return answer(p,q.answer);
+      return null;
+    }
+    if(q.interaction==Interaction.pairs){
+      if(cell<0||cell>=q.board.length||matched[p].contains(cell)||selected[p]==cell)return null;
+      if(selected[p]<0){selected[p]=cell;return null;}
+      final first=selected[p];selected[p]=-1;
+      if(q.board[first]!=q.board[cell])return answer(p,q.options.firstWhere((s)=>s!=q.answer));
+      matched[p].addAll([first,cell]);
+      if(matched[p].length==q.board.length)return answer(p,q.answer);
+    }
+    return null;
+  }
   bool? answer(int p,String value) {
     if(p<0||p>1||!canAnswer(p))return null;
     final q=tasks[p];
