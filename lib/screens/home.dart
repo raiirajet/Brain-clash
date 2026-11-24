@@ -44,11 +44,11 @@ class _HomeState extends State<Home>{
        ClipRRect(borderRadius:BorderRadius.circular(13),child:Image.asset('assets/branding/brain_clash.webp',width:48,height:48)),
        const SizedBox(width:8),
        Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('BRAIN CLASH',style:Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight:FontWeight.w900,letterSpacing:.5)),const Text('PLAY. THINK. WIN.',style:TextStyle(fontSize:10,letterSpacing:1.7,fontWeight:FontWeight.w700))])),
-       ActionChip(avatar:AvatarArt(index:p.current['avatar'] as int,size:24),label:Text(p.active),onPressed:()=>open(Profiles(progress:p))),
+       ActionChip(avatar:AvatarArt(index:p.current['avatar'] as int,size:24,costume:p.current['costume'] as int? ??0),label:Text(p.active),onPressed:()=>open(Profiles(progress:p))),
       ]),
       const SizedBox(height:10),
       if(!compact)Container(padding:const EdgeInsets.all(12),decoration:BoxDecoration(borderRadius:BorderRadius.circular(20),gradient:const LinearGradient(colors:[Color(0xff193e7f),Color(0xff161a33),Color(0xff63351f)]),border:Border.all(color:arcadeBlue.withAlpha(85))),child:Row(children:[
-       AvatarArt(index:p.current['avatar'] as int,size:76),
+       AvatarArt(index:p.current['avatar'] as int,size:76,costume:p.current['costume'] as int? ??0),
        Expanded(child:Column(mainAxisSize:MainAxisSize.min,mainAxisAlignment:MainAxisAlignment.center,crossAxisAlignment:CrossAxisAlignment.start,children:[
         Text('${p.current['xp']} XP',style:const TextStyle(fontSize:27,color:Colors.white,fontWeight:FontWeight.w900)),
         const SizedBox(height:6),
@@ -207,7 +207,7 @@ class CollectionPage extends StatefulWidget{
  @override State<CollectionPage> createState()=>_CollectionPageState();
 }
 class _CollectionPageState extends State<CollectionPage>{
- @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Sammlung'),actions:[IconButton(tooltip:L.text('Arena & Effekte'),icon:const Icon(Icons.palette),onPressed:()=>Navigator.push<void>(context,MaterialPageRoute(builder:(_)=>Cosmetics(progress:widget.progress))))]),body:GridView.builder(padding:const EdgeInsets.all(16),gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:2,childAspectRatio:1.15,crossAxisSpacing:8,mainAxisSpacing:8),itemCount:names.length,itemBuilder:(c,i){final p=widget.progress.current;final unlocked=(p['xp'] as int)>=thresholds[i];return Card(child:InkWell(onTap:unlocked?()async{setState(()=>p['avatar']=i);await widget.progress.save();}:null,child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[Container(decoration:BoxDecoration(shape:BoxShape.circle,gradient:RadialGradient(colors:[palette[i].withAlpha(90),Colors.transparent])),child:AvatarArt(index:i,size:80)),Text(names[i],style:const TextStyle(fontWeight:FontWeight.w900)),Text(['Standard','Standard','Selten','Selten','Episch','Episch','Episch','Episch','Legendär','Legendär','Meister','Meister'][i],style:TextStyle(color:palette[i],fontSize:11)),Text(unlocked?(p['avatar']==i?'Ausgewählt':'Auswählen'):'🔒 ${thresholds[i]} XP')])));}));
+ @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Sammlung'),actions:[IconButton(tooltip:L.text('Arena & Effekte'),icon:const Icon(Icons.palette),onPressed:()=>Navigator.push<void>(context,MaterialPageRoute(builder:(_)=>Cosmetics(progress:widget.progress))))]),body:GridView.builder(padding:const EdgeInsets.all(16),gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:2,mainAxisExtent:180,crossAxisSpacing:8,mainAxisSpacing:8),itemCount:names.length,itemBuilder:(c,i){final p=widget.progress.current;final unlocked=(p['xp'] as int)>=thresholds[i];return Card(child:InkWell(onTap:unlocked?()async{setState(()=>p['avatar']=i);await widget.progress.save();}:null,child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[Container(decoration:BoxDecoration(shape:BoxShape.circle,gradient:RadialGradient(colors:[palette[i].withAlpha(90),Colors.transparent])),child:AvatarArt(index:i,size:80,costume:p['costume'] as int? ??0)),Text(names[i],style:const TextStyle(fontWeight:FontWeight.w900)),Text(['Standard','Standard','Selten','Selten','Episch','Episch','Episch','Episch','Legendär','Legendär','Meister','Meister'][i],style:TextStyle(color:palette[i],fontSize:11)),Text(unlocked?(p['avatar']==i?'Ausgewählt':'Auswählen'):'🔒 ${thresholds[i]} XP')])));}));
 }
 class Profiles extends StatefulWidget{
  final Progress progress;
@@ -248,6 +248,6 @@ class _SettingsState extends State<Settings>{
   ListTile(leading:const Icon(Icons.restart_alt),title:const Text('Lernfortschritt zurücksetzen'),onTap:()async{final yes=await showDialog<bool>(context:context,builder:(c)=>AlertDialog(title:const Text('Fortschritt zurücksetzen?'),actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Abbrechen')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('Zurücksetzen'))]));if(yes==true){p.profiles[p.active]=p.fresh();await p.save();if(mounted)setState((){});}}),
   ListTile(leading:const Icon(Icons.storage),title:const Text('Lokale Datenspeicherung'),subtitle:Text(p.storageName)),
   ListTile(leading:const Icon(Icons.privacy_tip_outlined),title:const Text('Datenschutz'),onTap:()=>showDialog<void>(context:context,builder:(c)=>AlertDialog(title:const Text('Deine Daten'),content:const Text('Profile und Lernfortschritt werden auf diesem Gerät gespeichert. Kein Konto, keine Werbung, kein Tracking. Lösche Profile in der Profilverwaltung oder alle Daten in den Android-App-Einstellungen.'),actions:[TextButton(onPressed:()=>Navigator.pop(c),child:const Text('OK'))]))),
-  AboutListTile(applicationName:'Brain Clash',applicationVersion:'0.4.0 – Testversion',applicationLegalese:'Play. Think. Win.'),
+  AboutListTile(applicationName:'Brain Clash',applicationVersion:'0.9.5 – Release Candidate',applicationLegalese:'Play. Think. Win.'),
  ]));
 }

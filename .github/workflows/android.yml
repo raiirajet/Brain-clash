@@ -30,7 +30,8 @@ jobs:
       - run: flutter build apk --release
       - name: Version metadata
         id: version
-        run: echo "name=$(sed -n 's/^version: \([^+]*\).*/\1/p' pubspec.yaml)" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "name=$(sed -n 's/^version: \([^+]*\).*/\1/p' pubspec.yaml)" >> "$GITHUB_OUTPUT"
       - name: Verify and prepare APK
         run: |
           mkdir -p output
@@ -38,17 +39,18 @@ jobs:
           SDK_TOOLS="$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)"
           "$SDK_TOOLS" verify --verbose --print-certs output/BrainClash-v${{ steps.version.outputs.name }}-TEST.apk
           "$(dirname "$SDK_TOOLS")/aapt" dump badging output/BrainClash-v${{ steps.version.outputs.name }}-TEST.apk
+          (cd output && sha256sum *.apk > SHA256SUMS.txt)
       - uses: actions/upload-artifact@v4
         with:
           name: BrainClash-v${{ steps.version.outputs.name }}-TEST
-          path: output/*.apk
+          path: output/
       - name: Publish verified test prerelease
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="v${{ steps.version.outputs.name }}-test-${GITHUB_SHA:0:7}"
-          gh release create "$TAG" output/*.apk --target "$GITHUB_SHA" --prerelease --title "Brain Clash ${{ steps.version.outputs.name }} TEST" --notes "Optimized test APK signed with a non-production key. Uninstall older test builds if Android reports a signature conflict. Not a final production release."
+          gh release create "$TAG" output/*.apk --target "$GITHUB_SHA" --prerelease --title "Brain Clash ${{ steps.version.outputs.name }} TEST" --notes "Optimized test APK signed with a non-production key. If Android reports a signature conflict, preserve existing data and use a separate test device; do not uninstall blindly. Not a final production release."
       - uses: actions/upload-artifact@v4
         with:
           name: Android-scaffold-and-lockfile

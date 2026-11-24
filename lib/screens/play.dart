@@ -28,7 +28,7 @@ class _PlayState extends State<Play> with WidgetsBindingObserver{
  int get nowMs=>widget.clockMs?.call()??watch.elapsedMilliseconds;
  int last=0,streak=0;int lastCountdown=3;bool saved=false,leaving=false,dialogOpen=false;final feedback=['',''];final typed=['',''];int earnedXp=0;final seriesWins=[0,0];
  bool get seriesComplete=>widget.seriesLength==1||seriesWins.any((v)=>v>widget.seriesLength~/2);
- String playerName(int p)=>widget.playerNames?[p]??(p==0?widget.progress.active:widget.secondProfile.isEmpty?'P2':widget.secondProfile);
+ String playerName(int p)=>widget.playerNames?[p]??(p==0?widget.progress.active:widget.mode==Mode.solo?'BOT':widget.secondProfile.isEmpty?'P2':widget.secondProfile);
  final feedbackUntil=[0,0],feedbackEvent=[0,0],combo=[0,0];
  final feedbackCorrect=[true,true];
  final selectedAnswer=['',''];
@@ -45,11 +45,11 @@ class _PlayState extends State<Play> with WidgetsBindingObserver{
   if(before==Phase.countdown&&b.phase==Phase.playing){unawaited(GameAudio(widget.progress.prefs).effect('start'));}
   if(b.phase==Phase.countdown){final count=(b.countdown/1000).ceil();if(count!=lastCountdown){lastCountdown=count;unawaited(GameAudio(widget.progress.prefs).effect('countdown'));}}
   if(b.points[0]+b.points[1]>oldScore&&b.phase==Phase.playing)unawaited(GameAudio(widget.progress.prefs).effect('energy'));
-  if(b.phase==Phase.ended){setState(persist);}
+  if(b.phase==Phase.ended){arena.pauseEngine();setState(persist);}
  });}
- void reset(){last=nowMs;unawaited(GameAudio(widget.progress.prefs).music(scene:'arena',arena:widget.progress.current['arena'] as int? ??0));b=Battle(mode:widget.mode,world:widget.world,duration:widget.duration,level:widget.level,opponentLevel:widget.opponent,questions:widget.challenge==null?(widget.mode==Mode.training?ReviewQuestions(widget.progress.dueQuestions(widget.world)):null):ChallengeQuestions(widget.challenge!,widget.digits,config:widget.mathConfig,reviews:widget.mode==Mode.training?widget.progress.dueQuestions(widget.world):const []),opponentQuestions:widget.challenge!=null&&widget.opponentDigits!=widget.digits?ChallengeQuestions(widget.challenge!,widget.opponentDigits,config:widget.mathConfig):null,sameQuestions:widget.digits==widget.opponentDigits&&!const [Challenge.pairs,Challenge.targetHunt,Challenge.tapBattle,Challenge.numberSort].contains(widget.challenge)&&widget.challenge?.arcadeStage!=true,rule:widget.rule,numberEntry:widget.numberEntry,fuseMs:widget.challenge==Challenge.numberBomb?8000:0,digits:widget.digits,opponentDigits:widget.opponentDigits,skillName:widget.challenge?.name??widget.world.name);arena.energy=.5;arena.leftAvatar=widget.avatars?[0]??widget.progress.current['avatar'] as int;arena.rightAvatar=widget.avatars?[1]??(widget.progress.profiles[widget.secondProfile] as Map?)?['avatar'] as int? ??5;arena.training=widget.mode==Mode.training;arena.team=widget.mode==Mode.team;arena.reduced=widget.progress.prefs.getBool('reduced')??false;saved=false;typed[0]='';typed[1]='';earnedXp=0;streak=0;lastCountdown=3;arena.score=0;arena.clearEffects();for(var i=0;i<2;i++){feedbackUntil[i]=0;feedbackEvent[i]++;combo[i]=0;selectedAnswer[i]='';lastSolution[i]='';}arena.skin=widget.progress.current['arena'] as int? ?? 0;arena.leftCostume=widget.progress.current['costume'] as int? ??0;arena.rightCostume=(widget.progress.profiles[widget.secondProfile] as Map?)?['costume'] as int? ??0;arena.effect=widget.progress.current['effect'] as int? ?? 0;arena.tint=widget.progress.current['color'] as int? ?? 0;arena.background=widget.progress.current['background'] as int? ?? 0;arena.victor=null;arena.failed=-1;feedback[0]='';feedback[1]='';}
- void persist(){arena.victor=b.winner;if(saved)return;saved=true;if(b.winner!=null)seriesWins[b.winner!]++;if(seriesComplete)widget.onMatchEnd?.call(b.winner);final before=widget.progress.current['xp'] as int;if(widget.recordProgress)widget.progress.record(b);if(widget.recordProgress&&two&&widget.secondProfile.isNotEmpty&&widget.secondProfile!=widget.progress.active){widget.progress.record(b,player:1,profile:widget.secondProfile);}final after=widget.progress.current['xp'] as int;earnedXp=after-before;if(widget.recordProgress)unawaited(widget.progress.save());final audio=GameAudio(widget.progress.prefs);unawaited(audio.music(scene:'result'));unawaited(audio.effect(widget.mode==Mode.training?'right':b.winner==null?'draw':b.winner==0?'win':'loss'));if([50,150,300,600,1000,1500,2500,3500,7000,15000,30000].any((n)=>before<n&&after>=n))unawaited(audio.effect('unlock'));}
- @override void didChangeAppLifecycleState(AppLifecycleState state){if(state!=AppLifecycleState.resumed&&mounted){setState(()=>b.pause());}}
+ void reset(){last=nowMs;arena.resumeEngine();unawaited(GameAudio(widget.progress.prefs).music(scene:'arena',arena:widget.progress.current['arena'] as int? ??0));b=Battle(mode:widget.mode,world:widget.world,duration:widget.duration,level:widget.level,opponentLevel:widget.opponent,questions:widget.challenge==null?(widget.mode==Mode.training?ReviewQuestions(widget.progress.dueQuestions(widget.world)):null):ChallengeQuestions(widget.challenge!,widget.digits,config:widget.mathConfig,reviews:widget.mode==Mode.training?widget.progress.dueQuestions(widget.world):const []),opponentQuestions:widget.challenge!=null&&widget.opponentDigits!=widget.digits?ChallengeQuestions(widget.challenge!,widget.opponentDigits,config:widget.mathConfig):null,sameQuestions:widget.digits==widget.opponentDigits&&!const [Challenge.pairs,Challenge.targetHunt,Challenge.tapBattle,Challenge.numberSort].contains(widget.challenge)&&widget.challenge?.arcadeStage!=true,rule:widget.rule,numberEntry:widget.numberEntry,fuseMs:widget.challenge==Challenge.numberBomb?8000:0,digits:widget.digits,opponentDigits:widget.opponentDigits,skillName:widget.challenge?.name??widget.world.name);arena.energy=.5;arena.leftAvatar=widget.avatars?[0]??widget.progress.current['avatar'] as int;arena.rightAvatar=widget.avatars?[1]??(widget.progress.profiles[widget.secondProfile] as Map?)?['avatar'] as int? ??5;arena.training=widget.mode==Mode.training;arena.team=widget.mode==Mode.team;arena.reduced=widget.progress.prefs.getBool('reduced')??false;saved=false;typed[0]='';typed[1]='';earnedXp=0;streak=0;lastCountdown=3;arena.score=0;arena.clearEffects();for(var i=0;i<2;i++){feedbackUntil[i]=0;feedbackEvent[i]++;combo[i]=0;selectedAnswer[i]='';lastSolution[i]='';}arena.skin=widget.progress.current['arena'] as int? ?? 0;arena.leftCostume=widget.progress.current['costume'] as int? ??0;arena.rightCostume=(widget.progress.profiles[widget.secondProfile] as Map?)?['costume'] as int? ??0;arena.effect=widget.progress.current['effect'] as int? ?? 0;arena.tint=widget.progress.current['color'] as int? ?? 0;arena.background=widget.progress.current['background'] as int? ?? 0;arena.victor=null;arena.failed=-1;feedback[0]='';feedback[1]='';}
+ void persist(){arena.pauseEngine();arena.victor=b.winner;if(saved)return;saved=true;if(b.winner!=null)seriesWins[b.winner!]++;if(seriesComplete)widget.onMatchEnd?.call(b.winner);final before=widget.progress.current['xp'] as int;if(widget.recordProgress)widget.progress.record(b);if(widget.recordProgress&&two&&widget.secondProfile.isNotEmpty&&widget.secondProfile!=widget.progress.active){widget.progress.record(b,player:1,profile:widget.secondProfile);}final after=widget.progress.current['xp'] as int;earnedXp=after-before;if(widget.recordProgress)unawaited(widget.progress.save());final audio=GameAudio(widget.progress.prefs);unawaited(audio.music(scene:'result'));unawaited(audio.effect(widget.mode==Mode.training?'right':b.winner==null?'draw':b.winner==0?'win':'loss'));if([50,150,300,600,1000,1500,2500,3500,7000,15000,30000].any((n)=>before<n&&after>=n))unawaited(audio.effect('unlock'));}
+ @override void didChangeAppLifecycleState(AppLifecycleState state){if(state!=AppLifecycleState.resumed&&mounted){setState(()=>b.pause());arena.pauseEngine();}}
  @override void dispose(){timer.cancel();watch.stop();unawaited(GameAudio(widget.progress.prefs).music());WidgetsBinding.instance.removeObserver(this);super.dispose();}
  void answer(int p,String v,Question expected,{int? cell}){
   // Synchronise the monotonic clock at the input, not just the display frame.
@@ -64,24 +64,24 @@ class _PlayState extends State<Play> with WidgetsBindingObserver{
     unawaited(audio.effect(result?(p==0&&streak%5==0?'streak':'right'):'wrong'));
     if(widget.progress.prefs.getBool('haptics')??true)unawaited(result?HapticFeedback.selectionClick():HapticFeedback.lightImpact());
   }syncArena(beforePoints);});
-  if(b.phase==Phase.ended)persist();
+  if(b.phase==Phase.ended)setState(persist);
  }
  Future<void> leave()async{
   if(dialogOpen)return;
   if(b.phase==Phase.ended){Navigator.pop(context);return;}
   dialogOpen=true;
   final wasPaused=b.phase==Phase.paused;
-  setState(()=>b.pause());
+  setState(()=>b.pause());arena.pauseEngine();
   final yes=await showDialog<bool>(context:context,builder:(c)=>AlertDialog(title:const Text('Runde verlassen?'),content:const Text('Diese Runde wird nicht gespeichert.'),actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Weiterspielen')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('Verlassen'))]));
   dialogOpen=false;
   if(!mounted)return;
-  if(yes==true){setState(()=>leaving=true);WidgetsBinding.instance.addPostFrameCallback((_){if(mounted)Navigator.pop(context);});}else if(!wasPaused){setState((){last=nowMs;b.resume();});}
+  if(yes==true){setState(()=>leaving=true);WidgetsBinding.instance.addPostFrameCallback((_){if(mounted)Navigator.pop(context);});}else if(!wasPaused){setState((){last=nowMs;b.resume();arena.resumeEngine();});}
  }
  bool get two=>widget.mode==Mode.duel||widget.mode==Mode.team;
  @override Widget build(BuildContext context)=>PopScope(canPop:leaving||b.phase==Phase.ended,onPopInvokedWithResult:(didPop,result){if(!didPop&&!leaving)unawaited(leave());},child:Scaffold(
-  appBar:AppBar(title:Text(widget.challenge?.label??widget.world.label),leading:IconButton(icon:const Icon(Icons.arrow_back),onPressed:leave),actions:[if(b.phase!=Phase.ended)IconButton(icon:Icon(b.phase==Phase.paused?Icons.play_arrow:Icons.pause),onPressed:()=>setState((){if(b.phase==Phase.paused){last=nowMs;b.resume();}else{b.pause();}}))]),
+  appBar:AppBar(title:Text(widget.challenge?.label??widget.world.label),leading:IconButton(icon:const Icon(Icons.arrow_back),onPressed:leave),actions:[if(b.phase!=Phase.ended)IconButton(icon:Icon(b.phase==Phase.paused?Icons.play_arrow:Icons.pause),onPressed:()=>setState((){if(b.phase==Phase.paused){last=nowMs;b.resume();arena.resumeEngine();}else{b.pause();arena.pauseEngine();}}))]),
   body:ArcadeBackdrop(child:SafeArea(child:b.phase==Phase.ended?result():LayoutBuilder(builder:(context,space){
-   final wide=space.maxWidth>=640&&space.maxWidth>space.maxHeight;
+   final wide=space.maxWidth>=600&&space.maxWidth>space.maxHeight;
    if(wide){
     return Row(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
      Expanded(flex:3,child:panel(0)),
@@ -105,16 +105,19 @@ class _PlayState extends State<Play> with WidgetsBindingObserver{
     if(widget.mode==Mode.training)TextButton(onPressed:()=>setState((){b.finish();persist();}),child:const Text('Training beenden')),
    ]);
   })))));
- Widget hud()=>Padding(padding:const EdgeInsets.symmetric(horizontal:12,vertical:3),child:Row(children:[
+ Widget hud()=>LayoutBuilder(builder:(context,box){
+   if(box.maxWidth<300)return Padding(padding:const EdgeInsets.symmetric(horizontal:8,vertical:3),child:Column(mainAxisSize:MainAxisSize.min,children:[clockChip(),const SizedBox(height:5),Row(children:[Expanded(child:scoreChip(0)),const SizedBox(width:4),Expanded(child:scoreChip(1))])]));
+   return Padding(padding:const EdgeInsets.symmetric(horizontal:12,vertical:3),child:Row(children:[
     Expanded(child:scoreChip(0)),
     const SizedBox(width:7),
-    Container(padding:const EdgeInsets.symmetric(horizontal:12,vertical:4),decoration:BoxDecoration(color:const Color(0xff101b32),borderRadius:BorderRadius.circular(14),border:Border.all(color:Colors.white24)),child:Column(mainAxisSize:MainAxisSize.min,children:[
-     Text(b.phase==Phase.countdown?'${(b.countdown/1000).ceil()}':b.phase==Phase.paused?'PAUSE':b.finalRound?'FINAL':b.unlimited?'∞':'${(b.remaining/1000).ceil()} s',style:TextStyle(color:b.remaining<10000&&!b.unlimited?arcadeOrange:Colors.white,fontSize:20,fontWeight:FontWeight.w900)),
-     if(!b.unlimited)SizedBox(width:60,child:LinearProgressIndicator(value:(b.remaining/(widget.duration*1000)).clamp(0.0,1.0),color:arcadeOrange,backgroundColor:Colors.white24,minHeight:3)),
-    ])),
+    clockChip(),
     const SizedBox(width:7),
     Expanded(child:scoreChip(1)),
-   ]));
+   ]));});
+ Widget clockChip()=>Container(padding:const EdgeInsets.symmetric(horizontal:12,vertical:4),decoration:BoxDecoration(color:const Color(0xff101b32),borderRadius:BorderRadius.circular(14),border:Border.all(color:Colors.white24)),child:Column(mainAxisSize:MainAxisSize.min,children:[
+     Text(b.phase==Phase.countdown?'${(b.countdown/1000).ceil()}':b.phase==Phase.paused?'PAUSE':b.finalRound?'FINAL':b.unlimited?'∞':'${(b.remaining/1000).ceil()} s',style:TextStyle(color:b.remaining<10000&&!b.unlimited?arcadeOrange:Colors.white,fontSize:20,fontWeight:FontWeight.w900)),
+     if(!b.unlimited)SizedBox(width:60,child:LinearProgressIndicator(value:(b.remaining/(widget.duration*1000)).clamp(0.0,1.0),color:arcadeOrange,backgroundColor:Colors.white24,minHeight:3)),
+    ]));
  Widget stage(double height)=>Padding(padding:const EdgeInsets.symmetric(horizontal:10),child:ClipRRect(borderRadius:BorderRadius.circular(16),child:SizedBox(height:height,child:Stack(fit:StackFit.expand,children:[
     if(widget.challenge?.arcadeStage==true)ArcadeStage(challenge:widget.challenge!,points:b.points,remaining:b.remaining,reduced:reduced,rules:b.arcade)else GameWidget(game:arena),
     if(b.phase==Phase.countdown||b.phase==Phase.paused)IgnorePointer(child:ColoredBox(color:Colors.black38,child:Center(child:Text(b.phase==Phase.paused?'PAUSE':'${(b.countdown/1000).ceil()}',style:const TextStyle(color:Colors.white,fontSize:34,fontWeight:FontWeight.w900))))),
@@ -123,8 +126,8 @@ class _PlayState extends State<Play> with WidgetsBindingObserver{
   final color=p==0?arcadeBlue:arcadeOrange;
   final label=p==0?'P1':widget.mode==Mode.solo?'BOT':widget.mode==Mode.training?'XP':'P2';
   final score=p==1&&widget.mode==Mode.training?b.points[0]*10:b.points[p];
-  if(b.arcade==null&&widget.rule==BattleRule.hearts&&(widget.mode==Mode.duel||widget.mode==Mode.solo))return Container(padding:const EdgeInsets.symmetric(vertical:8),decoration:BoxDecoration(color:color.withAlpha(25),borderRadius:BorderRadius.circular(13),border:Border.all(color:color.withAlpha(100))),child:Row(mainAxisAlignment:MainAxisAlignment.center,children:[Text(label,style:const TextStyle(fontSize:11,fontWeight:FontWeight.w700)),const SizedBox(width:3),for(var i=0;i<3;i++)Icon(i<3-b.misses[p]?Icons.favorite:Icons.favorite_border,color:color,size:15),const SizedBox(width:3),Text('$score',style:const TextStyle(fontSize:13,fontWeight:FontWeight.w800))]));
-  return Container(padding:const EdgeInsets.symmetric(horizontal:8,vertical:5),decoration:BoxDecoration(color:color.withAlpha(25),border:Border.all(color:color.withAlpha(120)),borderRadius:BorderRadius.circular(13)),child:Row(mainAxisAlignment:MainAxisAlignment.center,children:[Icon(p==0?Icons.bolt:widget.mode==Mode.training?Icons.star:Icons.shield,color:color,size:17),const SizedBox(width:4),Text(label,style:const TextStyle(fontSize:11,fontWeight:FontWeight.w700)),const SizedBox(width:5),Text(b.arcade!=null?'${(b.arcade!.progress(p).clamp(0.0,1.0)*100).round()}%':widget.rule==BattleRule.race?'$score/5':widget.rule==BattleRule.race10?'$score/10':'$score',style:const TextStyle(fontSize:20,fontWeight:FontWeight.w900))]));
+  if(b.arcade==null&&widget.rule==BattleRule.hearts&&(widget.mode==Mode.duel||widget.mode==Mode.solo))return Container(padding:const EdgeInsets.symmetric(vertical:8),decoration:BoxDecoration(color:color.withAlpha(25),borderRadius:BorderRadius.circular(13),border:Border.all(color:color.withAlpha(100))),child:FittedBox(fit:BoxFit.scaleDown,child:Row(mainAxisSize:MainAxisSize.min,mainAxisAlignment:MainAxisAlignment.center,children:[Text(label,style:const TextStyle(fontSize:11,fontWeight:FontWeight.w700)),const SizedBox(width:3),for(var i=0;i<3;i++)Icon(i<3-b.misses[p]?Icons.favorite:Icons.favorite_border,color:color,size:15),const SizedBox(width:3),Text('$score',style:const TextStyle(fontSize:13,fontWeight:FontWeight.w800))])));
+  return Container(padding:const EdgeInsets.symmetric(horizontal:8,vertical:5),decoration:BoxDecoration(color:color.withAlpha(25),border:Border.all(color:color.withAlpha(120)),borderRadius:BorderRadius.circular(13)),child:FittedBox(fit:BoxFit.scaleDown,child:Row(mainAxisSize:MainAxisSize.min,mainAxisAlignment:MainAxisAlignment.center,children:[Icon(p==0?Icons.bolt:widget.mode==Mode.training?Icons.star:Icons.shield,color:color,size:17),const SizedBox(width:4),Text(label,style:const TextStyle(fontSize:11,fontWeight:FontWeight.w700)),const SizedBox(width:5),Text(b.arcade!=null?'${(b.arcade!.progress(p).clamp(0.0,1.0)*100).round()}%':widget.rule==BattleRule.race?'$score/5':widget.rule==BattleRule.race10?'$score/10':'$score',style:const TextStyle(fontSize:20,fontWeight:FontWeight.w900))])));
  }
 
  Widget panel(int p){

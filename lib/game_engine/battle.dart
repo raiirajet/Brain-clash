@@ -68,7 +68,7 @@ class Battle {
     if(phase!=Phase.playing)return;
     elapsed+=ms;time+=ms;
     arcade?.tick(ms,players:mode==Mode.training?1:2);checkArcade();if(phase==Phase.ended)return;
-    if(mode==Mode.solo&&arcade?.waiting(1)==true){arcade!.autoAction(1);checkArcade();if(phase==Phase.ended)return;}
+    if(mode==Mode.solo&&arcade?.waiting(1)==true){arcade!.autoAction(1);if(!arcade!.waiting(1)){restartArcadeQuestion(1);scheduleBot();}checkArcade();if(phase==Phase.ended)return;}
     if(pendingPlayer!=null&&elapsed-pendingAt>100) resolvePending();
     if(phase!=Phase.playing)return;
     if(fuseMs>0){
@@ -90,8 +90,9 @@ class Battle {
     if(!unlimited&&remaining==0) {if(pendingPlayer!=null)resolvePending();if(phase==Phase.playing&&arcade==null&&rule==BattleRule.finalClash&&points[0]==points[1]){finalRound=true;if(shared){advanceShared();}else{setTask(0,questions.make(world,level));setTask(1,(opponentQuestions??questions).make(world,opponentLevel));scheduleBot();}}else{finish();}}
   }
   void checkArcade(){if(arcade?.ended==true&&phase==Phase.playing)finish();}
-  bool arcadeMove(int p,Direction d){if(phase!=Phase.playing||p<0||p>1)return false;final ok=arcade?.move(p,d)??false;checkArcade();return ok;}
-  bool arcadeChest(int p,int index){if(phase!=Phase.playing||p<0||p>1)return false;final ok=arcade?.openChest(p,index)??false;checkArcade();return ok;}
+  void restartArcadeQuestion(int p){shown[p]=elapsed;ready[p]=elapsed+tasks[p].previewMs;locks[p]=ready[p];}
+  bool arcadeMove(int p,Direction d){if(phase!=Phase.playing||p<0||p>1)return false;final ok=arcade?.move(p,d)??false;if(ok)restartArcadeQuestion(p);checkArcade();return ok;}
+  bool arcadeChest(int p,int index){if(phase!=Phase.playing||p<0||p>1)return false;final ok=arcade?.openChest(p,index)??false;if(ok)restartArcadeQuestion(p);checkArcade();return ok;}
   void pause(){if(phase==Phase.playing||phase==Phase.countdown){previous=phase;phase=Phase.paused;}}
   void resume(){if(phase==Phase.paused)phase=previous;}
   bool? tapCell(int p,int cell){

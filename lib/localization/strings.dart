@@ -5,6 +5,10 @@ class L {
  static String text(String value){
   if(language!='en')return value;
   if(value=='+1 · Richtig!')return '+1 · Correct!';
+  if(value.contains(' · Tages-Challenge'))return value.replaceFirst('Tages-Challenge','Daily challenge');
+  if(value.contains(' Lernwelten'))return value.replaceFirst(' Lernwelten',' learning worlds');
+  if(value.contains(' Ziffern'))return value.replaceFirst(' Ziffern',' digits');
+  if(value.contains(' · ')&&value.endsWith(' Fehler'))return value.replaceAll(' richtig',' correct').replaceAll(' Fehler',' mistakes').replaceAll(' Punkte',' points');
   final exact=english[value];if(exact!=null)return exact;
   final patterns=<String,String>{'Drehe ':'Rotate ','Sieger: ':'Winner: ','Weiter: ':'Advances: ','Bis ':'Up to ','Finde ':'Find ','Zahl: ':'Number: ','Ordne die Buchstaben: ':'Arrange the letters: ','Erreiche die Zahl ':'Reach the number ','JETZT! Tippe ':'NOW! Tap ','Start in ':'Starts in ','Monster-Energie: ':'Monster energy: ','Richtig: ':'Correct: ','Richtig ist: ':'Correct answer: ','Reihenfolge: ':'Sequence: ','Zähle ':'Count ','Welches Symbol ist anders?':'Which symbol is different?','Englisch: ':'English translation of: ','Verdeckte Karte ':'Hidden card ','Feld ':'Tile ','Spieler 2: ':'Player 2: '};
   for(final entry in patterns.entries){if(value.startsWith(entry.key))return value.replaceFirst(entry.key,entry.value).replaceAll('Trefferquote:','Accuracy:').replaceAll(' Punkte',' points').replaceAll(' Fehler',' mistakes');}

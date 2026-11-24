@@ -16,5 +16,9 @@ adb install -r build/app/outputs/flutter-apk/app-release.apk
 adb shell am force-stop ch.brainclash.brain_clash
 adb shell am start -W -n ch.brainclash.brain_clash/.MainActivity
 adb shell pidof ch.brainclash.brain_clash
+mkdir -p output/device
+adb shell am start -W -n ch.brainclash.brain_clash/.MainActivity > output/device/cold-start.txt
+adb shell dumpsys gfxinfo ch.brainclash.brain_clash > output/device/gfxinfo.txt
+adb exec-out screencap -p > output/device/home.png
 adb logcat -d -s AndroidRuntime:E > /tmp/brainclash-runtime.txt
 cat /tmp/brainclash-runtime.txt
