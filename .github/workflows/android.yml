@@ -28,21 +28,21 @@ jobs:
       - name: Verify and prepare APK
         run: |
           mkdir -p output
-          cp build/app/outputs/flutter-apk/app-release.apk output/BrainClash-v0.3.1-TEST.apk
+          cp build/app/outputs/flutter-apk/app-release.apk output/BrainClash-v0.4.0-TEST.apk
           SDK_TOOLS="$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)"
-          "$SDK_TOOLS" verify --verbose --print-certs output/BrainClash-v0.3.1-TEST.apk
-          "$(dirname "$SDK_TOOLS")/aapt" dump badging output/BrainClash-v0.3.1-TEST.apk
+          "$SDK_TOOLS" verify --verbose --print-certs output/BrainClash-v0.4.0-TEST.apk
+          "$(dirname "$SDK_TOOLS")/aapt" dump badging output/BrainClash-v0.4.0-TEST.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: BrainClash-v0.3.1-TEST
+          name: BrainClash-v0.4.0-TEST
           path: output/*.apk
       - name: Publish verified test prerelease
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v0.3.1-test-${GITHUB_SHA:0:7}"
-          gh release create "$TAG" output/*.apk --target "$GITHUB_SHA" --prerelease --title "Brain Clash 0.3.1 TEST" --notes "Optimized test APK signed with a non-production key. Uninstall older test builds if Android reports a signature conflict. Not a final production release."
+          TAG="v0.4.0-test-${GITHUB_SHA:0:7}"
+          gh release create "$TAG" output/*.apk --target "$GITHUB_SHA" --prerelease --title "Brain Clash 0.4.0 TEST" --notes "Optimized test APK signed with a non-production key. Uninstall older test builds if Android reports a signature conflict. Not a final production release."
       - uses: actions/upload-artifact@v4
         with:
           name: Android-scaffold-and-lockfile

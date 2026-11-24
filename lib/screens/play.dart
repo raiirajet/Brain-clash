@@ -8,13 +8,15 @@ import '../audio/audio.dart';
 import '../game_engine/battle.dart';
 import '../learning/progress.dart';
 import '../question_generators/questions.dart';
+import '../question_generators/challenges.dart';
 import '../widgets/memory_board.dart';
 import '../widgets/character.dart';
 import '../widgets/arcade.dart';
 
 class Play extends StatefulWidget{
  final Progress progress;final Mode mode;final World world;final int duration,level,opponent;final bool numberEntry;final String secondProfile;
- const Play({super.key,required this.progress,required this.mode,required this.world,required this.duration,required this.level,required this.opponent,this.numberEntry=false,this.secondProfile=''});
+ final Challenge? challenge;final int digits,opponentDigits;final BattleRule rule;
+ const Play({super.key,required this.progress,required this.mode,required this.world,required this.duration,required this.level,required this.opponent,this.numberEntry=false,this.secondProfile='',this.challenge,this.digits=1,this.opponentDigits=1,this.rule=BattleRule.tug});
  @override State<Play> createState()=>_PlayState();
 }
 class _PlayState extends State<Play> with WidgetsBindingObserver{
@@ -37,7 +39,7 @@ class _PlayState extends State<Play> with WidgetsBindingObserver{
   if(b.points[0]+b.points[1]>oldScore&&b.phase==Phase.playing)unawaited(GameAudio(widget.progress.prefs).effect('energy'));
   if(b.phase==Phase.ended)persist();
  });}
- void reset(){b=Battle(mode:widget.mode,world:widget.world,duration:widget.duration,level:widget.level,opponentLevel:widget.opponent,questions:widget.mode==Mode.training?ReviewQuestions(widget.progress.dueQuestions(widget.world)):null);arena.energy=.5;arena.leftAvatar=widget.progress.current['avatar'] as int;arena.rightAvatar=(widget.progress.profiles[widget.secondProfile] as Map?)?['avatar'] as int? ??5;arena.training=widget.mode==Mode.training;arena.team=widget.mode==Mode.team;arena.reduced=widget.progress.prefs.getBool('reduced')??false;saved=false;typed='';streak=0;lastCountdown=3;arena.score=0;arena.clearEffects();for(var i=0;i<2;i++){feedbackUntil[i]=0;feedbackEvent[i]++;combo[i]=0;selectedAnswer[i]='';lastSolution[i]='';}arena.skin=widget.progress.current['arena'] as int? ?? 0;arena.effect=widget.progress.current['effect'] as int? ?? 0;arena.tint=widget.progress.current['color'] as int? ?? 0;arena.background=widget.progress.current['background'] as int? ?? 0;arena.victor=null;arena.failed=-1;feedback[0]='';feedback[1]='';}
+ void reset(){b=Battle(mode:widget.mode,world:widget.world,duration:widget.duration,level:widget.level,opponentLevel:widget.opponent,questions:widget.challenge==null?(widget.mode==Mode.training?ReviewQuestions(widget.progress.dueQuestions(widget.world)):null):ChallengeQuestions(widget.challenge!,widget.digits,reviews:widget.mode==Mode.training?widget.progress.dueQuestions(widget.world):const []),opponentQuestions:widget.challenge!=null&&widget.opponentDigits!=widget.digits?ChallengeQuestions(widget.challenge!,widget.opponentDigits):null,sameQuestions:widget.digits==widget.opponentDigits,rule:widget.rule);arena.energy=.5;arena.leftAvatar=widget.progress.current['avatar'] as int;arena.rightAvatar=(widget.progress.profiles[widget.secondProfile] as Map?)?['avatar'] as int? ??5;arena.training=widget.mode==Mode.training;arena.team=widget.mode==Mode.team;arena.reduced=widget.progress.prefs.getBool('reduced')??false;saved=false;typed='';streak=0;lastCountdown=3;arena.score=0;arena.clearEffects();for(var i=0;i<2;i++){feedbackUntil[i]=0;feedbackEvent[i]++;combo[i]=0;selectedAnswer[i]='';lastSolution[i]='';}arena.skin=widget.progress.current['arena'] as int? ?? 0;arena.effect=widget.progress.current['effect'] as int? ?? 0;arena.tint=widget.progress.current['color'] as int? ?? 0;arena.background=widget.progress.current['background'] as int? ?? 0;arena.victor=null;arena.failed=-1;feedback[0]='';feedback[1]='';}
  void persist(){arena.victor=b.winner;if(saved)return;saved=true;final before=widget.progress.current['xp'] as int;widget.progress.record(b);if(two&&widget.secondProfile.isNotEmpty&&widget.secondProfile!=widget.progress.active){widget.progress.record(b,player:1,profile:widget.secondProfile);}final after=widget.progress.current['xp'] as int;unawaited(widget.progress.save());final audio=GameAudio(widget.progress.prefs);unawaited(audio.effect(widget.mode==Mode.training?'right':b.winner==null?'draw':b.winner==0?'win':'loss'));if([50,150,300,600,1000].any((n)=>before<n&&after>=n))unawaited(audio.effect('unlock'));}
  @override void didChangeAppLifecycleState(AppLifecycleState state){if(state!=AppLifecycleState.resumed&&mounted){setState(()=>b.pause());}}
  @override void dispose(){timer.cancel();watch.stop();WidgetsBinding.instance.removeObserver(this);super.dispose();}
@@ -69,7 +71,7 @@ class _PlayState extends State<Play> with WidgetsBindingObserver{
  }
  bool get two=>widget.mode==Mode.duel||widget.mode==Mode.team;
  @override Widget build(BuildContext context)=>PopScope(canPop:leaving||b.phase==Phase.ended,onPopInvokedWithResult:(didPop,result){if(!didPop&&!leaving)unawaited(leave());},child:Scaffold(
-  appBar:AppBar(title:Text(widget.world.label),leading:IconButton(icon:const Icon(Icons.arrow_back),onPressed:leave),actions:[if(b.phase!=Phase.ended)IconButton(icon:Icon(b.phase==Phase.paused?Icons.play_arrow:Icons.pause),onPressed:()=>setState((){if(b.phase==Phase.paused){last=watch.elapsedMilliseconds;b.resume();}else{b.pause();}}))]),
+  appBar:AppBar(title:Text(widget.challenge?.label??widget.world.label),leading:IconButton(icon:const Icon(Icons.arrow_back),onPressed:leave),actions:[if(b.phase!=Phase.ended)IconButton(icon:Icon(b.phase==Phase.paused?Icons.play_arrow:Icons.pause),onPressed:()=>setState((){if(b.phase==Phase.paused){last=watch.elapsedMilliseconds;b.resume();}else{b.pause();}}))]),
   body:ArcadeBackdrop(child:SafeArea(child:b.phase==Phase.ended?result():LayoutBuilder(builder:(context,space)=>Column(children:[
    if(two)Expanded(child:RotatedBox(quarterTurns:2,child:panel(1))),
    Padding(padding:const EdgeInsets.symmetric(horizontal:12,vertical:3),child:Row(children:[
@@ -94,7 +96,8 @@ class _PlayState extends State<Play> with WidgetsBindingObserver{
   final color=p==0?arcadeBlue:arcadeOrange;
   final label=p==0?'P1':widget.mode==Mode.solo?'BOT':widget.mode==Mode.training?'XP':'P2';
   final score=p==1&&widget.mode==Mode.training?b.points[0]*10:b.points[p];
-  return Container(padding:const EdgeInsets.symmetric(horizontal:8,vertical:5),decoration:BoxDecoration(color:color.withAlpha(25),border:Border.all(color:color.withAlpha(120)),borderRadius:BorderRadius.circular(13)),child:Row(mainAxisAlignment:MainAxisAlignment.center,children:[Icon(p==0?Icons.bolt:widget.mode==Mode.training?Icons.star:Icons.shield,color:color,size:17),const SizedBox(width:4),Text(label,style:const TextStyle(fontSize:11,fontWeight:FontWeight.w700)),const SizedBox(width:5),Text('$score',style:const TextStyle(fontSize:22,fontWeight:FontWeight.w900))]));
+  if(widget.rule==BattleRule.hearts&&(widget.mode==Mode.duel||widget.mode==Mode.solo))return Container(padding:const EdgeInsets.symmetric(vertical:8),decoration:BoxDecoration(color:color.withAlpha(25),borderRadius:BorderRadius.circular(13),border:Border.all(color:color.withAlpha(100))),child:Row(mainAxisAlignment:MainAxisAlignment.center,children:[Text(label,style:const TextStyle(fontSize:11,fontWeight:FontWeight.w700)),const SizedBox(width:3),for(var i=0;i<3;i++)Icon(i<3-b.misses[p]?Icons.favorite:Icons.favorite_border,color:color,size:17)]));
+  return Container(padding:const EdgeInsets.symmetric(horizontal:8,vertical:5),decoration:BoxDecoration(color:color.withAlpha(25),border:Border.all(color:color.withAlpha(120)),borderRadius:BorderRadius.circular(13)),child:Row(mainAxisAlignment:MainAxisAlignment.center,children:[Icon(p==0?Icons.bolt:widget.mode==Mode.training?Icons.star:Icons.shield,color:color,size:17),const SizedBox(width:4),Text(label,style:const TextStyle(fontSize:11,fontWeight:FontWeight.w700)),const SizedBox(width:5),Text(widget.rule==BattleRule.race?'$score/5':'$score',style:const TextStyle(fontSize:20,fontWeight:FontWeight.w900))]));
  }
 
  Widget panel(int p){
@@ -112,8 +115,8 @@ class _PlayState extends State<Play> with WidgetsBindingObserver{
     Expanded(child:Container(width:double.infinity,padding:const EdgeInsets.symmetric(horizontal:8,vertical:3),decoration:BoxDecoration(color:Theme.of(context).colorScheme.surface.withAlpha(220),borderRadius:BorderRadius.circular(15),border:Border.all(color:activeFeedback?(feedbackCorrect[p]?arcadeGreen:arcadeRed).withAlpha(160):color.withAlpha(95))),child:Center(child:FittedBox(fit:BoxFit.scaleDown,child:Text(prompt,style:TextStyle(fontSize:small?23:34,fontWeight:FontWeight.w900),textAlign:TextAlign.center))))),
     const SizedBox(height:4),
     if(running&&isMemory)Expanded(flex:3,child:MemoryBoard(question:q,battle:b,player:p,onTap:(i)=>answer(p,'',q,cell:i)))
-    else if(running&&visible&&widget.numberEntry&&p==0&&q.world==World.math)numberPad(q,box.maxHeight,color)
-    else if(running&&visible)Expanded(flex:2,child:LayoutBuilder(builder:(context,grid)=>GridView.builder(padding:EdgeInsets.zero,physics:const NeverScrollableScrollPhysics(),itemCount:q.options.length,gridDelegate:SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:2,mainAxisExtent:((grid.maxHeight-5)/2).clamp(12.0,85.0).toDouble(),mainAxisSpacing:5,crossAxisSpacing:6),itemBuilder:(context,i){
+    else if(running&&visible&&widget.numberEntry&&p==0&&q.world==World.math&&int.tryParse(q.answer)!=null)numberPad(q,box.maxHeight,color)
+    else if(running&&visible)Expanded(flex:2,child:LayoutBuilder(builder:(context,grid)=>GridView.builder(padding:EdgeInsets.zero,physics:const NeverScrollableScrollPhysics(),itemCount:q.options.length,gridDelegate:SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:2,mainAxisExtent:((grid.maxHeight-(q.options.length>2?5:0))/(q.options.length>2?2:1)).clamp(12.0,100.0).toDouble(),mainAxisSpacing:5,crossAxisSpacing:6),itemBuilder:(context,i){
       final v=q.options[i];final wrong=activeFeedback&&!feedbackCorrect[p]&&selectedAnswer[p]==v&&b.locks[p]>b.elapsed;
       return FilledButton(style:FilledButton.styleFrom(backgroundColor:color,disabledBackgroundColor:wrong?const Color(0xffa42d49):color.withAlpha(100),disabledForegroundColor:Colors.white70,padding:const EdgeInsets.symmetric(horizontal:5),minimumSize:Size.zero,tapTargetSize:MaterialTapTargetSize.shrinkWrap,shape:RoundedRectangleBorder(borderRadius:BorderRadius.circular(13),side:BorderSide(color:wrong?arcadeRed:Colors.white24))),onPressed:b.canAnswer(p)?()=>answer(p,v,q):null,child:Row(mainAxisAlignment:MainAxisAlignment.center,children:[if(wrong)const Icon(Icons.close,size:16),Flexible(child:FittedBox(fit:BoxFit.scaleDown,child:Text(v,style:const TextStyle(fontSize:23,fontWeight:FontWeight.w800))))]));
     }))),

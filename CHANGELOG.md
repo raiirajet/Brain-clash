@@ -22,3 +22,6 @@
 
 ## 0.3.1 — Detailed arcade artwork
 - Full-body original vector characters with individual costumes, silhouettes and equipment; illustrated mode tiles; character-specific lightning, comet, shuriken, flame, orb and plasma animations; themed stage scenery; solved answer/equation feedback; profile names in game panels.
+
+## 0.4.0 — Duel arcade
+- 20 selectable game categories, separate arithmetic operations, 1–3 digit operands, independent digit ranges for local opponents, dedicated reaction/memory/logic challenges, four competitive rules and redesigned game selection. All previous worlds retained.

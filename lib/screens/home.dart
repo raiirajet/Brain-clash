@@ -5,6 +5,8 @@ import '../audio/audio.dart';
 import '../game_engine/battle.dart';
 import '../learning/progress.dart';
 import '../question_generators/questions.dart';
+import '../question_generators/challenges.dart';
+import '../widgets/challenge_card.dart';
 import 'play.dart';
 import '../widgets/character.dart';
 import 'cosmetics.dart';
@@ -78,24 +80,61 @@ class Setup extends StatefulWidget{
  @override State<Setup> createState()=>_SetupState();
 }
 class _SetupState extends State<Setup>{
- World world=World.math;int level=1,opponent=1,duration=60;bool automatic=false,numberEntry=false;String age='Individuell';String secondProfile='';
- @override void initState(){super.initState();level=widget.progress.prefs.getInt('difficulty')??1;duration=widget.progress.prefs.getInt('duration')??60;}
- @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:Text(modeNames[widget.mode.index])),body:SafeArea(child:ListView(padding:const EdgeInsets.all(18),children:[
-  Text('Lernwelt',style:Theme.of(context).textTheme.titleLarge),
-  const SizedBox(height:8),
-  GridView.count(shrinkWrap:true,physics:const NeverScrollableScrollPhysics(),crossAxisCount:3,childAspectRatio:1.25,mainAxisSpacing:7,crossAxisSpacing:7,children:World.values.map((w)=>ArcadeTile(label:w.label,icon:worldIcons[w.index],color:[const Color(0xff276fe5),const Color(0xff7044bf),const Color(0xffa743ab),const Color(0xffb95518),const Color(0xff187b65),const Color(0xff3b629b)][w.index],selected:w==world,onTap:()=>setState(()=>world=w))).toList()),
-  const SizedBox(height:20),
-  DropdownButtonFormField<String>(value:age,decoration:InputDecoration(labelText:L.text('Altersgruppe (freiwillig)')),items:['8–9 Jahre','10–11 Jahre','12–14 Jahre','15 Jahre und älter','Individuell','Automatisch'].map((a)=>DropdownMenuItem(value:a,child:Text(a))).toList(),onChanged:(v)=>setState((){age=v!;final ages=['8–9 Jahre','10–11 Jahre','12–14 Jahre','15 Jahre und älter'];if(ages.contains(age)){level=ages.indexOf(age);automatic=false;}if(age=='Automatisch')automatic=true;})),
-  DropdownButtonFormField<int>(value:level,decoration:InputDecoration(labelText:L.text('Deine Schwierigkeit')),items:levels(),onChanged:(v)=>setState(()=>level=v!)),
-  SwitchListTile(contentPadding:EdgeInsets.zero,title:const Text('Automatische Anpassung'),value:automatic,onChanged:(v)=>setState(()=>automatic=v)),
-  if(widget.mode!=Mode.training)DropdownButtonFormField<int>(value:opponent,decoration:InputDecoration(labelText:L.text(widget.mode==Mode.solo?'Virtueller Gegner':'Spieler 2')),items:levels(),onChanged:(v)=>setState(()=>opponent=v!)),
-  if(widget.mode==Mode.duel||widget.mode==Mode.team)DropdownButtonFormField<String>(value:secondProfile,decoration:InputDecoration(labelText:L.text('Profil für Spieler 2')),items:[const DropdownMenuItem(value:'',child:Text('Ohne Profil')),for(final name in widget.progress.profiles.keys.where((n)=>n!=widget.progress.active))DropdownMenuItem(value:name,child:Text(name))],onChanged:(v)=>setState(()=>secondProfile=v??'')),
-  if(widget.mode==Mode.training&&world==World.math)SwitchListTile(title:const Text('Zahlentastatur statt Antwortvorgaben'),contentPadding:EdgeInsets.zero,value:numberEntry,onChanged:(v)=>setState(()=>numberEntry=v)),
-  const SizedBox(height:18),const Text('Rundendauer'),
-  Wrap(spacing:8,children:[30,60,90,120,if(widget.mode==Mode.training)0].map((t)=>ChoiceChip(label:Text(t==0?'Ohne Limit':'$t s'),selected:duration==t,onSelected:(_)=>setState(()=>duration=t))).toList()),
-  const SizedBox(height:24),
-  FilledButton(onPressed:(){final actual=automatic?widget.progress.levelFor(world.name,level):level;Navigator.push<void>(context,MaterialPageRoute(builder:(_)=>Play(progress:widget.progress,mode:widget.mode,world:world,duration:duration,level:actual,opponent:opponent,numberEntry:numberEntry,secondProfile:secondProfile)));},child:const Padding(padding:EdgeInsets.all(14),child:Text('BATTLE STARTEN'))),
- ])));
+ Challenge challenge=Challenge.mathClassic;
+ BattleRule rule=BattleRule.tug;
+ int level=1,opponent=1,duration=60,digits=1,otherDigits=1;
+ bool automatic=false,numberEntry=false,customDigits=false,advanced=false;
+ String age='Individuell',secondProfile='';
+ int tab=0;
+ bool get competitive=>widget.mode==Mode.duel||widget.mode==Mode.solo;
+ static const mathGames=[Challenge.addition,Challenge.subtraction,Challenge.timesTable,Challenge.division,Challenge.multiplication,Challenge.arithmeticMix,Challenge.compare,Challenge.missing,Challenge.targetNumber,Challenge.mathClassic];
+ static const arcadeGames=[Challenge.reaction,Challenge.odd,Challenge.sequence,Challenge.pairs,Challenge.trueFalse,Challenge.logic,Challenge.memory,Challenge.focus,Challenge.words,Challenge.mixed];
+ @override void initState(){super.initState();level=widget.progress.prefs.getInt('difficulty')??1;opponent=level;duration=widget.progress.prefs.getInt('duration')??60;}
+ void start(){
+  final actual=automatic?widget.progress.levelFor(challenge.world.name,level):level;
+  Navigator.push<void>(context,MaterialPageRoute(builder:(_)=>Play(progress:widget.progress,mode:widget.mode,world:challenge.world,duration:duration,level:actual,opponent:opponent,numberEntry:numberEntry&&challenge.numeric&&challenge!=Challenge.targetNumber,secondProfile:secondProfile,challenge:challenge,digits:digits,opponentDigits:customDigits&&challenge.usesDigits?otherDigits:digits,rule:competitive?rule:BattleRule.tug)));
+ }
+ Widget section(String text)=>Padding(padding:const EdgeInsets.only(top:16,bottom:8),child:Text(text,style:Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight:FontWeight.w900)));
+ Widget digitRow(int value,ValueChanged<int> set)=>Row(children:[for(var i=1;i<=3;i++)Expanded(child:Padding(padding:const EdgeInsets.symmetric(horizontal:3),child:ChoiceChip(label:Text(i==1?'1 Ziffer':'$i Ziffern'),selected:value==i,onSelected:(_)=>set(i))))]);
+ @override Widget build(BuildContext context){
+  final games=tab==0?mathGames:arcadeGames;
+  return Scaffold(appBar:AppBar(title:Text(modeNames[widget.mode.index])),body:ArcadeBackdrop(child:SafeArea(child:Column(children:[
+   Expanded(child:ListView(padding:const EdgeInsets.fromLTRB(14,0,14,12),children:[
+    if(competitive)Container(height:76,padding:const EdgeInsets.all(8),decoration:BoxDecoration(borderRadius:BorderRadius.circular(18),gradient:const LinearGradient(colors:[Color(0xff173c7a),Color(0xff16172c),Color(0xff70381d)])),child:Row(mainAxisAlignment:MainAxisAlignment.spaceEvenly,children:[AvatarArt(index:widget.progress.current['avatar'] as int,size:58),const Text('1  VS  1',style:TextStyle(color:Colors.white,fontSize:25,fontWeight:FontWeight.w900)),const AvatarArt(index:5,size:58)])),
+    section('Wähle dein Spiel'),
+    Row(children:[for(var i=0;i<2;i++)Expanded(child:Padding(padding:const EdgeInsets.symmetric(horizontal:3),child:FilledButton.tonalIcon(onPressed:()=>setState(()=>tab=i),icon:Icon(i==0?Icons.calculate_rounded:Icons.sports_esports_rounded),label:Text(i==0?'Rechen-Battles':'Arcade-Battles'),style:FilledButton.styleFrom(backgroundColor:tab==i?const Color(0xff2359c5):null,foregroundColor:tab==i?Colors.white:null,padding:const EdgeInsets.symmetric(horizontal:4)))))]),
+    const SizedBox(height:8),
+    LayoutBuilder(builder:(context,box)=>GridView.builder(shrinkWrap:true,physics:const NeverScrollableScrollPhysics(),itemCount:games.length,gridDelegate:SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:box.maxWidth>=650?4:2,mainAxisExtent:76,mainAxisSpacing:7,crossAxisSpacing:7),itemBuilder:(context,i)=>ChallengeCard(challenge:games[i],selected:challenge==games[i],onTap:()=>setState(()=>challenge=games[i])))),
+    if(challenge.usesDigits)...[
+     section('Zahlenbereich'),digitRow(digits,(v)=>setState(()=>digits=v)),
+     Text(challenge==Challenge.division?'Die erste Zahl hat die gewählte Ziffernzahl. Division ohne Rest.':challenge==Challenge.targetNumber||challenge==Challenge.missing?'Ziffernzahl der erzeugten Zahlen.':'Ziffernzahl der Ausgangszahlen.',style:const TextStyle(fontSize:11)),
+     if(widget.mode==Mode.duel||widget.mode==Mode.team)...[
+      SwitchListTile(contentPadding:EdgeInsets.zero,title:const Text('Eigene Ziffernstufe für Spieler 2'),value:customDigits,onChanged:(v)=>setState(()=>customDigits=v)),
+      if(customDigits)digitRow(otherDigits,(v)=>setState(()=>otherDigits=v)),
+     ],
+    ],
+    if(competitive)...[
+     section('Spielregeln'),
+     for(final r in BattleRule.values)Card(child:ListTile(dense:true,selected:rule==r,leading:Icon([Icons.bolt,Icons.flag,Icons.timer,Icons.favorite][r.index],color:rule==r?arcadeOrange:null),title:Text(r.label),subtitle:Text(r.description),trailing:Icon(rule==r?Icons.check_circle:Icons.circle_outlined),onTap:()=>setState((){rule=r;if(r==BattleRule.sprint)duration=30;}))),
+    ],
+    section('Rundendauer'),
+    Wrap(spacing:8,children:[30,60,90,120,if(widget.mode==Mode.training)0].map((t)=>ChoiceChip(label:Text(t==0?'Ohne Limit':'$t s'),selected:duration==t,onSelected:(_)=>setState(()=>duration=t))).toList()),
+    if(widget.mode==Mode.training&&challenge.numeric&&challenge!=Challenge.targetNumber)SwitchListTile(title:const Text('Zahlentastatur statt Antwortvorgaben'),contentPadding:EdgeInsets.zero,value:numberEntry,onChanged:(v)=>setState(()=>numberEntry=v)),
+    Card(child:ExpansionTile(initiallyExpanded:advanced,onExpansionChanged:(v)=>advanced=v,leading:const Icon(Icons.tune),title:const Text('Spieler & Schwierigkeit'),childrenPadding:const EdgeInsets.all(12),children:[
+     DropdownButtonFormField<String>(value:age,decoration:InputDecoration(labelText:L.text('Altersgruppe (freiwillig)')),items:['8–9 Jahre','10–11 Jahre','12–14 Jahre','15 Jahre und älter','Individuell','Automatisch'].map((a)=>DropdownMenuItem(value:a,child:Text(a))).toList(),onChanged:(v)=>setState((){age=v!;final ages=['8–9 Jahre','10–11 Jahre','12–14 Jahre','15 Jahre und älter'];if(ages.contains(age)){level=ages.indexOf(age);automatic=false;}if(age=='Automatisch')automatic=true;})),
+     const SizedBox(height:8),
+     DropdownButtonFormField<int>(value:level,decoration:InputDecoration(labelText:L.text('Deine Schwierigkeit')),items:levels(),onChanged:(v)=>setState(()=>level=v!)),
+     SwitchListTile(contentPadding:EdgeInsets.zero,title:const Text('Automatische Anpassung'),value:automatic,onChanged:(v)=>setState(()=>automatic=v)),
+     if(widget.mode!=Mode.training)DropdownButtonFormField<int>(value:opponent,decoration:InputDecoration(labelText:L.text(widget.mode==Mode.solo?'Virtueller Gegner':'Spieler 2')),items:levels(),onChanged:(v)=>setState(()=>opponent=v!)),
+     if(widget.mode==Mode.duel||widget.mode==Mode.team)DropdownButtonFormField<String>(value:secondProfile,decoration:InputDecoration(labelText:L.text('Profil für Spieler 2')),items:[const DropdownMenuItem(value:'',child:Text('Ohne Profil')),for(final name in widget.progress.profiles.keys.where((n)=>n!=widget.progress.active))DropdownMenuItem(value:name,child:Text(name))],onChanged:(v)=>setState(()=>secondProfile=v??'')),
+    ])),
+   ])),
+   Padding(padding:const EdgeInsets.fromLTRB(14,5,14,10),child:Column(mainAxisSize:MainAxisSize.min,children:[
+    Text('${L.text(challenge.label)} · ${challenge.usesDigits?digits==1?L.text('1 Ziffer'):L.text('$digits Ziffern'):L.text(competitive?rule.label:modeNames[widget.mode.index])}',style:const TextStyle(fontWeight:FontWeight.w700,fontSize:12)),
+    const SizedBox(height:5),SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:start,icon:const Icon(Icons.play_arrow_rounded),label:const Text('BATTLE STARTEN'))),
+   ])),
+  ]))));
+ }
  List<DropdownMenuItem<int>> levels()=>List.generate(4,(i)=>DropdownMenuItem(value:i,child:Text(['Einfach','Normal','Schwer','Experte'][i])));
 }
 
@@ -167,6 +206,6 @@ class _SettingsState extends State<Settings>{
   ListTile(leading:const Icon(Icons.help_outline),title:const Text('Einführung erneut anzeigen'),onTap:widget.intro),
   ListTile(leading:const Icon(Icons.restart_alt),title:const Text('Lernfortschritt zurücksetzen'),onTap:()async{final yes=await showDialog<bool>(context:context,builder:(c)=>AlertDialog(title:const Text('Fortschritt zurücksetzen?'),actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Abbrechen')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('Zurücksetzen'))]));if(yes==true){p.profiles[p.active]=p.fresh();await p.save();if(mounted)setState((){});}}),
   ListTile(leading:const Icon(Icons.privacy_tip_outlined),title:const Text('Datenschutz'),onTap:()=>showDialog<void>(context:context,builder:(c)=>AlertDialog(title:const Text('Deine Daten'),content:const Text('Profile und Lernfortschritt werden auf diesem Gerät gespeichert. Kein Konto, keine Werbung, kein Tracking. Lösche Profile in der Profilverwaltung oder alle Daten in den Android-App-Einstellungen.'),actions:[TextButton(onPressed:()=>Navigator.pop(c),child:const Text('OK'))]))),
-  AboutListTile(applicationName:'Brain Clash',applicationVersion:'0.3.1 – Testversion',applicationLegalese:'Play. Think. Win.'),
+  AboutListTile(applicationName:'Brain Clash',applicationVersion:'0.4.0 – Testversion',applicationLegalese:'Play. Think. Win.'),
  ]));
 }
