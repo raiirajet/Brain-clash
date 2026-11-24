@@ -7,6 +7,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   flame: 1.25.0
   shared_preferences: 2.5.3
 dev_dependencies:

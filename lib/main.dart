@@ -3,6 +3,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'learning/progress.dart';
 import 'screens/home.dart';
 import 'audio/audio.dart';
+import 'localization/strings.dart' show L;
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,10 +19,11 @@ class BrainClash extends StatefulWidget {
 }
 class _BrainClashState extends State<BrainClash>{
   ThemeMode get mode=>ThemeMode.values[widget.progress.prefs.getInt('theme')??2];
-  @override Widget build(BuildContext context)=>MaterialApp(
+  @override Widget build(BuildContext context){L.language=widget.progress.prefs.getString('language')??'de';return MaterialApp(
+    locale:Locale(L.language),supportedLocales:const [Locale('de'),Locale('en')],localizationsDelegates:GlobalMaterialLocalizations.delegates,
     title:'Brain Clash',debugShowCheckedModeBanner:false,themeMode:mode,
     theme:ThemeData(colorScheme:ColorScheme.fromSeed(seedColor:const Color(0xff2563eb)),useMaterial3:true),
     darkTheme:ThemeData(colorScheme:ColorScheme.fromSeed(seedColor:const Color(0xff4d9cff),brightness:Brightness.dark),scaffoldBackgroundColor:const Color(0xff080b13),useMaterial3:true),
     home:Home(progress:widget.progress,themeChanged:()=>setState((){})),
-  );
+  );}
 }

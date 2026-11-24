@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import '../localization/strings.dart';
 import '../question_generators/questions.dart';
 import '../game_engine/battle.dart';
 class MemoryBoard extends StatelessWidget {
@@ -23,7 +24,7 @@ class MemoryBoard extends StatelessWidget {
         final paired=battle.matched[player].contains(i),chosen=battle.selected[player]==i;
         final lit=highlight==i||paired||chosen;
         final revealed=!sequence&&(preview||paired||chosen);
-        return Semantics(label:sequence?'Feld ${i+1}':revealed?question.board[i]:'Verdeckte Karte ${i+1}',button:true,
+        return Semantics(label:L.text(sequence?'Feld ${i+1}':revealed?question.board[i]:'Verdeckte Karte ${i+1}'),button:true,
           child:FilledButton(style:FilledButton.styleFrom(backgroundColor:lit?const Color(0xff139b8d):const Color(0xff304d90),disabledBackgroundColor:lit?const Color(0xff139b8d):const Color(0xff304d90),disabledForegroundColor:Colors.white,padding:EdgeInsets.zero),
           onPressed:!preview&&battle.canAnswer(player)&&!paired?()=>onTap(i):null,
           child:Text(sequence?(lit?'●':'${i+1}'):revealed?question.board[i]:'?',style:TextStyle(fontSize:cell*.48,color:Colors.white))));

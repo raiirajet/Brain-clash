@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flame/game.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import '../localization/strings.dart';
 import 'package:flutter/services.dart';
 import '../game_engine/arena.dart';
 import '../audio/audio.dart';

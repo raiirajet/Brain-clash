@@ -1,5 +1,6 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import '../localization/strings.dart';
 import '../audio/audio.dart';
 import '../game_engine/battle.dart';
 import '../learning/progress.dart';
@@ -62,10 +63,10 @@ class _SetupState extends State<Setup>{
   const SizedBox(height:8),
   Wrap(spacing:8,runSpacing:8,children:World.values.map((w)=>ChoiceChip(avatar:Icon(worldIcons[w.index],size:18),label:Text(w.label),selected:w==world,onSelected:(_)=>setState(()=>world=w))).toList()),
   const SizedBox(height:20),
-  DropdownButtonFormField<String>(value:age,decoration:const InputDecoration(labelText:'Altersgruppe (freiwillig)'),items:['8–9 Jahre','10–11 Jahre','12–14 Jahre','15 Jahre und älter','Individuell','Automatisch'].map((a)=>DropdownMenuItem(value:a,child:Text(a))).toList(),onChanged:(v)=>setState((){age=v!;final ages=['8–9 Jahre','10–11 Jahre','12–14 Jahre','15 Jahre und älter'];if(ages.contains(age)){level=ages.indexOf(age);automatic=false;}if(age=='Automatisch')automatic=true;})),
-  DropdownButtonFormField<int>(value:level,decoration:const InputDecoration(labelText:'Deine Schwierigkeit'),items:levels(),onChanged:(v)=>setState(()=>level=v!)),
+  DropdownButtonFormField<String>(value:age,decoration:InputDecoration(labelText:L.text('Altersgruppe (freiwillig)')),items:['8–9 Jahre','10–11 Jahre','12–14 Jahre','15 Jahre und älter','Individuell','Automatisch'].map((a)=>DropdownMenuItem(value:a,child:Text(a))).toList(),onChanged:(v)=>setState((){age=v!;final ages=['8–9 Jahre','10–11 Jahre','12–14 Jahre','15 Jahre und älter'];if(ages.contains(age)){level=ages.indexOf(age);automatic=false;}if(age=='Automatisch')automatic=true;})),
+  DropdownButtonFormField<int>(value:level,decoration:InputDecoration(labelText:L.text('Deine Schwierigkeit')),items:levels(),onChanged:(v)=>setState(()=>level=v!)),
   SwitchListTile(contentPadding:EdgeInsets.zero,title:const Text('Automatische Anpassung'),value:automatic,onChanged:(v)=>setState(()=>automatic=v)),
-  if(widget.mode!=Mode.training)DropdownButtonFormField<int>(value:opponent,decoration:InputDecoration(labelText:widget.mode==Mode.solo?'Virtueller Gegner':'Spieler 2'),items:levels(),onChanged:(v)=>setState(()=>opponent=v!)),
+  if(widget.mode!=Mode.training)DropdownButtonFormField<int>(value:opponent,decoration:InputDecoration(labelText:L.text(widget.mode==Mode.solo?'Virtueller Gegner':'Spieler 2')),items:levels(),onChanged:(v)=>setState(()=>opponent=v!)),
   if(widget.mode==Mode.training&&world==World.math)SwitchListTile(title:const Text('Zahlentastatur statt Antwortvorgaben'),contentPadding:EdgeInsets.zero,value:numberEntry,onChanged:(v)=>setState(()=>numberEntry=v)),
   const SizedBox(height:18),const Text('Rundendauer'),
   Wrap(spacing:8,children:[30,60,90,120,if(widget.mode==Mode.training)0].map((t)=>ChoiceChip(label:Text(t==0?'Ohne Limit':'$t s'),selected:duration==t,onSelected:(_)=>setState(()=>duration=t))).toList()),
@@ -94,7 +95,7 @@ class Stats extends StatelessWidget{
    ]
   ]));
  }
- Widget category(World w,Map p){final c=(p['categories'] as Map)[w.name] as Map?;final r=c?['right'] as int? ??0;final f=c?['wrong'] as int? ??0;return ListTile(title:Text(w.label),subtitle:LinearProgressIndicator(value:r+f==0?0:r/(r+f)),trailing:Text('$r / ${r+f}'));}
+ Widget category(World w,Map p){final c=(p['categories'] as Map)[w.name] as Map?;final r=c?['right'] as int? ??0;final f=c?['wrong'] as int? ??0;return ListTile(title:Text(w.label),subtitle:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[LinearProgressIndicator(value:r+f==0?0:r/(r+f)),if(r+f>0)Text('Ø ${((c!['ms'] as int)/(r+f)/1000).toStringAsFixed(1)} s · Lv ${(c['level'] as int)+1}')]),trailing:Text('$r / ${r+f}'));}
 }
 class CollectionPage extends StatefulWidget{
  final Progress progress;
@@ -102,7 +103,7 @@ class CollectionPage extends StatefulWidget{
  @override State<CollectionPage> createState()=>_CollectionPageState();
 }
 class _CollectionPageState extends State<CollectionPage>{
- @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Sammlung'),actions:[IconButton(tooltip:'Arena & Effekte',icon:const Icon(Icons.palette),onPressed:()=>Navigator.push<void>(context,MaterialPageRoute(builder:(_)=>Cosmetics(progress:widget.progress))))]),body:GridView.builder(padding:const EdgeInsets.all(16),gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:2,childAspectRatio:1.15,crossAxisSpacing:8,mainAxisSpacing:8),itemCount:6,itemBuilder:(c,i){final p=widget.progress.current;final unlocked=(p['xp'] as int)>=thresholds[i];return Card(child:InkWell(onTap:unlocked?()async{setState(()=>p['avatar']=i);await widget.progress.save();}:null,child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[AvatarArt(index:i,size:66),Text(names[i]),Text(unlocked?(p['avatar']==i?'Ausgewählt':'Auswählen'):'🔒 ${thresholds[i]} XP')])));}));
+ @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Sammlung'),actions:[IconButton(tooltip:L.text('Arena & Effekte'),icon:const Icon(Icons.palette),onPressed:()=>Navigator.push<void>(context,MaterialPageRoute(builder:(_)=>Cosmetics(progress:widget.progress))))]),body:GridView.builder(padding:const EdgeInsets.all(16),gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:2,childAspectRatio:1.15,crossAxisSpacing:8,mainAxisSpacing:8),itemCount:6,itemBuilder:(c,i){final p=widget.progress.current;final unlocked=(p['xp'] as int)>=thresholds[i];return Card(child:InkWell(onTap:unlocked?()async{setState(()=>p['avatar']=i);await widget.progress.save();}:null,child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[AvatarArt(index:i,size:66),Text(names[i]),Text(unlocked?(p['avatar']==i?'Ausgewählt':'Auswählen'):'🔒 ${thresholds[i]} XP')])));}));
 }
 class Profiles extends StatefulWidget{
  final Progress progress;
@@ -112,7 +113,7 @@ class Profiles extends StatefulWidget{
 class _ProfilesState extends State<Profiles>{
  Progress get p=>widget.progress;
  Future<void> add()async{
-  var name='';final result=await showDialog<bool>(context:context,builder:(c)=>AlertDialog(title:const Text('Neues Profil'),content:TextField(maxLength:24,onChanged:(v)=>name=v,decoration:const InputDecoration(labelText:'Spitzname')),actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Abbrechen')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('Erstellen'))]));
+  var name='';final result=await showDialog<bool>(context:context,builder:(c)=>AlertDialog(title:const Text('Neues Profil'),content:TextField(maxLength:24,onChanged:(v)=>name=v,decoration:InputDecoration(labelText:L.text('Spitzname'))),actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Abbrechen')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('Erstellen'))]));
   name=name.trim();if(!mounted||result!=true||name.isEmpty)return;
   if(p.profiles.containsKey(name)){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Dieser Name existiert bereits.')));return;}
   setState((){p.profiles[name]=p.fresh();p.active=name;});await p.save();
@@ -128,6 +129,7 @@ class _SettingsState extends State<Settings>{
  Progress get p=>widget.progress;
  Widget toggle(String key,String title,bool fallback)=>SwitchListTile(title:Text(title),value:p.prefs.getBool(key)??fallback,onChanged:(v)async{await p.prefs.setBool(key,v);if(mounted)setState((){});});
  @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Einstellungen')),body:ListView(children:[
+  ListTile(title:const Text('Sprache'),trailing:DropdownButton<String>(value:p.prefs.getString('language')??'de',items:const [DropdownMenuItem(value:'de',child:Text('Deutsch')),DropdownMenuItem(value:'en',child:Text('English'))],onChanged:(v)async{if(v==null)return;L.language=v;await p.prefs.setString('language',v);if(mounted)setState((){});widget.themeChanged();})),
   ListTile(title:const Text('Design'),trailing:DropdownButton<int>(value:p.prefs.getInt('theme')??2,items:const [DropdownMenuItem(value:0,child:Text('System')),DropdownMenuItem(value:1,child:Text('Hell')),DropdownMenuItem(value:2,child:Text('Dunkel'))],onChanged:(v)async{await p.prefs.setInt('theme',v!);if(mounted)setState((){});widget.themeChanged();})),
   ListTile(title:const Text('Standard-Schwierigkeit'),trailing:DropdownButton<int>(value:p.prefs.getInt('difficulty')??1,items:List.generate(4,(i)=>DropdownMenuItem(value:i,child:Text(['Einfach','Normal','Schwer','Experte'][i]))),onChanged:(v)async{await p.prefs.setInt('difficulty',v!);if(mounted)setState((){});})),
   toggle('sound','Soundeffekte',true),

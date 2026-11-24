@@ -64,7 +64,7 @@ class Progress {
       final key=a.correct?'right':'wrong';p[key]=(p[key] as int)+1;
       final cats=p['categories'] as Map;
       final c=cats.putIfAbsent(a.question.world.name,()=>{'right':0,'wrong':0,'ms':0,'level':b.level,'windowRight':0,'windowTotal':0}) as Map;
-      c[key]=(c[key] as int)+1;c['ms']=(c['ms'] as int)+a.ms;
+      c[key]=(c[key] as int)+1;c['ms']=(c['ms'] as int)+a.ms;c['last']=a.question.prompt;c['bestMs']=c['bestMs']==null?a.ms:(a.correct&&a.ms<(c['bestMs'] as int)?a.ms:c['bestMs']);
       c['windowTotal']=(c['windowTotal'] as int)+1;
       if(a.correct)c['windowRight']=(c['windowRight'] as int)+1;
     }

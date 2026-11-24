@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import '../localization/strings.dart';
 import '../learning/progress.dart';
 class Cosmetics extends StatefulWidget {
  final Progress progress;
