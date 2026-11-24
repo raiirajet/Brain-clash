@@ -117,7 +117,7 @@ class _PlayState extends State<Play> with WidgetsBindingObserver{
       final v=q.options[i];final wrong=activeFeedback&&!feedbackCorrect[p]&&selectedAnswer[p]==v&&b.locks[p]>b.elapsed;
       return FilledButton(style:FilledButton.styleFrom(backgroundColor:color,disabledBackgroundColor:wrong?const Color(0xffa42d49):color.withAlpha(100),disabledForegroundColor:Colors.white70,padding:const EdgeInsets.symmetric(horizontal:5),minimumSize:Size.zero,tapTargetSize:MaterialTapTargetSize.shrinkWrap,shape:RoundedRectangleBorder(borderRadius:BorderRadius.circular(13),side:BorderSide(color:wrong?arcadeRed:Colors.white24))),onPressed:b.canAnswer(p)?()=>answer(p,v,q):null,child:Row(mainAxisAlignment:MainAxisAlignment.center,children:[if(wrong)const Icon(Icons.close,size:16),Flexible(child:FittedBox(fit:BoxFit.scaleDown,child:Text(v,style:const TextStyle(fontSize:23,fontWeight:FontWeight.w800))))]));
     }))),
-    SizedBox(height:feedbackHeight,child:Center(child:activeFeedback?AnswerFeedback(message:feedbackCorrect[p]&&lastSolution[p].isNotEmpty?'${feedback[p]} · ${lastSolution[p]}':feedback[p],correct:feedbackCorrect[p],reduced:reduced,event:feedbackEvent[p]):b.pendingPlayer==p?const Text('Warte …',style:TextStyle(fontSize:12)):const SizedBox.shrink())),
+    SizedBox(height:feedbackHeight,child:Center(child:activeFeedback?AnswerFeedback(message:feedbackCorrect[p]&&lastSolution[p].isNotEmpty&&(!b.shared||b.pendingPlayer==null)?'${feedback[p]} · ${lastSolution[p]}':feedback[p],correct:feedbackCorrect[p],reduced:reduced,event:feedbackEvent[p]):b.pendingPlayer==p?const Text('Warte …',style:TextStyle(fontSize:12)):const SizedBox.shrink())),
    ]);
   }));
  }
