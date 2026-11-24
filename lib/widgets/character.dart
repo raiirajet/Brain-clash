@@ -53,7 +53,7 @@ class VictoryAvatar extends StatelessWidget {
  final int index;final bool animate;
  const VictoryAvatar({super.key,required this.index,required this.animate});
  @override Widget build(BuildContext context)=>TweenAnimationBuilder<double>(
-  tween:Tween(begin:animate?.55:1.0,end:1.0),duration:Duration(milliseconds:animate?650:0),curve:Curves.easeOutBack,
+  tween:Tween(begin:animate ? 0.55 : 1.0,end:1.0),duration:Duration(milliseconds:animate?650:0),curve:Curves.easeOutBack,
   builder:(context,scale,child)=>Transform.scale(scale:scale,child:child),
   child:AvatarArt(index:index,size:100));
 }
