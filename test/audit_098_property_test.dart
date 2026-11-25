@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:brain_clash/question_generators/challenges.dart';
+import 'package:brain_clash/question_generators/questions.dart';
 import 'package:brain_clash/game_engine/arcade_rules.dart';
 import 'package:brain_clash/game_engine/battle.dart';
 
