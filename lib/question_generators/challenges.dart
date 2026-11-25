@@ -51,7 +51,9 @@ class ChallengeQuestions extends Questions{
   return Question(q.world,q.prompt,q.answer,choices,q.explanation,preview:q.preview,interaction:q.interaction,board:q.board);
  }
  static const wordClues={'HAUS':'Gebäude zum Wohnen','MAUS':'Kleines Nagetier','BAUM':'Hat Stamm und Blätter','FROSCH':'Quakendes Tier','APFEL':'Runde Frucht','LAMPE':'Macht Licht','WOLKE':'Am Himmel','TIGER':'Gestreifte Raubkatze','BLUME':'Blüht im Garten','STERN':'Leuchtet nachts','FISCH':'Schwimmt im Wasser','PFERD':'Tier zum Reiten','BANANE':'Gelbe Frucht','GARTEN':'Ort für Pflanzen','PIRAT':'Seeräuber','KAMERA':'Macht Fotos','RAKETE':'Fliegt ins All','PLANET':'Umkreist einen Stern','ELEFANT':'Tier mit Rüssel','SCHULE':'Ort zum Lernen','GIRAFFE':'Tier mit langem Hals','VULKAN':'Berg mit Lava','KROKUS':'Frühlingsblume','KOMPASS':'Zeigt die Himmelsrichtung'};
- String decimal(int n)=>n%10==0?'${n~/10}':'${n~/10}.${n%10}';
+ String decimal(int n,{int places=1}){
+  final scale=places==1?10:places==2?100:1000;
+  final tail=(n%scale).toString().padLeft(places,'0').replaceFirst(RegExp(r'0+
  Question generate(World world,int level){
   level=level.clamp(0,3).toInt();
   final review=due.indexWhere((q)=>world==World.mixed||q.world==world);
@@ -81,7 +83,183 @@ class ChallengeQuestions extends Questions{
    case Challenge.multiplication:return number(World.math,'$a × $b = ?',a*b);
    case Challenge.division:
     if(config.division==DivisionStyle.remainder){
-     final divisor=maxDigit<2?1:2+random.nextInt(min([5,8,10,12][level],maxDigit)-1);
+     final divisor=2+random.nextInt(max(1,min([5,8,10,12][level],maxDigit)-1));
+     if(a%divisor==0){a=a<maxDigit?a+1:a-1;}
+     final answer='${a~/divisor} R ${a%divisor}';
+     return pick(World.math,'$a ÷ $divisor (Rest)',answer,List.generate(3,(i)=>'${a~/divisor+i+1} R ${a%divisor}'));
+    }
+    if(config.division==DivisionStyle.decimal){
+     final divisor=[2,4,5,8][random.nextInt(4)];
+     final answer=(a/divisor).toString();
+     return pick(World.math,'$a ÷ $divisor = ?',answer,List.generate(3,(i)=>(a/divisor+i+1).toString()));
+    }
+    // Dividend has exactly the selected digits; the divisor is nonzero and the quotient integral.
+    final divisor=maxDigit<2?1:2+random.nextInt(min([5,8,10,12][level],maxDigit)-1);
+    final lo=max(1,(minDigit+divisor-1)~/divisor),hi=maxDigit~/divisor;
+    final quotient=lo+random.nextInt(hi-lo+1);
+    return number(World.math,'${quotient*divisor} ÷ $divisor = ?',quotient);
+   case Challenge.bigTable:
+   case Challenge.timesTable:
+    final limit=challenge==Challenge.bigTable?20:10;
+    final x=config.table>0?config.table.clamp(1,limit).toInt():1+random.nextInt(limit),y=1+random.nextInt(min(limit,challenge==Challenge.bigTable?[10,12,16,20][level]:[5,7,9,10][level]));
+    return number(World.math,'$x × $y = ?',x*y);
+   case Challenge.numberSeries:
+    final step=1+random.nextInt([4,12,25,50][level]),start=1+random.nextInt([10,30,100,300][level]);
+    return number(World.math,'$start, ${start+step}, ${start+2*step}, ?',start+3*step);
+   case Challenge.fractions:
+    final d=[4,6,8,10,12,16,20,24][random.nextInt(2+level*2)];
+    final e=level<2?d:level==2?d*2:d+1;
+    final x=1+random.nextInt(d-1),y=1+random.nextInt(e-1);
+    final denominator=d*e~/d.gcd(e),numerator=x*(denominator~/d)+y*(denominator~/e);
+    String fraction(int n){final gcd=n.gcd(denominator);return gcd==denominator?'${n~/gcd}':'${n~/gcd}/${denominator~/gcd}';}
+    return pick(World.math,'$x/$d + $y/$e = ?',fraction(numerator),List.generate(3,(i)=>fraction(numerator+i+1)));
+   case Challenge.percent:
+    final rates=const [[10,25,50],[5,10,20,25,50],[15,30,40,60,75],[5,12,15,20,35,60,75]][level];
+    final rate=rates[random.nextInt(rates.length)];
+    final unit=level==0?100:100~/rate.gcd(100);
+    final amount=unit*(1+random.nextInt([5,30,60,100][level]));
+    final value=rate*amount~/100;
+    if(level==3){switch(random.nextInt(3)){case 1:return number(World.math,'$rate % von ? = $value',amount);case 2:return number(World.math,'? % von $amount = $value',rate);}}
+    return number(World.math,'$rate % von $amount',value);
+   case Challenge.decimals:
+    final x=1+random.nextInt([19,99,999,9999][level]),y=1+random.nextInt([19,99,999,9999][level]);
+    final places=level<2?1:level==2?2:3;
+    String fmt(int n)=>decimal(n,places:places);
+    return pick(World.math,'${fmt(x)} + ${fmt(y)} = ?',fmt(x+y),List.generate(3,(i)=>fmt(x+y+i+1)));
+   case Challenge.precedence:
+    final n=level+2;
+    return switch(level){0||1=>number(World.math,'$a + $b × $n = ?',a+b*n),2=>number(World.math,'($a + $b) × $n + $a × 2 = ?',(a+b)*n+a*2),_=>number(World.math,'$a + ($b + $n) × 3 − $n = ?',a+(b+n)*3-n)};
+   case Challenge.estimate:
+    final x=11+random.nextInt([19,89,189,389][level]),y=11+random.nextInt([19,89,189,389][level]);
+    final estimate=((x*y)/100).round()*100;
+    return pick(World.math,'$x × $y ≈ ? (auf 100)', '$estimate',List.generate(3,(i)=>'${estimate+100*(i+1)}'));
+   case Challenge.wordSprint:
+    const banks=[
+     ['HAUS','MAUS','BAUM','FROSCH'],
+     ['APFEL','LAMPE','WOLKE','TIGER','BLUME','STERN','FISCH','PFERD'],
+     ['BANANE','GARTEN','PIRAT','KAMERA','RAKETE','PLANET'],
+     ['ELEFANT','SCHULE','GIRAFFE','VULKAN','KROKUS','KOMPASS']
+    ];
+    final bank=banks[level],word=bank[random.nextInt(bank.length)],letters=word.split('')..shuffle(random);
+    if(letters.join()==word){final first=letters.removeAt(0);letters.add(first);}
+    final wrong=<String>{};while(wrong.length<3){final copy=word.split('')..shuffle(random);if(copy.join()!=word)wrong.add(copy.join());}
+    return Question(World.words,'Ordne die Buchstaben · ${wordClues[word]}',word,[word,...wrong],'Richtig: '+word,interaction:Interaction.word,board:letters);
+   case Challenge.logicEscape:return super.make(World.logic,level);
+   case Challenge.bossBattle:return super.make(World.mixed,level);
+   case Challenge.numberRecall:
+    final s=List.generate(3+level.clamp(0,3).toInt(),(_)=>random.nextInt(10)).join();
+    final wrong=List.generate(3,(i)=>'${(int.parse(s[0])+i+1)%10}${s.substring(1)}');
+    return Question(World.memory,'Gib die gemerkte Zahl ein',s,[s,...wrong],'Zahl: $s',preview:s,interaction:Interaction.recall);
+   case Challenge.shapeClash:
+    final arrows=['↑','→','↓','←'];final i=random.nextInt(4),turn=level==0?1:1+random.nextInt(3);
+    final right=level<2||random.nextBool(),answer=arrows[(i+(right?turn:4-turn))%4];
+    return pick(World.logic,'Drehe ${arrows[i]} um ${90*turn}° nach ${right?'rechts':'links'}',answer,arrows.where((s)=>s!=answer).toList());
+   case Challenge.patternMaster:
+    final signs=['●','▲','■','◆','★']..shuffle(random);
+    final cycle=List.generate(level+2,(i)=>signs[i%signs.length]);
+    final pattern=[...cycle,...cycle,...cycle.take(level+1)];
+    final answer=cycle[level+1];
+    return pick(World.logic,'${pattern.join(' ')} ?',answer,signs.where((s)=>s!=answer).take(3).toList());
+   case Challenge.colorConfusion:
+    final words=['Rot','Blau','Grün','Gelb','Violett','Orange'].take(level<2?4:level+3).toList();
+    final i=random.nextInt(words.length),j=(i+1+random.nextInt(words.length-1))%words.length;
+    final others=words.where((w)=>w!=words[i]).toList()..shuffle(random);
+    final options=[words[i],...others.take(3)]..shuffle(random);
+    return Question(World.focus,words[j].toUpperCase(),words[i],options,'Farbe: ${words[i]}',interaction:Interaction.stroop,board:['$i']);
+   case Challenge.spellingDuel:
+    const banks=[
+      [['Fahrrad','Farad','Fahrad','Farrad'],['Blume','Blumme','Bluume','Bluhme'],['Wasser','Waser','Wassser','Waszer'],['Schule','Schuhle','Schulle','Schuhleh'],['Apfel','Appfel','Affel','Apffel'],['Mutter','Muter','Mutterr','Mutterh']],
+      [['Schokolade','Schokollade','Schokolate','Schokoladde'],['Schmetterling','Schmeterling','Schmetterlieng','Schmetterlingg'],['Geburtstag','Geburstag','Geburtsttag','Geburdstag'],['nämlich','nähmlich','nemlich','nämmlich'],['vielleicht','vileicht','viellecht','fielleicht'],['interessant','interesant','interressant','interessannt']],
+      [['Bibliothek','Biblioteck','Bibliohthek','Biblothek'],['Rhythmus','Rytmus','Rhytmus','Rythmuss'],['Atmosphäre','Atmosfäre','Atmospähre','Atmosphähre'],['Philosophie','Philosofie','Fillosophie','Phillosophie'],['Restaurant','Restorant','Restaurand','Restaurannt'],['Katastrophe','Katastrofe','Kattastrophe','Katastroppe']],
+      [['Parallelität','Paralelität','Parallellität','Paralellität'],['Portemonnaie','Portemonai','Portemonnai','Portemonnaiee'],['Ingenieur','Ingeneur','Ingeniör','Ingenieurr'],['Authentizität','Autentizität','Authentizietät','Authentizitäht'],['Choreografie','Choreograffie','Chorreografie','Choreogravie'],['Synchronisation','Syncronisation','Synchronisazion','Synchrronisation']]
+    ];
+    final bank=banks[level],row=bank[random.nextInt(bank.length)];
+    return pick(World.words,'Wie schreibt man es?',row.first,row.sublist(1));
+   case Challenge.targetHunt:
+    final symbols=['●','▲','■','◆','★','✚']..shuffle(random);
+    final target=symbols.first,board=List.generate([9,12,15,16][level],(_)=>symbols[1+random.nextInt(min(5,level+2))]);
+    board[random.nextInt(board.length)]=target;
+    return Question(World.focus,'Finde $target',target,[target,...symbols.skip(1).take(3)],'Tippe nur das Ziel.',interaction:Interaction.target,board:board);
+   case Challenge.tapBattle:
+    final goal=[5,6,8,10][level];return Question(World.focus,'$goal schnelle Treffer!','$goal',['$goal','0','1','2'],'$goal Treffer ergeben einen Punkt.',interaction:Interaction.tap);
+   case Challenge.numberSort:
+    final set=<int>{};while(set.length<[4,5,6,8][level]){set.add(1+random.nextInt([19,99,999,9999][level]));}
+    final board=set.toList()..shuffle(random);
+    final sorted=set.toList()..sort();
+    if(board.join(' ')==sorted.join(' ')){final first=board[0];board[0]=board[1];board[1]=first;}
+    final answer=sorted.join(' ');
+    final wrong=List.generate(3,(i){final v=[...sorted];final a=v[i];v[i]=v[i+1];v[i+1]=a;return v.join(' ');});
+    return Question(World.math,'Klein nach gross',answer,[answer,...wrong],'Reihenfolge: $answer',interaction:Interaction.sort,board:board.map((n)=>n.toString()).toList());
+   case Challenge.compare:
+    final numbers=<int>{a,b};while(numbers.length<4){numbers.add(maxDigit-minDigit<3?numbers.length+maxDigit:operand());}
+    final largest=random.nextBool();
+    final answer=largest?numbers.reduce(max):numbers.reduce(min);
+    return pick(World.math,largest?'Welche Zahl ist am grössten?':'Welche Zahl ist am kleinsten?',answer.toString(),numbers.where((n)=>n!=answer).map((n)=>n.toString()).toList());
+   case Challenge.missing:return level==0||random.nextBool()?number(World.math,'$a + ? = ${a+b}',b):number(World.math,'? − $b = $a',a+b);
+   case Challenge.targetNumber:
+    final target=a+b;
+    final correct='$a + $b';
+    final alternatives=<int>{};while(alternatives.length<3){final n=maxDigit-minDigit<3?maxDigit+1+alternatives.length:operand();if(n!=b)alternatives.add(n);}
+    final wrong=alternatives.map((n)=>'$a + $n').toList();
+    return pick(World.math,'Erreiche die Zahl $target',correct,wrong);
+   case Challenge.trueFalse:
+    final correct=random.nextBool();
+    final result=a+b+(correct?0:1+random.nextInt(5));
+    final answer=correct?'Richtig':'Falsch';
+    return Question(World.logic,'$a + $b = $result',answer,const ['Richtig','Falsch'],'$a + $b = ${a+b}');
+   case Challenge.reaction:
+    return Question(World.focus,'JETZT!','LOS',const ['LOS','Zu früh','Falsch','Warten'],'Reagiere erst auf das Signal.',preview:'Warte auf das Signal …',interaction:Interaction.signal,board:[(900+random.nextInt([1000,1900,2600,3400][level])).toString()]);
+   case Challenge.odd:
+    final signs=['●','▲','■','◆','★','✚']..shuffle(random);
+    final row=List.filled(8+level.clamp(0,3).toInt()*3,signs[0]);row[random.nextInt(row.length)]=signs[1];
+    return pick(World.focus,'Welches Symbol ist anders?\n${row.join(' ')}',signs[1],[signs[0],signs[2],signs[3]]);
+   case Challenge.sequence:
+    final cells=List.generate(3+level.clamp(0,3).toInt(),(_)=>random.nextInt(9).toString());
+    final answer=cells.join(' ');
+    final wrong=List.generate(3,(i){final copy=[...cells];copy[i]=((int.parse(copy[i])+1)%9).toString();return copy.join(' ');});
+    return Question(World.memory,'Tippe die Felder in derselben Reihenfolge',answer,[answer,...wrong],'Reihenfolge: $answer',preview:answer,interaction:Interaction.sequence,board:cells);
+   case Challenge.pairs:
+    final faces=['🐱','🐶','🦊','🐼','🐸','🐯']..shuffle(random);
+    final cards=faces.take(2+level.clamp(0,3).toInt()).expand((f)=>[f,f]).toList()..shuffle(random);
+    return Question(World.memory,'Finde alle Bildpaare','Paare gefunden',const ['Paare gefunden','Nicht gleich','Falsch','Noch nicht'],'Gleiche Bilder bilden ein Paar.',preview:'Merke die Karten',interaction:Interaction.pairs,board:cards);
+   default:return super.make(world,level);
+  }
+ }
+}
+),'');
+  return tail.isEmpty?'${n~/scale}':'${n~/scale}.$tail';
+ }
+ Question generate(World world,int level){
+  level=level.clamp(0,3).toInt();
+  final review=due.indexWhere((q)=>world==World.mixed||q.world==world);
+  if(review>=0)return due.removeAt(review);
+  if(challenge.standard)return super.make(world,level);
+  var a=operand();
+  var b=operand();
+  if(config.factorDigits>0&&challenge==Challenge.multiplication){
+   final i=config.factorDigits.clamp(1,4).toInt()-1;
+   final lo=[1,10,100,1000][i],hi=[9,99,999,9999][i];
+   b=lo+random.nextInt(hi-lo+1);
+  }
+  final type=challenge==Challenge.arithmeticMix||(challenge.arcadeStage&&challenge!=Challenge.logicEscape&&challenge!=Challenge.bossBattle)?[Challenge.addition,Challenge.subtraction,Challenge.multiplication,Challenge.division][random.nextInt(4)]:challenge;
+  switch(type){
+   case Challenge.addition:
+    if(config.noCarry){
+     // Keep the requested operand width, including at the most significant digit.
+     final minValue=minDigit;
+     if(a.toString()[0]=='9'||config.range>0&&a%10==9)a=minValue;
+     var x=a,y=b,m=1,total=0;
+     while(x>0||y>0){total+=min(y%10,9-x%10)*m;x~/=10;y~/=10;m*=10;}
+     b=max(minValue,total);
+     if(b>maxDigit)b=minValue;
+    }
+    return number(World.math,'$a + $b = ?',a+b);
+   case Challenge.subtraction:return config.negative?number(World.math,'$a − $b = ?',a-b):number(World.math,'${max(a,b)} − ${min(a,b)} = ?', (a-b).abs());
+   case Challenge.multiplication:return number(World.math,'$a × $b = ?',a*b);
+   case Challenge.division:
+    if(config.division==DivisionStyle.remainder){
+     final divisor=2+random.nextInt(max(1,min([5,8,10,12][level],maxDigit)-1));
+     if(a%divisor==0){a=a<maxDigit?a+1:a-1;}
      final answer='${a~/divisor} R ${a%divisor}';
      return pick(World.math,'$a ÷ $divisor (Rest)',answer,List.generate(3,(i)=>'${a~/divisor+i+1} R ${a%divisor}'));
     }
@@ -109,8 +287,13 @@ class ChallengeQuestions extends Questions{
     String fraction(int n){final gcd=n.gcd(denominator);return gcd==denominator?'${n~/gcd}':'${n~/gcd}/${denominator~/gcd}';}
     return pick(World.math,'$x/$denominator + $y/$denominator = ?',fraction(x+y),List.generate(3,(i)=>fraction(x+y+i+1)));
    case Challenge.percent:
-    final rate=[5,10,20,25,50,75][random.nextInt(6)],amount=(1+random.nextInt([5,20,60,100][level]))*100;
-    return number(World.math,'$rate % von $amount',rate*amount~/100);
+    final rates=const [[10,25,50],[5,10,20,25,50],[15,30,40,60,75],[5,12,15,20,35,60,75]][level];
+    final rate=rates[random.nextInt(rates.length)];
+    final unit=level==0?100:100~/rate.gcd(100);
+    final amount=unit*(1+random.nextInt([5,30,60,100][level]));
+    final value=rate*amount~/100;
+    if(level==3){switch(random.nextInt(3)){case 1:return number(World.math,'$rate % von ? = $value',amount);case 2:return number(World.math,'? % von $amount = $value',rate);}}
+    return number(World.math,'$rate % von $amount',value);
    case Challenge.decimals:
     final x=1+random.nextInt([19,99,999,9999][level]),y=1+random.nextInt([19,99,999,9999][level]);
     return pick(World.math,'${decimal(x)} + ${decimal(y)} = ?',decimal(x+y),List.generate(3,(i)=>decimal(x+y+i+1)));
