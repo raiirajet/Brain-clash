@@ -26,6 +26,9 @@ class Battle {
   final bool sameQuestions;
   final bool numberEntry,timedArcade;
   final int fuseMs,digits,opponentDigits;
+  final int? opponentFuseMs;
+  int fuseFor(int p)=>p==1?(opponentFuseMs??fuseMs):fuseMs;
+  int fuseRemainingFor(int p)=> (fuseFor(p)-max(0,elapsed-ready[p])).clamp(0,fuseFor(p)).toInt();
   final String skillName,settingsKey;
   late final ArcadeRules? arcade;
   final sorted=[<String>[],<String>[]];
@@ -50,9 +53,9 @@ class Battle {
   bool get shared=>mode==Mode.duel&&sameQuestions&&level==opponentLevel&&fuseMs==0&&ArcadeRules.kindFor(skillName)==null;
   bool get speedContest=>arcade==null&&rule==BattleRule.speed&&(mode==Mode.duel||mode==Mode.solo);
   bool get arbitrate=>shared||speedContest;
-  Battle({required this.mode,required this.world,required this.duration,required this.level,required this.opponentLevel,Questions? questions,this.opponentQuestions,this.rule=BattleRule.tug,this.sameQuestions=true,this.numberEntry=false,this.timedArcade=false,this.fuseMs=0,this.digits=1,this.opponentDigits=1,this.skillName='mixed',this.settingsKey='',Random? random}):questions=questions??Questions(),rng=random??Random() {
+  Battle({required this.mode,required this.world,required this.duration,required this.level,required this.opponentLevel,Questions? questions,this.opponentQuestions,this.rule=BattleRule.tug,this.sameQuestions=true,this.numberEntry=false,this.timedArcade=false,this.fuseMs=0,this.opponentFuseMs,this.digits=1,this.opponentDigits=1,this.skillName='mixed',this.settingsKey='',Random? random}):questions=questions??Questions(),rng=random??Random() {
     final kind=ArcadeRules.kindFor(skillName);
-    arcade=kind==null?null:ArcadeRules(kind,seed:rng.nextInt(1<<30),difficulty:level,cooperative:mode==Mode.team,repeatObjectives:mode==Mode.training||timedArcade&&kind!=ArcadeKind.boss);
+    arcade=kind==null?null:ArcadeRules(kind,seed:rng.nextInt(1<<30),difficulty:level,opponentDifficulty:opponentLevel,cooperative:mode==Mode.team,repeatObjectives:mode==Mode.training||timedArcade&&kind!=ArcadeKind.boss);
     final first=this.questions.make(world,level);
     tasks=[first,mode==Mode.training||shared?first:(opponentQuestions??this.questions).make(world,opponentLevel)];
     if(shared||speedContest&&level==opponentLevel&&digits==opponentDigits) tasks[1]=tasks[0];
@@ -103,10 +106,10 @@ class Battle {
     }
     if(pendingPlayer!=null&&elapsed-pendingAt>100)resolvePending();
     if(phase!=Phase.playing)return;
-    if(fuseMs>0){
+    if(fuseMs>0||fuseFor(1)>0){
       for(var p=0;p<(mode==Mode.training?1:2);p++){
         if(phase!=Phase.playing)break;
-        if(canAnswer(p)&&elapsed-ready[p]>=fuseMs){
+        if(fuseFor(p)>0&&canAnswer(p)&&elapsed-ready[p]>=fuseFor(p)){
           final q=tasks[p];answer(p,q.options.firstWhere((x)=>x!=q.answer));
         }
       }
@@ -185,7 +188,7 @@ class Battle {
     if(!q.options.contains(value)&&!(q.interaction==Interaction.recall&&RegExp(r'^\d+$').hasMatch(value))&&!((numberEntry||mode==Mode.training&&p==0)&&q.world==World.math&&double.tryParse(value)?.isFinite==true))return null;
     final good=value==q.answer||((numberEntry||mode==Mode.training)&&q.world==World.math&&double.tryParse(value)?.isFinite==true&&double.tryParse(value)==double.tryParse(q.answer));
     if(mode!=Mode.solo||p==0)attempts.add(Attempt(q,p,elapsed-ready[p],good,response:value,taskId:taskIds[p]));
-    if(!good){misses[p]++;locks[p]=elapsed+850;if(arcade!=null){arcade!.wrong(p);checkArcade();if(p==1&&mode==Mode.solo)botAt=locks[p]+700;return false;}if(rule==BattleRule.perfect&&(mode==Mode.duel||mode==Mode.solo)){finish(forcedWinner:1-p,reason:FinishReason.mistake);return false;}if(rule==BattleRule.hearts&&(mode==Mode.duel||mode==Mode.solo)){updateRuleEnergy();if(misses[p]>=3){finish(forcedWinner:1-p,reason:FinishReason.hearts);return false;}}if(fuseMs>0&&!shared){setTask(p,(p==0?questions:opponentQuestions??questions).make(world,p==0?level:opponentLevel));ready[p]+=850;locks[p]=ready[p];if(p==1)scheduleBot();}else if(p==1&&mode==Mode.solo)botAt=locks[p]+700;return false;}
+    if(!good){misses[p]++;locks[p]=elapsed+850;if(arcade!=null){arcade!.wrong(p);checkArcade();if(p==1&&mode==Mode.solo)botAt=locks[p]+700;return false;}if(rule==BattleRule.perfect&&(mode==Mode.duel||mode==Mode.solo)){finish(forcedWinner:1-p,reason:FinishReason.mistake);return false;}if(rule==BattleRule.hearts&&(mode==Mode.duel||mode==Mode.solo)){updateRuleEnergy();if(misses[p]>=3){finish(forcedWinner:1-p,reason:FinishReason.hearts);return false;}}if(fuseFor(p)>0&&!shared){setTask(p,(p==0?questions:opponentQuestions??questions).make(world,p==0?level:opponentLevel));ready[p]+=850;locks[p]=ready[p];if(p==1)scheduleBot();}else if(p==1&&mode==Mode.solo)botAt=locks[p]+700;return false;}
     if(arbitrate) {
       if(pendingPlayer!=null) {
         if(pendingPlayer!=p&&elapsed-pendingAt<=100){pendingPlayer=null;if(shared){advanceShared();}else{advanceIndependent();}return true;}
