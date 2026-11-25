@@ -27,5 +27,30 @@ void main(){
   b.tick(3000);final q=b.tasks[0];b.answer(0,q.options.firstWhere((v)=>v!=q.answer));b.tick(850);b.answer(0,q.answer);b.finish();p.record(b);
   final skill=(p.current['skills'] as Map)['addition'] as Map;
   expect((skill['sampleWindow'] as List).length,1);expect((skill['sampleWindow'] as List).first['ok'],false);
+  expect(p.current['xp'],5);expect(p.current['dailyRight']??0,0);
+ });
+
+ test('deleted profile cannot inherit quick start or second-player checkpoint',()async{
+  SharedPreferences.setMockInitialValues({});final prefs=await SharedPreferences.getInstance();final p=Progress(prefs);
+  p.profiles['A']=p.fresh();p.profiles['B']=p.fresh();p.active='A';
+  await prefs.setString(p.quickKey('lastGame'),'division');
+  await prefs.setString(p.quickKey('lastSecondProfile'),'B');
+  p.current['series']={'A|B|addition':[1,0,0]};
+  p.active='B';await prefs.setString(p.quickKey('lastGame'),'addition');
+  await p.deleteProfile('B');p.profiles['B']=p.fresh();p.active='B';
+  expect(prefs.containsKey(p.quickKey('lastGame')),false);expect(p.current['xp'],0);
+  p.active='A';expect(prefs.getString(p.quickKey('lastGame')),'division');
+  expect(prefs.containsKey(p.quickKey('lastSecondProfile')),false);expect(p.current['series'],isEmpty);
+  await p.save();final restored=Progress(prefs);expect(restored.active,'A');expect(restored.profiles.containsKey('B'),true);
+ });
+ test('solo victories never modify human duel rating',()async{
+  SharedPreferences.setMockInitialValues({});final p=Progress(await SharedPreferences.getInstance());
+  for(final mode in [Mode.solo,Mode.duel]){
+   final b=Battle(mode:mode,world:Challenge.addition.world,duration:60,level:0,opponentLevel:0,rule:BattleRule.sprint);
+   b.tick(3000);b.answer(0,b.tasks[0].answer);b.tick(101);b.finish(forcedWinner:0);p.record(b);
+   if(mode==Mode.solo){expect(p.current['competitive'],isNull);expect((p.current['soloRating'] as Map)['rating'],1020);}
+  }
+  expect((p.current['competitive'] as Map)['rating'],1020);
+  expect((p.current['soloRating'] as Map)['rating'],1020);
  });
 }
