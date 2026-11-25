@@ -10,17 +10,17 @@ class ArcadeStage extends StatelessWidget {
  final int remaining;
  final bool reduced;
  final ArcadeRules? rules;
- final List<int>? fuseRemaining,avatars;
+ final List<int>? fuseRemaining,avatars,fuseDurations;
  final int players,fuseDuration;
- const ArcadeStage({super.key,required this.challenge,required this.points,required this.remaining,required this.reduced,this.rules,this.fuseRemaining,this.avatars,this.players=2,this.fuseDuration=8000});
- @override Widget build(BuildContext context)=>Semantics(label:players==1?'${challenge.label}: ${points[0]}':'${challenge.label}: ${points[0]} zu ${points[1]}',child:CustomPaint(painter:_StagePainter(challenge,List<int>.of(points),remaining,rules,fuseRemaining,avatars,players,fuseDuration),size:Size.infinite));
+ const ArcadeStage({super.key,required this.challenge,required this.points,required this.remaining,required this.reduced,this.rules,this.fuseRemaining,this.avatars,this.players=2,this.fuseDuration=8000,this.fuseDurations});
+ @override Widget build(BuildContext context)=>Semantics(label:players==1?'${challenge.label}: ${points[0]}':'${challenge.label}: ${points[0]} zu ${points[1]}',child:CustomPaint(painter:_StagePainter(challenge,List<int>.of(points),remaining,rules,fuseRemaining,avatars,players,fuseDuration,fuseDurations),size:Size.infinite));
 }
 class _StagePainter extends CustomPainter{
  final Challenge challenge;final List<int> points;final int remaining;
  final ArcadeRules? rules;
- final List<int>? fuseRemaining,avatars;
+ final List<int>? fuseRemaining,avatars,fuseDurations;
  final int players,fuseDuration;
- _StagePainter(this.challenge,this.points,this.remaining,this.rules,this.fuseRemaining,this.avatars,this.players,this.fuseDuration);
+ _StagePainter(this.challenge,this.points,this.remaining,this.rules,this.fuseRemaining,this.avatars,this.players,this.fuseDuration,this.fuseDurations);
  @override void paint(Canvas c,Size s){
   final w=s.width,h=s.height;
   if(w<=0||h<=0)return;
@@ -34,7 +34,7 @@ class _StagePainter extends CustomPainter{
    final paint=Paint()..color=color;
    switch(challenge){
     case Challenge.mathTower:
-     final goal=rules?.towerGoal??10,step=math.min(h/((rules?.towerGoal??10)+2),10.0),width=half*.38;
+     final goal=rules?.towerGoalFor(p)??10,step=math.min(h/((rules?.towerGoalFor(p)??10)+2),10.0),width=half*.38;
      for(var i=0;i<math.min(lane?.blocks??n,goal);i++){
       final r=RRect.fromRectAndRadius(Rect.fromLTWH(x0+half*.31,h-4-(i+1)*step,width,step-1),const Radius.circular(2));
       c.drawRRect(r,paint);c.drawLine(r.outerRect.topLeft,r.outerRect.topRight,Paint()..color=Colors.white54..strokeWidth=1);
@@ -77,7 +77,7 @@ class _StagePainter extends CustomPainter{
      final center=Offset(x0+half*.5,h*.55),r=math.min(half*.21,h*.32);
      final fuse=fuseRemaining?[p]??remaining;
      c.drawCircle(center,r,Paint()..color=color.withAlpha(80));
-     c.drawArc(Rect.fromCircle(center:center,radius:r),-math.pi/2,math.pi*2*(fuse/math.max(1,fuseDuration)).clamp(0.0,1.0).toDouble(),false,Paint()..color=(fuse<3000?Colors.redAccent:color)..style=PaintingStyle.stroke..strokeWidth=4);
+     c.drawArc(Rect.fromCircle(center:center,radius:r),-math.pi/2,math.pi*2*(fuse/math.max(1,fuseDurations?[p]??fuseDuration)).clamp(0.0,1.0).toDouble(),false,Paint()..color=(fuse<3000?Colors.redAccent:color)..style=PaintingStyle.stroke..strokeWidth=4);
      c.drawCircle(center,math.min(n.toDouble()+2,r*.8),paint);
      break;
     case Challenge.mazeBattle:
@@ -97,7 +97,7 @@ class _StagePainter extends CustomPainter{
      }
      break;
     case Challenge.logicEscape:
-     for(var i=0;i<(rules?.escapeGoal??6);i++){final x=x0+half*(i+.5)/(rules?.escapeGoal??6),y=h*.53;final r=math.min(h*.19,half/14);c.drawRRect(RRect.fromRectAndRadius(Rect.fromCenter(center:Offset(x,y),width:r*1.6,height:r*1.5),const Radius.circular(3)),Paint()..color=i<(lane?.locks??0)?Colors.greenAccent:color);c.drawArc(Rect.fromCenter(center:Offset(x,y-r*.8),width:r,height:r),math.pi,math.pi,false,Paint()..color=Colors.white70..style=PaintingStyle.stroke..strokeWidth=2);}
+     for(var i=0;i<(rules?.escapeGoalFor(p)??6);i++){final x=x0+half*(i+.5)/(rules?.escapeGoalFor(p)??6),y=h*.53;final r=math.min(h*.19,half/14);c.drawRRect(RRect.fromRectAndRadius(Rect.fromCenter(center:Offset(x,y),width:r*1.6,height:r*1.5),const Radius.circular(3)),Paint()..color=i<(lane?.locks??0)?Colors.greenAccent:color);c.drawArc(Rect.fromCenter(center:Offset(x,y-r*.8),width:r,height:r),math.pi,math.pi,false,Paint()..color=Colors.white70..style=PaintingStyle.stroke..strokeWidth=2);}
      break;
     default:break;
    }
