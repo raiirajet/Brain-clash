@@ -41,9 +41,14 @@ class ArcadeRules {
  'mathTower'=>ArcadeKind.tower,'mathRace'=>ArcadeKind.race,'rocketRace'=>ArcadeKind.rocket,'treasureRush'=>ArcadeKind.treasure,'mazeBattle'=>ArcadeKind.maze,'logicEscape'=>ArcadeKind.escape,'bossBattle'=>ArcadeKind.boss,_=>null};
  final ArcadeKind kind;
  final int seed,difficulty;
- int get tier=>difficulty.clamp(0,3).toInt();
- int get towerGoal=>10+tier*2;
- int get escapeGoal=>6+tier;
+ final int? opponentDifficulty;
+ int get tier=>tierFor(0);
+ int tierFor(int p)=>(p==1?(opponentDifficulty??difficulty):difficulty).clamp(0,3).toInt();
+ int get towerGoal=>towerGoalFor(0);
+ int towerGoalFor(int p)=>10+tierFor(p)*2;
+ int get escapeGoal=>escapeGoalFor(0);
+ int escapeGoalFor(int p)=>6+tierFor(p);
+ int treasureGoalFor(int p)=>treasureGoal+tierFor(p);
  int get bossMaxHp=>120+tier*30;
  int get bossStage=>completed[0]+1;
  int get strikeInterval=>math.max(4000,(bossPhase==3?6500:12000)-tier*1000);
@@ -58,7 +63,7 @@ class ArcadeRules {
  int teamHp=5,elapsed=0,nextStrike=12000;
  int? winner;
  bool ended=false;
- ArcadeRules(this.kind,{this.seed=42,this.difficulty=0,this.cooperative=false,this.repeatObjectives=false}):mazes=[for(var i=0;i<2;i++)Maze(seed,columns:5+difficulty.clamp(0,3).toInt(),rows:4+difficulty.clamp(0,3).toInt())]{bossHp=bossMaxHp;nextStrike=strikeInterval;}
+ ArcadeRules(this.kind,{this.seed=42,this.difficulty=0,this.opponentDifficulty,this.cooperative=false,this.repeatObjectives=false}):mazes=[for(var i=0;i<2;i++)Maze(seed,columns:5+(i==1?(opponentDifficulty??difficulty):difficulty).clamp(0,3).toInt(),rows:4+(i==1?(opponentDifficulty??difficulty):difficulty).clamp(0,3).toInt())]{bossHp=bossMaxHp;nextStrike=strikeInterval;}
  bool get boss=>kind==ArcadeKind.boss;
  int get bossPhase=>bossHp>bossMaxHp*2/3?1:bossHp>bossMaxHp/3?2:3;
  bool waiting(int p)=>(kind==ArcadeKind.maze||kind==ArcadeKind.treasure)&&lanes[p].keys>0;
@@ -92,11 +97,11 @@ class ArcadeRules {
  }
  static const chestValues=[2,1,3,2,1,3];
  static const treasureGoal=9;
- int chestReward(int p,int i)=>(difficulty==0&&completed[p]==0?chestValues:chests(p))[i];
+ int chestReward(int p,int i)=>(tierFor(p)==0&&completed[p]==0?chestValues:chests(p))[i];
  bool openChest(int p,int index){
   if(ended||kind!=ArcadeKind.treasure||index<0||index>=chestValues.length)return false;
   final l=lanes[p];if(l.keys==0||l.opened.contains(index))return false;
-  l.keys=0;l.opened.add(index);l.gems+=(difficulty==0&&completed[p]==0?chestValues:chests(p))[index];check();return true;
+  l.keys=0;l.opened.add(index);l.gems+=(tierFor(p)==0&&completed[p]==0?chestValues:chests(p))[index];check();return true;
  }
  void autoAction(int p){
   if(!waiting(p))return;
@@ -109,7 +114,7 @@ class ArcadeRules {
   }
  }
  void tick(int ms,{int players=2}){
-  if(ended||ms<=0)return;elapsed+=ms;
+  if(ended||ms<=0)return;final target=elapsed+ms;elapsed=target;
   if(kind==ArcadeKind.rocket){
    // Bounded substeps keep integration stable across dropped frames.
    for(var left=ms;left>0;){final step=math.min(left,20);left-=step;final dt=step/1000;
@@ -120,22 +125,24 @@ class ArcadeRules {
     check(players:players);if(ended)return;
    }
   }
-  if(boss&&elapsed>=nextStrike){
+  while(boss&&!ended&&target>=nextStrike){
+   elapsed=nextStrike;
    final shield=cooperative?lanes.every((l)=>l.charge>0):lanes[0].charge>0;
    if(!shield)teamHp--;
    for(final l in lanes){l.charge=0;}
    nextStrike=elapsed+strikeInterval;
    if(teamHp<=0){if(repeatObjectives){resetBoss();}else{ended=true;winner=1;}}
   }
+  if(boss&&!ended)elapsed=target;
   check(players:players);
  }
  double progress(int p){
-  final l=lanes[p];return switch(kind){ArcadeKind.tower=>l.blocks/towerGoal,ArcadeKind.race||ArcadeKind.rocket=>l.position/100,ArcadeKind.treasure=>l.gems/treasureGoal,ArcadeKind.maze=>1-mazeFor(p).distance(l.cell)/math.max(1,mazeFor(p).distance(0)),ArcadeKind.escape=>l.locks/escapeGoal,ArcadeKind.boss=>1-bossHp/bossMaxHp};
+  final l=lanes[p];return switch(kind){ArcadeKind.tower=>l.blocks/towerGoalFor(p),ArcadeKind.race||ArcadeKind.rocket=>l.position/100,ArcadeKind.treasure=>l.gems/treasureGoalFor(p),ArcadeKind.maze=>1-mazeFor(p).distance(l.cell)/math.max(1,mazeFor(p).distance(0)),ArcadeKind.escape=>l.locks/escapeGoalFor(p),ArcadeKind.boss=>1-bossHp/bossMaxHp};
  }
  void resetBoss(){bossHp=bossMaxHp;teamHp=5;nextStrike=elapsed+strikeInterval;for(final l in lanes){l.charge=0;}}
  void check({int players=2}){
   if(ended||boss)return;final a=progress(0)>=1,b=players>1&&progress(1)>=1;
-  if(repeatObjectives){if(a){completed[0]++;lanes[0]=ArcadeLane();if(kind==ArcadeKind.maze)mazes[0]=Maze(seed+completed[0],columns:5+tier,rows:4+tier);}if(b){completed[1]++;lanes[1]=ArcadeLane();if(kind==ArcadeKind.maze)mazes[1]=Maze(seed+completed[1],columns:5+tier,rows:4+tier);}return;}
+  if(repeatObjectives){if(a){completed[0]++;lanes[0]=ArcadeLane();if(kind==ArcadeKind.maze)mazes[0]=Maze(seed+completed[0],columns:5+tier,rows:4+tier);}if(b){completed[1]++;lanes[1]=ArcadeLane();if(kind==ArcadeKind.maze)mazes[1]=Maze(seed+completed[1],columns:5+tierFor(1),rows:4+tierFor(1));}return;}
   if(a||b){ended=true;winner=a&&b?null:a?0:1;}
  }
  int? timeWinner(){if(boss)return bossHp==0?0:1;final a=completed[0]+progress(0).clamp(0.0,1.0),b=completed[1]+progress(1).clamp(0.0,1.0);return (a-b).abs()<.000001?null:a>b?0:1;}
