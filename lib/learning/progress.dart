@@ -20,9 +20,32 @@ class Progress {
     try{final raw=prefs.getString('profileSnapshotV1');if(raw!=null){final snapshot=ProfileSnapshot.fromJson(jsonDecode(raw) as Map);if(snapshot.revision>=_revision){profiles=snapshot.profiles;active=snapshot.active;_revision=snapshot.revision;}}}catch(_){/* Use legacy backup. */}
     profiles.putIfAbsent('Gast',()=>fresh());
     if(!profiles.containsKey(active))active='Gast';
+    for(final profile in profiles.values){migrateRating(profile as Map);}
   }
   Map<String,dynamic> fresh()=>{'rounds':0,'wins':0,'right':0,'wrong':0,'xp':0,'avatar':0,'categories':<String,dynamic>{},'review':<String,dynamic>{},'best':0};
   String quickKey(String key)=>'profile:${Uri.encodeComponent(active)}:$key';
+  void migrateRating(Map profile){
+    if(profile['ratingPolicy']==2)return;
+    if(profile['competitive']!=null)profile['legacyCompetitive']=profile.remove('competitive');
+    profile['ratingPolicy']=2;
+  }
+  /// Delete profile-specific settings and invalidate checkpoints involving it.
+  Future<void> deleteProfile(String name)async{
+    profiles.remove(name);
+    profiles.putIfAbsent('Gast',()=>fresh());
+    if(active==name)active='Gast';
+    final prefix='profile:${Uri.encodeComponent(name)}:';
+    for(final key in prefs.getKeys().toList()){
+      if(key.startsWith(prefix)||(key.startsWith('profile:')&&key.endsWith(':lastSecondProfile')&&prefs.getString(key)==name)){
+        await prefs.remove(key);
+      }
+    }
+    for(final entry in profiles.entries){
+      final series=(entry.value as Map)['series'] as Map?;
+      series?.removeWhere((key,_)=>key is String&&key.startsWith('${entry.key}|$name|'));
+    }
+    await save();
+  }
   Map<String,dynamic> get current=>profiles[active] as Map<String,dynamic>;
   static Future<Progress> open(SharedPreferences prefs,{String? databasePath})async{
     final progress=Progress(prefs);
@@ -33,6 +56,7 @@ class Progress {
         progress.profiles=stored.profiles;progress.active=stored.active;progress._revision=stored.revision;
         progress.profiles.putIfAbsent('Gast',()=>progress.fresh());
         if(!progress.profiles.containsKey(progress.active))progress.active='Gast';
+        for(final profile in progress.profiles.values){progress.migrateRating(profile as Map);}
       }
       progress._store=store;
       if(stored==null||stored.revision<progress._revision)await progress.save();
@@ -147,21 +171,25 @@ class Progress {
     final window=skill.putIfAbsent('sampleWindow',()=> <dynamic>[]) as List;
     if(b.mode==Mode.training){
      for(final a in samples){window.add({'ok':a.correct,'ms':a.ms});}
+     var adjusted=false;
      while(window.length>=20){
       final group=window.take(20).cast<Map>().toList();
       final correct=group.where((a)=>a['ok']==true).length;
       final avg=group.fold<int>(0,(sum,a)=>sum+(a['ms'] as int))/20;
       final next=adapt(level,correct,20);
       final digitNext=correct<12?-1:correct>=18&&avg<=4500?1:0;
-      skill['level']=next;
-      if(numeric){skill['digits']=(digit+digitNext).clamp(1,4).toInt();}
+      if(!adjusted){
+        skill['level']=next;
+        if(numeric){skill['digits']=(digit+digitNext).clamp(1,4).toInt();}
+        adjusted=true;
+      }
       skill['masteryAccuracy']=correct/20;
       window.removeRange(0,20);
      }
     }
     if(b.mode==Mode.duel||b.mode==Mode.solo){
       // Preserve historical combined rating; start a clean human-only rating.
-      if(p['ratingPolicy']!=2){if(p['competitive']!=null)p['legacyCompetitive']=p.remove('competitive');p['ratingPolicy']=2;}
+      migrateRating(p);
       final competitive=p.putIfAbsent(b.mode==Mode.duel?'competitive':'soloRating',()=>{'played':0,'wins':0,'draws':0,'rating':1000}) as Map;
       competitive['played']=(competitive['played'] as int)+1;
       competitive['wins']=(competitive['wins'] as int)+(b.winner==player?1:0);
