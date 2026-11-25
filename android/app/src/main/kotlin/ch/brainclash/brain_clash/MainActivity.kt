@@ -15,6 +15,8 @@ class MainActivity: FlutterActivity() {
     private var musicEnabled = false
     private var active = false
     private var musicVolume = 0.2f
+    private var musicResource = R.raw.bc_music
+    private var loadedResource = 0
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         pool = SoundPool.Builder().setMaxStreams(4).setAudioAttributes(
@@ -39,6 +41,9 @@ class MainActivity: FlutterActivity() {
                 "music" -> {
                     musicEnabled=call.argument<Boolean>("enabled") ?: false
                     musicVolume=vol
+                    val arena=(call.argument<Number>("arena")?.toInt() ?: 0).coerceIn(0,5)
+                    val arenaTracks=intArrayOf(R.raw.bc_arena0,R.raw.bc_arena1,R.raw.bc_arena2,R.raw.bc_arena3,R.raw.bc_arena4,R.raw.bc_arena5)
+                    musicResource=when(call.argument<String>("scene")){"arena"->arenaTracks[arena];"result"->R.raw.bc_result;else->R.raw.bc_music}
                     updateMusic()
                     result.success(null)
                 }
@@ -48,7 +53,7 @@ class MainActivity: FlutterActivity() {
     }
     private fun updateMusic() {
         if(musicEnabled && active) {
-            if(music==null) music=MediaPlayer.create(this,R.raw.bc_music)?.apply { isLooping=true }
+            if(music==null || loadedResource!=musicResource){music?.release();music=MediaPlayer.create(this,musicResource)?.apply { isLooping=true };loadedResource=musicResource}
             music?.setVolume(musicVolume,musicVolume)
             music?.start()
         } else if(music?.isPlaying==true) music?.pause()

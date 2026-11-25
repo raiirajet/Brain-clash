@@ -1,0 +1,149 @@
+
+import 'dart:math' as math;
+enum ArcadeKind { tower, race, rocket, treasure, maze, escape, boss }
+enum Direction { up, right, down, left }
+
+/// A seeded perfect maze. Both sides have the same layout.
+class Maze {
+ static const width=5,height=4;
+ final int columns,rows;
+ late final List<Set<int>> links;
+ int get end=>columns*rows-1;
+ Maze(int seed,{this.columns=width,this.rows=height}){
+  links=List.generate(columns*rows,(_)=><int>{});
+  final rng=math.Random(seed),seen=<int>{0},stack=<int>[0];
+  while(stack.isNotEmpty){
+   final cell=stack.last;
+   final next=Direction.values.map((d)=>neighbor(cell,d)).whereType<int>().where((n)=>!seen.contains(n)).toList();
+   if(next.isEmpty){stack.removeLast();continue;}
+   final n=next[rng.nextInt(next.length)];links[cell].add(n);links[n].add(cell);seen.add(n);stack.add(n);
+  }
+ }
+ int? neighbor(int cell,Direction d){
+  final x=cell%columns,y=cell~/columns;
+  return switch(d){Direction.up=>y>0?cell-columns:null,Direction.right=>x<columns-1?cell+1:null,Direction.down=>y<rows-1?cell+columns:null,Direction.left=>x>0?cell-1:null};
+ }
+ int? move(int cell,Direction d){final n=neighbor(cell,d);return links[cell].contains(n)?n:null;}
+ int distance(int start){
+  final queue=<int>[start],depth=<int,int>{start:0};
+  for(var i=0;i<queue.length;i++){final c=queue[i];if(c==end)return depth[c]!;for(final n in links[c]){if(!depth.containsKey(n)){depth[n]=depth[c]!+1;queue.add(n);}}}
+  throw StateError('Disconnected maze');
+ }
+}
+class ArcadeLane {
+ int blocks=0,keys=0,gems=0,cell=0,locks=0,charge=0;
+ double position=0,velocity=0,fuel=0;
+ final opened=<int>{};
+}
+/// Deterministic, elapsed-time-only simulation; cosmetic choices never affect it.
+class ArcadeRules {
+ static ArcadeKind? kindFor(String skill)=>switch(skill){
+ 'mathTower'=>ArcadeKind.tower,'mathRace'=>ArcadeKind.race,'rocketRace'=>ArcadeKind.rocket,'treasureRush'=>ArcadeKind.treasure,'mazeBattle'=>ArcadeKind.maze,'logicEscape'=>ArcadeKind.escape,'bossBattle'=>ArcadeKind.boss,_=>null};
+ final ArcadeKind kind;
+ final int seed,difficulty;
+ final int? opponentDifficulty;
+ int get tier=>tierFor(0);
+ int tierFor(int p)=>(p==1?(opponentDifficulty??difficulty):difficulty).clamp(0,3).toInt();
+ int get towerGoal=>towerGoalFor(0);
+ int towerGoalFor(int p)=>10+tierFor(p)*2;
+ int get escapeGoal=>escapeGoalFor(0);
+ int escapeGoalFor(int p)=>6+tierFor(p);
+ int treasureGoalFor(int p)=>treasureGoal+tierFor(p);
+ int get bossMaxHp=>120+tier*30;
+ int get bossStage=>completed[0]+1;
+ int get strikeInterval=>math.max(4000,(bossPhase==3?6500:12000)-tier*1000);
+ List<int> chests(int p)=>List<int>.of(chestValues)..shuffle(math.Random(seed+completed[p]));
+ final List<Maze> mazes;
+ Maze get maze=>mazes[0];
+ Maze mazeFor(int p)=>mazes[p];
+ final lanes=[ArcadeLane(),ArcadeLane()];
+ final bool cooperative,repeatObjectives;
+ final completed=[0,0];
+ late int bossHp;
+ int teamHp=5,elapsed=0,nextStrike=12000;
+ int? winner;
+ bool ended=false;
+ ArcadeRules(this.kind,{this.seed=42,this.difficulty=0,this.opponentDifficulty,this.cooperative=false,this.repeatObjectives=false}):mazes=[for(var i=0;i<2;i++)Maze(seed,columns:5+(i==1?(opponentDifficulty??difficulty):difficulty).clamp(0,3).toInt(),rows:4+(i==1?(opponentDifficulty??difficulty):difficulty).clamp(0,3).toInt())]{bossHp=bossMaxHp;nextStrike=strikeInterval;}
+ bool get boss=>kind==ArcadeKind.boss;
+ int get bossPhase=>bossHp>bossMaxHp*2/3?1:bossHp>bossMaxHp/3?2:3;
+ bool waiting(int p)=>(kind==ArcadeKind.maze||kind==ArcadeKind.treasure)&&lanes[p].keys>0;
+ void correct(int p){
+  if(ended)return;final l=lanes[p];
+  switch(kind){
+   case ArcadeKind.tower:l.blocks++;break;
+   case ArcadeKind.race:l.position=math.min(100.0,l.position+12);break;
+   case ArcadeKind.rocket:l.fuel=math.min(6.0,l.fuel+2.5);l.velocity=math.min(24.0,l.velocity+5);break;
+   case ArcadeKind.treasure:case ArcadeKind.maze:l.keys=1;break;
+   case ArcadeKind.escape:l.locks++;break;
+   case ArcadeKind.boss:l.charge++;bossHp=math.max(0,bossHp-(bossPhase==2?10:15));if(bossHp==0){if(repeatObjectives){completed[0]++;resetBoss();}else{ended=true;winner=0;}}break;
+  }
+  check();
+ }
+ void wrong(int p){
+  if(ended)return;final l=lanes[p];
+  switch(kind){
+   case ArcadeKind.tower:l.blocks=math.max(0,l.blocks-1);break;
+   case ArcadeKind.race:l.position=math.max(0.0,l.position-5);break;
+   case ArcadeKind.rocket:l.fuel=math.max(0.0,l.fuel-1.5);l.velocity*=.55;break;
+   case ArcadeKind.escape:l.locks=math.max(0,l.locks-1);break;
+   case ArcadeKind.boss:teamHp--;if(teamHp<=0){if(repeatObjectives){resetBoss();}else{ended=true;winner=1;}}break;
+   default:break;
+  }
+ }
+ bool move(int p,Direction d){
+  if(ended||kind!=ArcadeKind.maze||lanes[p].keys==0)return false;
+  final l=lanes[p],n=mazeFor(p).move(lanes[p].cell,d);if(n==null)return false;
+  l.cell=n;l.keys=0;check();return true;
+ }
+ static const chestValues=[2,1,3,2,1,3];
+ static const treasureGoal=9;
+ int chestReward(int p,int i)=>(tierFor(p)==0&&completed[p]==0?chestValues:chests(p))[i];
+ bool openChest(int p,int index){
+  if(ended||kind!=ArcadeKind.treasure||index<0||index>=chestValues.length)return false;
+  final l=lanes[p];if(l.keys==0||l.opened.contains(index))return false;
+  l.keys=0;l.opened.add(index);l.gems+=(tierFor(p)==0&&completed[p]==0?chestValues:chests(p))[index];check();return true;
+ }
+ void autoAction(int p){
+  if(!waiting(p))return;
+  if(kind==ArcadeKind.maze){
+   final l=lanes[p],old=mazeFor(p).distance(lanes[p].cell);
+   for(final d in Direction.values){final n=mazeFor(p).move(l.cell,d);if(n!=null&&mazeFor(p).distance(n)<old){move(p,d);return;}}
+  }else{
+   final available=List.generate(chestValues.length,(i)=>i).where((i)=>!lanes[p].opened.contains(i)).toList()..sort((a,b)=>chestReward(p,b).compareTo(chestReward(p,a)));
+   if(available.isNotEmpty)openChest(p,available.first);
+  }
+ }
+ void tick(int ms,{int players=2}){
+  if(ended||ms<=0)return;final target=elapsed+ms;elapsed=target;
+  if(kind==ArcadeKind.rocket){
+   // Bounded substeps keep integration stable across dropped frames.
+   for(var left=ms;left>0;){final step=math.min(left,20);left-=step;final dt=step/1000;
+    for(var p=0;p<players;p++){final l=lanes[p],powered=math.min(dt,lanes[p].fuel);
+     l.fuel=math.max(0.0,l.fuel-powered);l.velocity=(l.velocity+powered*5-(dt-powered)*9).clamp(0.0,24.0).toDouble();
+     l.position=math.min(100.0,l.position+l.velocity*dt);
+    }
+    check(players:players);if(ended)return;
+   }
+  }
+  while(boss&&!ended&&target>=nextStrike){
+   elapsed=nextStrike;
+   final shield=cooperative?lanes.every((l)=>l.charge>0):lanes[0].charge>0;
+   if(!shield)teamHp--;
+   for(final l in lanes){l.charge=0;}
+   nextStrike=elapsed+strikeInterval;
+   if(teamHp<=0){if(repeatObjectives){resetBoss();}else{ended=true;winner=1;}}
+  }
+  if(boss&&!ended)elapsed=target;
+  check(players:players);
+ }
+ double progress(int p){
+  final l=lanes[p];return switch(kind){ArcadeKind.tower=>l.blocks/towerGoalFor(p),ArcadeKind.race||ArcadeKind.rocket=>l.position/100,ArcadeKind.treasure=>l.gems/treasureGoalFor(p),ArcadeKind.maze=>1-mazeFor(p).distance(l.cell)/math.max(1,mazeFor(p).distance(0)),ArcadeKind.escape=>l.locks/escapeGoalFor(p),ArcadeKind.boss=>1-bossHp/bossMaxHp};
+ }
+ void resetBoss(){bossHp=bossMaxHp;teamHp=5;nextStrike=elapsed+strikeInterval;for(final l in lanes){l.charge=0;}}
+ void check({int players=2}){
+  if(ended||boss)return;final a=progress(0)>=1,b=players>1&&progress(1)>=1;
+  if(repeatObjectives){if(a){completed[0]++;lanes[0]=ArcadeLane();if(kind==ArcadeKind.maze)mazes[0]=Maze(seed+completed[0],columns:5+tier,rows:4+tier);}if(b){completed[1]++;lanes[1]=ArcadeLane();if(kind==ArcadeKind.maze)mazes[1]=Maze(seed+completed[1],columns:5+tierFor(1),rows:4+tierFor(1));}return;}
+  if(a||b){ended=true;winner=a&&b?null:a?0:1;}
+ }
+ int? timeWinner(){if(boss)return bossHp==0?0:1;final a=completed[0]+progress(0).clamp(0.0,1.0),b=completed[1]+progress(1).clamp(0.0,1.0);return (a-b).abs()<.000001?null:a>b?0:1;}
+}

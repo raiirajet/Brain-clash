@@ -11,8 +11,8 @@ class GameAudio {
     on MissingPluginException{if(name=='right'||name=='wrong')await SystemSound.play(name=='right'?SystemSoundType.click:SystemSoundType.alert);}
     on PlatformException{if(name=='right'||name=='wrong')await SystemSound.play(name=='right'?SystemSoundType.click:SystemSoundType.alert);}
   }
-  Future<void> music()async{
-    try{await channel.invokeMethod<void>('music',{'enabled':prefs.getBool('music')??false,'volume':volume*.35});}
+  Future<void> music({String scene='menu',int arena=0})async{
+    try{await channel.invokeMethod<void>('music',{'enabled':prefs.getBool('music')??false,'volume':volume*.35,'scene':scene,'arena':arena});}
     on MissingPluginException{/* Non-Android audio adapter not yet implemented. */}
     on PlatformException{/* Device audio unavailable; gameplay remains usable. */}
   }

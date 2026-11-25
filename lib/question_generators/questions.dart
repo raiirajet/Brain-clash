@@ -1,6 +1,6 @@
 import 'dart:math';
 
-enum Interaction { choices, sequence, pairs, signal }
+enum Interaction { choices, sequence, pairs, signal, recall, stroop, target, tap, sort, word }
 enum World { math, logic, memory, focus, words, mixed }
 extension WorldLabel on World {
   String get label => const ['Mathematik','Logic Clash','Memory Arena','Focus Rush','Word Battle','Mixed Battle'][index];
@@ -42,7 +42,7 @@ class Questions {
           default:return number(world,'$a + $b × 2',a+b*2);
         }
       case World.logic:
-        final a=1+random.nextInt(9), b=2+random.nextInt(4);
+        final a=1+random.nextInt([9,19,39,79][level]), b=2+random.nextInt([4,8,12,20][level]);
         switch(random.nextInt(7)) {
           case 0:return number(world,'$a · ${a+b} · ${a+2*b} · ?',a+3*b);
           case 1:return number(world,'$a · ${a*2} · ${a*4} · ?',a*8);
@@ -114,7 +114,7 @@ class Questions {
           ['Ergänze: Schu_ (ein einzelner Schuh)','h','l','m','k'],
           ['Welches Wort passt zu 🐘?','Elefant','Tiger','Giraffe','Zebra'],
         ];
-        final row=bank[random.nextInt(level==0?8:bank.length)];
+        final row=bank[random.nextInt([8,12,16,20][level])];
         return pick(world,row[0],row[1],row.sublist(2));
       case World.mixed:throw StateError('Mixed must resolve');
     }
@@ -123,7 +123,7 @@ class Questions {
     final wrong=<String>{};
     while(wrong.length<3) {
       final d=random.nextInt(13)-6;
-      if(d!=0&&n+d>=0) wrong.add((n+d).toString());
+      if(d!=0&&(n<0||n+d>=0)) wrong.add((n+d).toString());
     }
     return pick(w,p,n.toString(),wrong.toList());
   }

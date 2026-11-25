@@ -1,7 +1,7 @@
 name: brain_clash
 description: Offline arcade learning battles.
 publish_to: none
-version: 0.4.0+5
+version: 0.9.8+10
 environment:
   sdk: '>=3.7.0 <4.0.0'
 dependencies:
@@ -11,6 +11,7 @@ dependencies:
     sdk: flutter
   flame: 1.25.0
   shared_preferences: 2.5.3
+  sqflite: ^2.4.1
 dev_dependencies:
   integration_test:
     sdk: flutter
@@ -21,3 +22,13 @@ flutter:
   uses-material-design: true
   assets:
     - assets/branding/brain_clash.webp
+    - assets/games/
+    - assets/fonts/Outfit-OFL.txt
+    - assets/fonts/Inter-OFL.txt
+  fonts:
+    - family: Outfit
+      fonts:
+        - asset: assets/fonts/Outfit.ttf
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter.ttf

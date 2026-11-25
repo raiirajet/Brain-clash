@@ -41,6 +41,7 @@ legacy.mkdir(exist_ok=True)
 p.write_text(s.replace('android:icon="@drawable/brain_clash_icon"','android:icon="@mipmap/brain_clash_launcher"'))
 PY
 
+python3 scripts/fetch_fonts.py
 python3 scripts/synth_audio.py
 cp android_support/MainActivity.kt android/app/src/main/kotlin/ch/brainclash/brain_clash/MainActivity.kt
 # Test builds do not expose the Flutter debug service to the network.

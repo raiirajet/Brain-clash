@@ -8,7 +8,7 @@ void main(){
   final p=Progress(await SharedPreferences.getInstance());
   await tester.pumpWidget(BrainClash(progress:p));
   expect(find.text('Solo Battle'),findsOneWidget);
-  expect(find.text('2 Spieler'),findsOneWidget);
+  expect(find.text('1 VS 1'),findsOneWidget);
   expect(find.text('Training'),findsOneWidget);
   expect(find.text('Team Battle'),findsOneWidget);
  });
