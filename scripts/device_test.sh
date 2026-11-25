@@ -11,7 +11,7 @@ p.write_text(s)
 PY
 flutter test integration_test/app_test.dart -d emulator-5554
 bash scripts/bootstrap_android.sh
-flutter build apk --release
+bash scripts/retry_dependency_build.sh flutter build apk --release
 adb install -r build/app/outputs/flutter-apk/app-release.apk
 adb shell am force-stop ch.brainclash.brain_clash
 adb shell am start -W -n ch.brainclash.brain_clash/.MainActivity
