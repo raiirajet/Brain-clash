@@ -34,6 +34,7 @@ public class MainActivity extends Activity {
     android.content.SharedPreferences prefs;
     LinearLayout root,body; ScrollView scroll;
     int grade=4,count=10,index=0,score=0,correct=0,streak=0,chosen=-1,totalAnswered=0;
+    int mixedCount=10;
     long xp=0;
     String screen="home",mode="training",difficulty="Alle";
     boolean imported=false,loading=false;
@@ -107,6 +108,8 @@ public class MainActivity extends Activity {
     int level(){return (int)Math.min(Integer.MAX_VALUE,1+xp/1000);}
     void home(){
         base("home","Quiz Clash","Dein Wissen. Dein Abenteuer.",false);
+        ImageView logo=new ImageView(this);logo.setImageResource(R.drawable.quiz_icon);logo.setContentDescription("Quiz Clash Logo");logo.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        LinearLayout.LayoutParams logoParams=new LinearLayout.LayoutParams(dp(84),dp(84));logoParams.gravity=Gravity.CENTER_HORIZONTAL;logoParams.bottomMargin=dp(12);body.addView(logo,logoParams);
         LinearLayout hero=column(PURPLE,20);
         add(hero,text("✦  LEVEL "+level(),14,0xffffe3a1,true),8);
         add(hero,text(xp+" XP",34,WHITE,true),5);
@@ -114,7 +117,8 @@ public class MainActivity extends Activity {
         add(hero,text((1000-xp%1000)+" XP bis zum nächsten Level",14,WHITE,false),0);add(body,hero,17);
         heading("Bereit für eine Runde?");
         if(loading){caption("Fragenbank wird geladen …");return;}
-        action("▶  Quiz starten",()->{mode="training";classes();});
+        action("⤨  Alle Fragen · Zufall",()->{mode="mixed";mixedSetup();});
+        secondary("▶  Gezieltes Quiz",()->{mode="training";classes();});
         secondary("★  Tages-Challenge",()->{mode="daily";classes();});
         secondary("↻  Fehler trainieren  ("+mistakes.size()+")",()->{mode="mistakes";classes();});
         secondary("▥  Mein Fortschritt",()->stats());
@@ -137,12 +141,27 @@ public class MainActivity extends Activity {
         caption("Klassenstufen sind eine Orientierung am Lehrplan 21.");
     }
     ArrayList<Q> pool(){
+        if(mode.equals("mixed"))return new ArrayList<>(bank);
         ArrayList<Q> out=new ArrayList<>();
         for(Q q:bank)if(q.grade==grade&&(subjects.isEmpty()||subjects.contains(q.subject))&&
           (difficulty.equals("Alle")||q.difficulty.equalsIgnoreCase(difficulty))&&(!mode.equals("mistakes")||mistakes.contains(q.id)))out.add(q);
         return out;
     }
+    void mixedSetup(){
+        base("mixed","Alle Fragen","Klassen 1–9 · alle Fächer · alle Schwierigkeitsgrade",true);
+        LinearLayout card=column(PURPLE,20);
+        add(card,text("⤨  Wissens-Mix",24,WHITE,true),8);
+        add(card,text(bank.size()+" verfügbare Fragen",18,WHITE,false),8);
+        add(card,text("Jede Runde wird neu gemischt. Keine Frage erscheint zweimal in derselben Runde.",15,WHITE,false),0);add(body,card,16);
+        heading("Wie viele Fragen?");
+        choices(new String[]{"5","10","20","50"},String.valueOf(mixedCount),s->{mixedCount=Integer.parseInt(s);mixedSetup();});
+        add(body,button((mixedCount==0?"✓  ":"")+"Alle verfügbaren Fragen",mixedCount==0?PURPLE:WHITE,mixedCount==0?WHITE:INK,()->{mixedCount=0;mixedSetup();}),10);
+        int n=mixedCount==0?bank.size():Math.min(mixedCount,bank.size());
+        caption(n+" Fragen in dieser Runde · ohne Zeitlimit");
+        if(n>0)action("Los geht’s!  →",()->start());else caption("Bitte zuerst eine Fragenbank importieren.");
+    }
     void setup(){
+        if(mode.equals("mixed")){mixedSetup();return;}
         base("setup",grade+". Klasse",mode.equals("daily")?"Tages-Challenge":mode.equals("mistakes")?"Fehlertraining":"Stelle dein Quiz zusammen.",true);
         TreeMap<String,Integer> cats=new TreeMap<>();
         for(Q q:bank)if(q.grade==grade&&(!mode.equals("mistakes")||mistakes.contains(q.id)))cats.merge(q.subject,1,Integer::sum);
@@ -176,7 +195,8 @@ public class MainActivity extends Activity {
             p.sort(Comparator.comparing(q->q.id));
             long seed=java.time.LocalDate.now().toEpochDay()*31+grade;Collections.shuffle(p,new Random(seed));
         }else Collections.shuffle(p);
-        round=new ArrayList<>(p.subList(0,Math.min(p.size(),mode.equals("daily")?10:count)));
+        int requested=mode.equals("daily")?10:mode.equals("mixed")?(mixedCount==0?p.size():mixedCount):count;
+        round=new ArrayList<>(p.subList(0,Math.min(p.size(),requested)));
         index=score=correct=streak=0;chosen=-1;shuffleAnswers();quiz();
     }
     void shuffleAnswers(){
@@ -221,7 +241,7 @@ public class MainActivity extends Activity {
         add(card,text(correct+" von "+round.size()+" richtig",22,WHITE,true),6);
         add(card,text("Level "+level()+"  ·  "+xp+" XP insgesamt",15,WHITE,false),0);add(body,card,18);
         int stars=(correct*3)/round.size();heading(stars==3?"★★★  Fantastisch!":stars==2?"★★☆  Gut gemacht!":stars==1?"★☆☆  Weiter so!":"Weiter üben lohnt sich!");
-        action("Noch eine Runde",()->setup());secondary("Fehler trainieren",()->{mode="mistakes";subjects.clear();difficulty="Alle";setup();});secondary("Zur Startseite",()->home());
+        action("Noch eine Runde",()->setup());secondary("Fehler trainieren",()->{boolean wasMixed=mode.equals("mixed");mode="mistakes";subjects.clear();difficulty="Alle";if(wasMixed)classes();else setup();});secondary("Zur Startseite",()->home());
     }
     void stats(){
         base("stats","Mein Fortschritt","Dein persönlicher Lernweg.",true);
@@ -233,7 +253,7 @@ public class MainActivity extends Activity {
     }
     void back(){
         switch(screen){case "quiz":new AlertDialog.Builder(this).setTitle("Runde beenden?").setMessage("Deine bereits verdienten Punkte bleiben gespeichert.").setNegativeButton("Weiterspielen",null).setPositiveButton("Beenden",(d,w)->home()).show();break;
-        case "setup":classes();break;case "home":super.onBackPressed();break;default:home();}
+        case "mixed":home();break;case "setup":classes();break;case "home":super.onBackPressed();break;default:home();}
     }
     @Override public void onBackPressed(){back();}
     void pick(){
