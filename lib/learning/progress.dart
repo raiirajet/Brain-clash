@@ -122,23 +122,24 @@ class Progress {
     for(final a in b.attempts.where((a)=>a.player==player)){
       final key=a.correct?'right':'wrong';p[key]=(p[key] as int)+1;
       final cats=p['categories'] as Map;
-      final c=cats.putIfAbsent(a.question.world.name,()=>{'right':0,'wrong':0,'ms':0,'level':player==0?b.level:b.opponentLevel,'windowRight':0,'windowTotal':0}) as Map;
+      final c=cats.putIfAbsent(a.question.world.name,()=> <String,dynamic>{'right':0,'wrong':0,'ms':0,'level':player==0?b.level:b.opponentLevel,'windowRight':0,'windowTotal':0}) as Map;
       c[key]=(c[key] as int)+1;c['ms']=(c['ms'] as int)+a.ms;c['last']=a.question.prompt;if(a.correct&&(c['bestMs']==null||a.ms<(c['bestMs'] as int)))c['bestMs']=a.ms;
       // Category totals are descriptive; mastery uses first attempts per game.
     }
     final right=own.where((a)=>a.correct).length;
     final firstRight=samples.where((a)=>a.correct).length;
-    final dayBonus=DailyProgress.add(p,right);
-    final weekBonus=WeeklyProgress.add(p,own.where((a)=>a.correct).map((a)=>a.question.world.name));
+    final corrected=first.entries.where((e)=>!e.value.correct&&own.any((a)=>a.taskId==e.key&&a.correct)).length;
+    final dayBonus=DailyProgress.add(p,firstRight);
+    final weekBonus=WeeklyProgress.add(p,samples.where((a)=>a.correct).map((a)=>a.question.world.name));
     final learned=b.mode==Mode.training?samples.where((a)=>a.correct&&previousDue.contains(a.question.key)).map((a)=>a.question.key).toSet().length:0;
-    final qualified=samples.length>=5&&right>=3&&(b.elapsed>=10000||b.finishReason==FinishReason.goal);
+    final qualified=samples.length>=5&&firstRight>=3&&(b.elapsed>=10000||b.finishReason==FinishReason.goal);
     final breakdown=<String,int>{
-     'Richtige Antworten':right*10,'Teilnahme':qualified?15:0,'Sieg':right>0&&b.mode!=Mode.training&&(b.mode==Mode.team?b.winner==0:b.winner==player)?25:0,
+     'Richtige Antworten':firstRight*10,'Korrekturen':corrected*5,'Teilnahme':qualified?15:0,'Sieg':firstRight>0&&b.mode!=Mode.training&&(b.mode==Mode.team?b.winner==0:b.winner==player)?25:0,
      'Fehlerfrei':qualified&&firstRight==samples.length?50:0,'Tagesziel':dayBonus,'Wochenziel':weekBonus,'Rekord':qualified&&newRecord?30:0,'Fehlertraining':learned*15};
     breakdown.removeWhere((k,v)=>v==0);
     final reward=breakdown.values.fold<int>(0,(sum,n)=>sum+n);
     final skillMap=p.putIfAbsent('skills',()=> <String,dynamic>{}) as Map;
-    final skill=skillMap.putIfAbsent(b.skillName,()=>{'right':0,'wrong':0,'digits':digit,'level':level}) as Map;
+    final skill=skillMap.putIfAbsent(b.skillName,()=> <String,dynamic>{'right':0,'wrong':0,'digits':digit,'level':level}) as Map;
     skill['right']=(skill['right'] as int? ??0)+right;skill['wrong']=(skill['wrong'] as int? ??0)+own.length-right;
     final numeric=Challenge.values.where((c)=>c.name==b.skillName).firstOrNull?.usesDigits??false;
     final signature='$digit|$level|${b.settingsKey}';
@@ -159,7 +160,9 @@ class Progress {
      }
     }
     if(b.mode==Mode.duel||b.mode==Mode.solo){
-      final competitive=p.putIfAbsent('competitive',()=>{'played':0,'wins':0,'draws':0,'rating':1000}) as Map;
+      // Preserve historical combined rating; start a clean human-only rating.
+      if(p['ratingPolicy']!=2){if(p['competitive']!=null)p['legacyCompetitive']=p.remove('competitive');p['ratingPolicy']=2;}
+      final competitive=p.putIfAbsent(b.mode==Mode.duel?'competitive':'soloRating',()=>{'played':0,'wins':0,'draws':0,'rating':1000}) as Map;
       competitive['played']=(competitive['played'] as int)+1;
       competitive['wins']=(competitive['wins'] as int)+(b.winner==player?1:0);
       competitive['draws']=(competitive['draws'] as int)+(b.winner==null?1:0);
