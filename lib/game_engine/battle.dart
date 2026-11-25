@@ -50,11 +50,14 @@ class Battle {
   bool finalRound=false;
   int finalDeadline=0;
   int get finalRemaining=>max(0,finalDeadline-elapsed);
-  bool get shared=>mode==Mode.duel&&sameQuestions&&level==opponentLevel&&fuseMs==0&&ArcadeRules.kindFor(skillName)==null;
+  bool get shared=>mode==Mode.duel&&sameQuestions&&level==opponentLevel&&digits==opponentDigits&&fuseMs==0&&fuseFor(1)==0&&ArcadeRules.kindFor(skillName)==null;
   bool get speedContest=>arcade==null&&rule==BattleRule.speed&&(mode==Mode.duel||mode==Mode.solo);
   bool get arbitrate=>shared||speedContest;
   Battle({required this.mode,required this.world,required this.duration,required this.level,required this.opponentLevel,Questions? questions,this.opponentQuestions,this.rule=BattleRule.tug,this.sameQuestions=true,this.numberEntry=false,this.timedArcade=false,this.fuseMs=0,this.opponentFuseMs,this.digits=1,this.opponentDigits=1,this.skillName='mixed',this.settingsKey='',Random? random}):questions=questions??Questions(),rng=random??Random() {
     final kind=ArcadeRules.kindFor(skillName);
+    if(kind==null&&(mode==Mode.duel||mode==Mode.solo)&&rule==BattleRule.speed&&(level!=opponentLevel||digits!=opponentDigits)){
+      throw ArgumentError('Speed Battle requires equal difficulty and digit settings');
+    }
     arcade=kind==null?null:ArcadeRules(kind,seed:rng.nextInt(1<<30),difficulty:level,opponentDifficulty:opponentLevel,cooperative:mode==Mode.team,repeatObjectives:mode==Mode.training||timedArcade&&kind!=ArcadeKind.boss);
     final first=this.questions.make(world,level);
     tasks=[first,mode==Mode.training||shared?first:(opponentQuestions??this.questions).make(world,opponentLevel)];
