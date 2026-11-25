@@ -155,7 +155,7 @@ class _SetupState extends State<Setup>{
      Padding(padding:const EdgeInsets.only(top:7),child:Text(rule.description,style:const TextStyle(fontSize:12))),
     ],
     if(competitive)Wrap(spacing:8,children:[for(final n in [1,3,5])ChoiceChip(label:Text(n==1?'Einzelrunde':'Best of $n'),selected:seriesLength==n,onSelected:(_)=>setState(()=>seriesLength=n))]),
-    if(competitive&&challenge.specialRules)SwitchListTile(title:const Text('Volle Rundendauer spielen'),subtitle:const Text('Bei erreichtem Ziel startet eine neue Etappe.'),value:timedArcade,onChanged:(v)=>setState(()=>timedArcade=v)),
+    if(competitive&&challenge.specialRules)SwitchListTile(title:Text(timedArcade?'Zeitrennen':'Zielrennen'),subtitle:Text(timedArcade?'Die Runde endet erst nach Ablauf der Zeit.':'Die Runde endet beim Spielziel, einer Niederlage oder am Zeitlimit.'),value:timedArcade,onChanged:(v)=>setState(()=>timedArcade=v)),
     section(widget.mode==Mode.training||challenge.specialRules&&timedArcade||competitive&&!challenge.specialRules&&rule==BattleRule.sprint?'Rundendauer':'Maximale Rundendauer'),
     Text(widget.mode==Mode.training||challenge.specialRules&&timedArcade?'Das Spiel läuft bis zum Ablauf der Zeit; erreichte Ziele starten eine neue Etappe.':competitive&&!challenge.specialRules&&rule==BattleRule.sprint?'Die Runde endet erst nach Ablauf der Zeit.':competitive&&!challenge.specialRules&&rule==BattleRule.finalClash?'Bei Gleichstand folgt eine Entscheidungsaufgabe.':'Die Runde endet beim Spielziel, einer Niederlage oder am Zeitlimit.',style:const TextStyle(fontSize:12)),
     Wrap(spacing:8,children:[30,60,90,120,if(widget.mode==Mode.training)0].map((t)=>ChoiceChip(label:Text(t==0?'Ohne Limit':'$t s'),selected:duration==t,onSelected:(_)=>setState(()=>duration=t))).toList()),
@@ -200,7 +200,8 @@ class Stats extends StatelessWidget{
     Row(children:[Expanded(child:MetricTile(label:'XP',value:'$xp',icon:Icons.bolt,color:arcadeOrange)),const SizedBox(width:12),AccuracyRing(value:right+wrong==0?0:right/(right+wrong),reduced:progress.prefs.getBool('reduced')??false)]),
     const SizedBox(height:12),
     ListTile(title:const Text('Rang'),trailing:Text(rankFor(xp))),
-    ListTile(title:const Text('Wettkampfrang'),trailing:Text('${(p['competitive'] as Map?)?['rating']??1000}')),
+    ListTile(title:const Text('Wettkampfrang'),subtitle:const Text('Nur menschliche Duelle'),trailing:Text('${(p['competitive'] as Map?)?['rating']??1000}')),
+     ListTile(title:const Text('Bot-Rang'),trailing:Text('${(p['soloRating'] as Map?)?['rating']??1000}')),
     ListTile(title:const Text('Nächste Freischaltung'),trailing:Text(thresholds.where((t)=>t>xp).isEmpty?'Alle': '${thresholds.firstWhere((t)=>t>xp)-xp} XP')),
     ListTile(title:const Text('Tages-Challenge'),trailing:Text('${DailyProgress.count(p)}/10')),
     ListTile(title:const Text('Wochen-Challenge'),subtitle:Text('${WeeklyProgress.worlds(p).length}/3 Lernwelten'),trailing:Text('${WeeklyProgress.count(p)}/50')),
@@ -242,7 +243,7 @@ class _ProfilesState extends State<Profiles>{
   if(p.profiles.containsKey(name)){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Dieser Name existiert bereits.')));return;}
   setState((){p.profiles[name]=p.fresh();p.active=name;});await p.save();
  }
- @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Spielerprofile')),floatingActionButton:FloatingActionButton.extended(onPressed:add,icon:const Icon(Icons.add),label:const Text('Profil')),body:ListView(children:p.profiles.keys.map((name)=>ListTile(title:Text(name),leading:Icon(p.active==name?Icons.check_circle:Icons.person_outline),onTap:()async{setState(()=>p.active=name);await p.save();},trailing:IconButton(icon:const Icon(Icons.delete_outline),onPressed:()async{final yes=await showDialog<bool>(context:context,builder:(c)=>AlertDialog(title:Text('$name löschen?'),content:const Text('Der lokale Lernfortschritt wird entfernt.'),actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Abbrechen')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('Löschen'))]));if(yes!=true||!mounted)return;setState((){p.profiles.remove(name);p.profiles.putIfAbsent('Gast',()=>p.fresh());if(p.active==name)p.active='Gast';});await p.save();}))).toList()));
+ @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Spielerprofile')),floatingActionButton:FloatingActionButton.extended(onPressed:add,icon:const Icon(Icons.add),label:const Text('Profil')),body:ListView(children:p.profiles.keys.map((name)=>ListTile(title:Text(name),leading:Icon(p.active==name?Icons.check_circle:Icons.person_outline),onTap:()async{setState(()=>p.active=name);await p.save();},trailing:IconButton(icon:const Icon(Icons.delete_outline),onPressed:()async{final yes=await showDialog<bool>(context:context,builder:(c)=>AlertDialog(title:Text('$name löschen?'),content:const Text('Der lokale Lernfortschritt wird entfernt.'),actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Abbrechen')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('Löschen'))]));if(yes!=true||!mounted)return;await p.deleteProfile(name);if(mounted)setState((){});}))).toList()));
 }
 class Settings extends StatefulWidget{
  final Progress progress;final VoidCallback themeChanged;final Future<void> Function() intro;
