@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+python3 scripts/install_anime_assets.py
 if [ ! -d android ]; then
   tmp="$(mktemp -d)"
   flutter create --no-pub --platforms=android --org ch.brainclash --project-name brain_clash "$tmp/brain_clash"
