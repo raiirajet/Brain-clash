@@ -4,6 +4,7 @@ import '../game_engine/battle.dart';
 import '../question_generators/questions.dart';
 import '../question_generators/challenges.dart';
 import 'engagement.dart';
+import '../core/fighters.dart';
 import '../core/storage/profile_store.dart';
 class Progress {
   final SharedPreferences prefs;
@@ -22,9 +23,11 @@ class Progress {
     if(!profiles.containsKey(active))active='Gast';
     for(final profile in profiles.values){migrateRating(profile as Map);}
   }
-  Map<String,dynamic> fresh()=>{'rounds':0,'wins':0,'right':0,'wrong':0,'xp':0,'avatar':0,'categories':<String,dynamic>{},'review':<String,dynamic>{},'best':0};
+  Map<String,dynamic> fresh()=>{'rounds':0,'wins':0,'right':0,'wrong':0,'xp':0,'avatar':0,'avatarRoster':2,'categories':<String,dynamic>{},'review':<String,dynamic>{},'best':0};
   String quickKey(String key)=>'profile:${Uri.encodeComponent(active)}:$key';
   void migrateRating(Map profile){
+    if(profile['avatarRoster']!=2){profile['avatar']=0;profile['avatarRoster']=2;profile.remove('costume');}
+    else {profile['avatar']=validFighter(profile['avatar']);}
     if(profile['ratingPolicy']==2)return;
     if(profile['competitive']!=null)profile['legacyCompetitive']=profile.remove('competitive');
     profile['ratingPolicy']=2;

@@ -9,6 +9,7 @@ import '../question_generators/challenges.dart';
 import '../widgets/challenge_card.dart';
 import 'play.dart';
 import '../widgets/character.dart';
+import '../core/fighters.dart';
 import 'cosmetics.dart';
 import '../widgets/arcade.dart';
 import '../widgets/mode_art.dart';
@@ -16,9 +17,8 @@ import '../learning/engagement.dart';
 import 'tournament.dart';
 import '../widgets/accuracy_history.dart';
 
-const avatars=['🤖','👨‍🚀','🥷','🦊','🐉','👽'];
-const names=['Volt','Cosmo','Shadow','Blaze','Drako','Nova','Frost','Ember','Titan','Luna','Orion','Sol'];
-const thresholds=[0,50,150,300,600,1000,1500,2500,3500,7000,15000,30000];
+const names=fighterNames;
+const thresholds=[0,0,0,0,0,0,0,0,0];
 const modeNames=['Solo Battle','1 VS 1','Training','Team Battle'];
 const worldIcons=[Icons.calculate,Icons.extension,Icons.psychology,Icons.track_changes,Icons.translate,Icons.shuffle];
 class Home extends StatefulWidget{
@@ -48,13 +48,13 @@ class _HomeState extends State<Home>{
       ]),
       const SizedBox(height:10),
       if(!compact)Container(padding:const EdgeInsets.all(12),decoration:BoxDecoration(borderRadius:BorderRadius.circular(20),gradient:const LinearGradient(colors:[Color(0xff193e7f),Color(0xff161a33),Color(0xff63351f)]),border:Border.all(color:arcadeBlue.withAlpha(85))),child:Row(children:[
-       AvatarArt(index:p.current['avatar'] as int,size:76,costume:p.current['costume'] as int? ??0),
+       InkWell(onTap:()=>open(CollectionPage(progress:p)),borderRadius:BorderRadius.circular(12),child:AvatarArt(index:validFighter(p.current['avatar']),size:76)),
        Expanded(child:Column(mainAxisSize:MainAxisSize.min,mainAxisAlignment:MainAxisAlignment.center,crossAxisAlignment:CrossAxisAlignment.start,children:[
         Text('${p.current['xp']} XP',style:const TextStyle(fontSize:27,color:Colors.white,fontWeight:FontWeight.w900)),
         const SizedBox(height:6),
         LinearProgressIndicator(value:((p.current['xp'] as int)%100)/100,backgroundColor:Colors.white24,color:arcadeGreen,borderRadius:BorderRadius.circular(8)),
         const SizedBox(height:5),
-        Text('Lv ${1+(p.current['xp'] as int)~/100} · ${thresholds.where((t)=>t>(p.current['xp'] as int)).isEmpty?'Alle Figuren': '${thresholds.firstWhere((t)=>t>(p.current['xp'] as int))-(p.current['xp'] as int)} XP → ${names[thresholds.indexOf(thresholds.firstWhere((t)=>t>(p.current['xp'] as int)))]}'}',style:const TextStyle(color:Colors.white70,fontSize:12)),
+        Text('Lv ${1+(p.current['xp'] as int)~/100} · ${names[validFighter(p.current['avatar'])]}',style:const TextStyle(color:Colors.white70,fontSize:12)),
        ])),const SizedBox(width:10),const Icon(Icons.bolt_rounded,color:arcadeOrange,size:36),
       ])),
       const SizedBox(height:10),
@@ -69,7 +69,7 @@ class _HomeState extends State<Home>{
       Container(decoration:BoxDecoration(color:Theme.of(context).colorScheme.surface.withAlpha(215),borderRadius:BorderRadius.circular(18),border:Border.all(color:Theme.of(context).colorScheme.outlineVariant.withAlpha(100))),child:Row(children:[
        nav(Icons.insights,'Fortschritt',()=>open(Stats(progress:p))),
        nav(Icons.account_tree,'Turnier',()=>open(TournamentPage(progress:p))),
-       nav(Icons.face,'Sammlung',()=>open(CollectionPage(progress:p))),
+       nav(Icons.face,'Figuren',()=>open(CollectionPage(progress:p))),
        nav(Icons.emoji_events,'Erfolge',()=>open(Stats(progress:p,achievements:true))),
        nav(Icons.settings,'Einstellungen',()=>open(Settings(progress:p,themeChanged:widget.themeChanged,intro:intro))),
       ])),
@@ -185,7 +185,18 @@ class _SetupState extends State<Setup>{
    ])),
   ]))));
  }
- Widget fighterPicker(int player){final profile=player==0?widget.progress.current:(widget.progress.profiles[secondProfile] as Map? ??widget.progress.current);final current=player==0?avatar1??profile['avatar'] as int:avatar2??(profile['avatar'] as int);return Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(player==0?'Spieler 1':'Spieler 2'),SizedBox(height:96,child:ListView(scrollDirection:Axis.horizontal,children:[for(var i=0;i<names.length;i++)if((profile['xp'] as int)>=thresholds[i])Padding(padding:const EdgeInsets.all(4),child:ChoiceChip(label:Column(mainAxisSize:MainAxisSize.min,children:[AvatarArt(index:i,size:44),Text(names[i])]),selected:current==i,onSelected:(_)=>setState((){if(player==0){avatar1=i;}else{avatar2=i;}})))]))]);}
+ Widget fighterPicker(int player){
+  final profile=player==0?widget.progress.current:widget.progress.profiles[secondProfile] as Map?;
+  final current=player==0?avatar1??validFighter(profile?['avatar']):avatar2??(profile==null?5:validFighter(profile['avatar']));
+  return Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+   Text(player==0?'Spieler 1':widget.mode==Mode.solo?'Gegner':'Spieler 2'),
+   SizedBox(height:108,child:ListView(scrollDirection:Axis.horizontal,children:[
+    for(var i=0;i<names.length;i++)Padding(padding:const EdgeInsets.all(4),child:ChoiceChip(
+     label:Column(mainAxisSize:MainAxisSize.min,children:[AvatarArt(index:i,size:57),Text(names[i])]),
+     selected:current==i,onSelected:(_)=>setState((){if(player==0){avatar1=i;}else{avatar2=i;}})))
+   ]))
+  ]);
+ }
  List<DropdownMenuItem<int>> levels()=>List.generate(4,(i)=>DropdownMenuItem(value:i,child:Text(['Einfach','Normal','Schwer','Experte'][i])));
 }
 
@@ -228,7 +239,27 @@ class CollectionPage extends StatefulWidget{
  @override State<CollectionPage> createState()=>_CollectionPageState();
 }
 class _CollectionPageState extends State<CollectionPage>{
- @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Sammlung'),actions:[IconButton(tooltip:L.text('Arena & Effekte'),icon:const Icon(Icons.palette),onPressed:()=>Navigator.push<void>(context,MaterialPageRoute(builder:(_)=>Cosmetics(progress:widget.progress))))]),body:GridView.builder(padding:const EdgeInsets.all(16),gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:2,mainAxisExtent:180,crossAxisSpacing:8,mainAxisSpacing:8),itemCount:names.length,itemBuilder:(c,i){final p=widget.progress.current;final unlocked=(p['xp'] as int)>=thresholds[i];return Card(child:InkWell(onTap:unlocked?()async{setState(()=>p['avatar']=i);await widget.progress.save();}:null,child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[Container(decoration:BoxDecoration(shape:BoxShape.circle,gradient:RadialGradient(colors:[palette[i].withAlpha(90),Colors.transparent])),child:AvatarArt(index:i,size:80,costume:p['costume'] as int? ??0)),Text(names[i],style:const TextStyle(fontWeight:FontWeight.w900)),Text(['Standard','Standard','Selten','Selten','Episch','Episch','Episch','Episch','Legendär','Legendär','Meister','Meister'][i],style:TextStyle(color:palette[i],fontSize:11)),Text(unlocked?(p['avatar']==i?'Ausgewählt':'Auswählen'):'🔒 ${thresholds[i]} XP')])));}));
+ @override Widget build(BuildContext context){
+  final p=widget.progress.current;
+  final selected=validFighter(p['avatar']);
+  return Scaffold(appBar:AppBar(title:const Text('Charakter auswählen'),actions:[
+   IconButton(tooltip:L.text('Arena & Effekte'),icon:const Icon(Icons.palette),onPressed:()=>Navigator.push<void>(context,MaterialPageRoute(builder:(_)=>Cosmetics(progress:widget.progress))))
+  ]),body:Column(children:[
+   Padding(padding:const EdgeInsets.all(10),child:Text('Dein Charakter: ${names[selected]} · Alle Figuren frei verfügbar')),
+   Expanded(child:GridView.builder(padding:const EdgeInsets.all(12),
+    gridDelegate:const SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent:230,mainAxisExtent:174,crossAxisSpacing:8,mainAxisSpacing:8),
+    itemCount:names.length,itemBuilder:(c,i)=>Card(
+     shape:RoundedRectangleBorder(borderRadius:BorderRadius.circular(16),side:BorderSide(color:selected==i?palette[i]:Colors.transparent,width:2)),
+     child:InkWell(borderRadius:BorderRadius.circular(16),onTap:()async{
+      setState(()=>p['avatar']=i);await widget.progress.save();
+     },child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[
+      AvatarArt(index:i,size:112,pose:selected==i?4:0),
+      Text(names[i],style:const TextStyle(fontWeight:FontWeight.w900)),
+      Text(selected==i?'✓ Ausgewählt':'Auswählen')
+     ]))
+    )))
+  ]));
+ }
 }
 class Profiles extends StatefulWidget{
  final Progress progress;

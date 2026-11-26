@@ -57,7 +57,7 @@ class Arena extends FlameGame {
    final offset=Offset(p==0?w*.18+pulse:w*.82-pulse,y+bob+(failed==p&&!reduced?sin(clock*60)*3:0));
    canvas.drawOval(Rect.fromCenter(center:Offset(offset.dx,y+radius*.82),width:radius*2.7,height:radius*.58),Paint()..color=base.withAlpha(75));
    canvas.drawCircle(offset,radius*1.16,Paint()..color=base.withAlpha(30));
-   drawAvatar(canvas,offset,radius*(pulses[p]>0&&!reduced?1.08:1),avatar,action:reduced?0:sin(progress*pi),hurt:failed==p,costume:p==0?leftCostume:rightCostume);
+   drawAvatar(canvas,offset,radius*(pulses[p]>0&&!reduced?1.08:1),avatar,action:0,hurt:failed==p,faceLeft:p==1,pose:reduced?0:failed==p?3:pulses[p]>0?(progress<.25?1:progress<.73?2:5):0,costume:p==0?leftCostume:rightCostume);
    if(pulses[p]>0&&!reduced){
     final c=effect==0?palette[avatar.clamp(0,palette.length-1).toInt()]:effect==1?Colors.amber:Colors.cyanAccent;
     drawAttack(canvas,offset,Offset(x,y),progress,c,avatar,radius);
@@ -80,7 +80,9 @@ class Arena extends FlameGame {
    canvas.drawLine(Offset(w*.5+(i-3)*w*.035,h*.65),Offset(xx,h),Paint()..color=Colors.white12..strokeWidth=.7);
   }
   if(team){
-   drawAvatar(canvas,anchor,radius*1.12,4);
+   canvas.drawCircle(anchor,radius,Paint()..color=orange.withAlpha(75));
+   canvas.drawCircle(anchor,radius*.72,Paint()..color=orange..style=PaintingStyle.stroke..strokeWidth=3);
+   canvas.drawCircle(anchor,radius*.25,Paint()..color=Colors.white);
   }else{
    for(var i=3;i>=1;i--){
     canvas.drawCircle(anchor,radius*i/3,Paint()..color=blue.withAlpha(30+i*25)..style=PaintingStyle.stroke..strokeWidth=3);
@@ -93,7 +95,7 @@ class Arena extends FlameGame {
    final jump=reduced?0.0:sin(t*pi)*8;
    final center=Offset(w*(team?(p==0 ? .14 : .37):.28)+jump,y+(reduced?0.0:sin(clock*3+p)*2));
    canvas.drawOval(Rect.fromCenter(center:Offset(center.dx,y+radius*.75),width:radius*2.4,height:radius*.52),Paint()..color=base.withAlpha(80));
-   drawAvatar(canvas,center,radius*(pulses[p]>0&&!reduced?1.08:1),avatar,action:reduced?0:sin(t*pi),hurt:failed==p,costume:p==0?leftCostume:rightCostume);
+   drawAvatar(canvas,center,radius*(pulses[p]>0&&!reduced?1.08:1),avatar,action:0,hurt:failed==p,pose:reduced?0:failed==p?3:pulses[p]>0?(t<.25?1:t<.73?2:5):0,costume:p==0?leftCostume:rightCostume);
    if(pulses[p]>0&&!reduced){
     final c=effect==0?palette[avatar.clamp(0,palette.length-1).toInt()]:effect==1?Colors.amber:Colors.cyanAccent;
     drawAttack(canvas,center,anchor,t,c,avatar,radius);

@@ -1,0 +1,2 @@
+# Anime fighters
+Either upload the original `BrainClash_Anime_Assets.zip` to the repository root or commit the nine WebP files directly into `assets/characters/`. Run `python3 scripts/install_anime_assets.py` before local Flutter tests; Android CI invokes it automatically. Each atlas is 960×640 with six 320px tiles. The asset contract test still requires all nine real decodable images. Missing files deliberately block an incomplete APK.
