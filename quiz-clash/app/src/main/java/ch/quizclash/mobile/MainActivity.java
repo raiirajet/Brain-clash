@@ -32,7 +32,11 @@ public class MainActivity extends Activity {
     ArrayList<Q> bank=new ArrayList<>(),round=new ArrayList<>(),bundledBank=new ArrayList<>();
     Set<String> mistakes=new HashSet<>(), subjects=new TreeSet<>();
     ArrayList<Integer> order=new ArrayList<>();
-    android.content.SharedPreferences prefs;
+    android.content.SharedPreferences prefs, profileRegistry;
+    String playerId="legacy", playerName="";
+    Set<String> solved=new HashSet<>(), profileIds=new HashSet<>();
+    Map<String,Integer> officialGrades=new HashMap<>();
+    int rankScope=0;
     LinearLayout root,body; ScrollView scroll;
     int grade=4,count=10,index=0,score=0,correct=0,streak=0,chosen=-1,totalAnswered=0;
     int mixedCount=10,profileGrade=0,avatarStyle=0,draftStyle=0;
@@ -48,14 +52,13 @@ public class MainActivity extends Activity {
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
-        prefs=getSharedPreferences("quiz_progress",MODE_PRIVATE);
-        xp=prefs.getLong("xp",0); totalAnswered=prefs.getInt("answered",0);
-        profileGrade=ProfileModel.validGrade(prefs.getInt("profile_grade",0));
-        grade=profileGrade>0?profileGrade:4;
-        avatarStyle=ProfileModel.validStyle(prefs.getInt("avatar_style",0));
-        if(!prefs.contains("avatar_seed"))prefs.edit().putLong("avatar_seed",avatarRandom.nextLong()).apply();
-        avatarSeed=prefs.getLong("avatar_seed",0L);
-        mistakes=new HashSet<>(prefs.getStringSet("mistakes",Collections.emptySet()));
+        profileRegistry=getSharedPreferences("quiz_profiles",MODE_PRIVATE);
+        profileIds=new HashSet<>(profileRegistry.getStringSet("ids",Collections.singleton("legacy")));
+        if(profileIds.isEmpty())profileIds.add("legacy");
+        playerId=profileRegistry.getString("active","legacy");
+        if(!profileIds.contains(playerId))playerId=new TreeSet<>(profileIds).first();
+        saveRegistry();
+        loadPlayer(playerId);
         loading=true;
         home();
         io.execute(()->{
@@ -90,9 +93,137 @@ public class MainActivity extends Activity {
             final String status=message;
             runOnUiThread(()->{
                 if(isFinishing()||isDestroyed())return;
-                bundledBank=fixed;bank=selected;imported=localImport;loading=false;note=status;home();
+                bundledBank=fixed;officialGrades.clear();for(Q q:fixed)officialGrades.put(q.id,q.grade);
+                bank=selected;imported=localImport;loading=false;note=status;home();
             });
         });
+    }
+    android.content.SharedPreferences playerPrefs(String id){
+        return getSharedPreferences(id.equals("legacy")?"quiz_progress":"quiz_player_"+id,MODE_PRIVATE);
+    }
+    void saveRegistry(){
+        profileRegistry.edit().putStringSet("ids",new HashSet<>(profileIds)).putString("active",playerId).apply();
+    }
+    void loadPlayer(String id){
+        playerId=id;
+        prefs=playerPrefs(id);
+        playerName=prefs.getString("player_name","");
+        xp=prefs.getLong("xp",0); totalAnswered=prefs.getInt("answered",0);
+        profileGrade=ProfileModel.validGrade(prefs.getInt("profile_grade",0));
+        grade=profileGrade>0?profileGrade:4;
+        avatarStyle=ProfileModel.validStyle(prefs.getInt("avatar_style",0));
+        if(!prefs.contains("avatar_seed"))prefs.edit().putLong("avatar_seed",avatarRandom.nextLong()).apply();
+        avatarSeed=prefs.getLong("avatar_seed",0L);
+        mistakes=new HashSet<>(prefs.getStringSet("mistakes",Collections.emptySet()));
+        solved=new HashSet<>(prefs.getStringSet("rank_solved",Collections.emptySet()));
+        grade=profileGrade>0?profileGrade:4;mode="training";subjects.clear();difficulty="Alle";count=10;mixedCount=10;round.clear();order.clear();chosen=-1;pendingProfileAction="";setupFromClasses=false;
+        rankScope=profileGrade;
+    }
+    void switchPlayer(String id){
+        if(loading||!profileIds.contains(id))return;
+        loadPlayer(id);saveRegistry();home();
+    }
+    String displayName(String id){
+        String name=playerPrefs(id).getString("player_name","");
+        return name.isEmpty()?"Unbenanntes Profil":name;
+    }
+    boolean duplicateName(String name,String except){
+        for(String id:profileIds)if(!id.equals(except)&&RankModel.nameKey(playerPrefs(id).getString("player_name","")).equals(RankModel.nameKey(name)))return true;
+        return false;
+    }
+    void nameDialog(boolean create){
+        if(loading)return;
+        if(create&&profileIds.size()>=30){Toast.makeText(this,"Maximal 30 lokale Profile",Toast.LENGTH_SHORT).show();return;}
+        LinearLayout content=column(WHITE,16);
+        add(content,text("Spielname oder Spitzname (2–24 Zeichen)",14,INK,true),8);
+        EditText input=new EditText(this);input.setSingleLine(true);input.setTextColor(INK);
+        input.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_FLAG_CAP_WORDS);
+        input.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(48)});
+        input.setHint("z. B. QuizFuchs");if(!create)input.setText(playerName);add(content,input,8);
+        add(content,text("Bitte keinen vollständigen Namen, keine Adresse und keine Schule angeben. Nur lokal gespeichert.",13,MUTED,false),0);
+        AlertDialog dialog=new AlertDialog.Builder(this).setTitle(create?"Neues Spielerprofil":"Spielnamen bearbeiten").setView(content).setNegativeButton("Abbrechen",null).setPositiveButton("Speichern",null).create();
+        dialog.setOnShowListener(d->dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{
+            String name=RankModel.cleanName(input.getText().toString());
+            if(!RankModel.validName(name)){input.setError("2–24 Zeichen: Buchstaben, Zahlen, Leerzeichen, - oder _");return;}
+            if(duplicateName(name,create?"":playerId)){input.setError("Dieser Name ist bereits vergeben");return;}
+            if(create){
+                String id=UUID.randomUUID().toString();playerPrefs(id).edit().putString("player_name",name).apply();
+                profileIds.add(id);loadPlayer(id);saveRegistry();dialog.dismiss();profileClass();
+            }else{
+                playerName=name;prefs.edit().putString("player_name",name).apply();dialog.dismiss();home();
+            }
+        }));
+        dialog.show();
+    }
+    void players(){
+        base("players","Spielerprofile","Mehrere Spieler auf diesem Gerät",true);
+        caption("Jedes Profil hat einen eigenen Namen, Avatar, Klassenstufe, XP und Ranglistenfortschritt.");
+        ArrayList<String> ids=new ArrayList<>(profileIds);ids.sort(Comparator.comparing(this::displayName,String.CASE_INSENSITIVE_ORDER).thenComparing(id->id));
+        for(String id:ids){
+            android.content.SharedPreferences pp=playerPrefs(id);
+            LinearLayout card=column(WHITE,12);LinearLayout row=new LinearLayout(this);row.setGravity(Gravity.CENTER_VERTICAL);
+            AvatarView av=new AvatarView(this,pp.getLong("avatar_seed",0L),ProfileModel.validStyle(pp.getInt("avatar_style",0)));
+            LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(dp(60),dp(60));lp.rightMargin=dp(12);row.addView(av,lp);
+            LinearLayout info=new LinearLayout(this);info.setOrientation(LinearLayout.VERTICAL);
+            int g=ProfileModel.validGrade(pp.getInt("profile_grade",0));
+            add(info,text(displayName(id)+(id.equals(playerId)?"  ✓":""),18,INK,true),4);
+            add(info,text((g==0?"Klasse nicht gewählt":g+". Klasse")+" · "+pp.getLong("xp",0)+" XP",14,MUTED,false),0);
+            row.addView(info,new LinearLayout.LayoutParams(0,-2,1));add(card,row,8);
+            add(card,button(id.equals(playerId)?"Aktives Profil":"Profil verwenden",id.equals(playerId)?BG:PURPLE,id.equals(playerId)?INK:WHITE,()->switchPlayer(id)),0);
+            add(body,card,10);
+        }
+        action("＋ Neues Spielerprofil",()->nameDialog(true));
+        secondary("Aktuellen Namen bearbeiten",()->nameDialog(false));
+        secondary("Aktuelles Profil löschen",()->new AlertDialog.Builder(this).setTitle("Profil wirklich löschen?")
+            .setMessage("Name, Avatar, XP, Klasse und Ranglistenpunkte dieses Profils werden lokal gelöscht. Andere Profile bleiben erhalten.")
+            .setNegativeButton("Abbrechen",null).setPositiveButton("Löschen",(d,w)->{
+                String removed=playerId;playerPrefs(removed).edit().clear().commit();profileIds.remove(removed);
+                if(profileIds.isEmpty())profileIds.add("legacy");
+                loadPlayer(new TreeSet<>(profileIds).first());saveRegistry();home();
+            }).show());
+    }
+    ArrayList<RankModel.Entry> rankEntries(int scope){
+        ArrayList<RankModel.Entry> entries=new ArrayList<>();
+        for(String id:profileIds){
+            android.content.SharedPreferences pp=playerPrefs(id);
+            String name=pp.getString("player_name","");
+            int g=ProfileModel.validGrade(pp.getInt("profile_grade",0));
+            if(!RankModel.validName(name)||(scope!=0&&g!=scope))continue;
+            Set<String> known=pp.getStringSet("rank_solved",Collections.emptySet());
+            int unique=RankModel.count(known,officialGrades,scope);
+            if(unique>0)entries.add(new RankModel.Entry(id,name,g,unique,pp.getLong("avatar_seed",0L),ProfileModel.validStyle(pp.getInt("avatar_style",0))));
+        }
+        return RankModel.rank(entries);
+    }
+    RankModel.Entry ownRank(int scope){for(RankModel.Entry e:rankEntries(scope))if(e.id.equals(playerId))return e;return null;}
+    void openRanking(){rankScope=profileGrade;ranking();}
+    void ranking(){
+        base("ranking","Rangliste","Lokaler Wettbewerb · keine Online-Spieler",true);
+        if(profileGrade>0)choices(new String[]{"Meine Klasse","Alle Klassen"},rankScope==0?"Alle Klassen":"Meine Klasse",s->{rankScope=s.equals("Meine Klasse")?profileGrade:0;ranking();});
+        heading(rankScope==0?"Alle Klassen":rankScope+". Klasse");
+        caption("100 RP pro erstmals richtig beantworteter, eingebauter Frage. Keine Zusatzpunkte für Wiederholungen oder importierte Fragen.");
+        ArrayList<RankModel.Entry> entries=rankEntries(rankScope);
+        if(entries.isEmpty())caption("Noch keine Platzierung. Wähle einen Namen und löse deine erste Frage richtig.");
+        for(RankModel.Entry e:entries){
+            LinearLayout card=column(e.id.equals(playerId)?0xffe5dfff:WHITE,12);
+            LinearLayout row=new LinearLayout(this);row.setGravity(Gravity.CENTER_VERTICAL);
+            TextView rank=text("#"+e.rank,22,e.rank<=3?PURPLE:INK,true);rank.setGravity(Gravity.CENTER);
+            row.addView(rank,new LinearLayout.LayoutParams(dp(46),-2));
+            AvatarView av=new AvatarView(this,e.seed,e.style);av.setContentDescription("Avatar von "+e.name);
+            LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(dp(48),dp(48));lp.rightMargin=dp(10);row.addView(av,lp);
+            LinearLayout info=new LinearLayout(this);info.setOrientation(LinearLayout.VERTICAL);
+            add(info,text(e.name+(e.id.equals(playerId)?" · Du":""),17,INK,true),3);
+            add(info,text(RankModel.title(e.rank)+" · "+(e.grade==0?"ohne Klasse":e.grade+". Klasse"),13,MUTED,false),0);
+            row.addView(info,new LinearLayout.LayoutParams(0,-2,1));
+            TextView points=text(e.points()+" RP",16,PURPLE,true);points.setGravity(Gravity.END);row.addView(points,new LinearLayout.LayoutParams(-2,-2));
+            add(card,row,0);add(body,card,8);
+        }
+        if(!playerName.isEmpty()&&ownRank(rankScope)==null)caption("Du bist in dieser Rangliste noch nicht platziert.");
+        heading("Top-10-Titel");
+        for(int i=1;i<=10;i++)caption("#"+i+"  ·  "+RankModel.title(i));
+        caption("Bei Gleichstand teilen sich Spieler einen Rang und Titel. Der nächste Rang wird entsprechend übersprungen. Titel ändern sich mit der Platzierung.");
+        secondary("Spielerprofile verwalten",()->players());
+        caption("Online-Ranking ist vorbereitet, aber noch nicht verbunden. Es werden keine Daten übertragen.");
     }
     static ArrayList<Q> mergeBanks(List<Q> fixed,List<Q> extra){
         ArrayList<Q> out=new ArrayList<>();Set<String> ids=new HashSet<>(),stems=new HashSet<>();
@@ -167,11 +298,14 @@ public class MainActivity extends Activity {
         LinearLayout.LayoutParams ap=new LinearLayout.LayoutParams(dp(92),dp(92));ap.rightMargin=dp(14);top.addView(portrait,ap);
         LinearLayout info=new LinearLayout(this);info.setOrientation(LinearLayout.VERTICAL);
         add(info,text("DEIN PROFIL",12,GOLD,true),4);
-        add(info,text(profileGrade==0?"Welche Klasse besuchst du?":profileGrade+". Klasse",23,WHITE,true),5);
+        add(info,text(playerName.isEmpty()?"Dein Spielname":playerName,23,WHITE,true),5);
+        add(info,text(profileGrade==0?"Welche Klasse besuchst du?":profileGrade+". Klasse",17,WHITE,true),5);
         add(info,text(profileGrade==0?"Wähle deine Klasse für passende Quizfragen.":classCount(profileGrade)+" passende Fragen",14,WHITE,false),0);
         top.addView(info,new LinearLayout.LayoutParams(0,-2,1));add(profile,top,14);
+        add(profile,button(playerName.isEmpty()?"Spielnamen festlegen":"Namen bearbeiten",WHITE,INK,()->nameDialog(false)),8);
         add(profile,button(profileGrade==0?"Meine Klasse festlegen":"Klasse ändern",WHITE,INK,()->{pendingProfileAction="";profileClass();}),8);
-        add(profile,button("Avatar gestalten",0xff3e329f,WHITE,()->openAvatar()),0);add(body,profile,14);
+        add(profile,button("Avatar gestalten",0xff3e329f,WHITE,()->openAvatar()),8);
+        add(profile,button("Spieler wechseln / hinzufügen",0xff3e329f,WHITE,()->players()),0);add(body,profile,14);
 
         LinearLayout hero=column(WHITE,16);
         add(hero,text("★  LEVEL "+level(),15,PURPLE,true),5);
@@ -184,6 +318,10 @@ public class MainActivity extends Activity {
             add(hero,text(classMistakes(profileGrade)+" Fragen zum Wiederholen",14,MUTED,false),0);
         }else add(hero,text(totalAnswered+" beantwortete Fragen insgesamt",14,MUTED,false),0);
         add(body,hero,16);
+        LinearLayout rankCard=column(WHITE,16);RankModel.Entry rank=ownRank(profileGrade);
+        add(rankCard,text("🏆  "+(rank==null?"Noch nicht platziert":"#"+rank.rank+" · "+RankModel.title(rank.rank)),19,INK,true),6);
+        add(rankCard,text(RankModel.count(solved,officialGrades,profileGrade)*100+" RP · "+(profileGrade==0?"Alle Klassen":profileGrade+". Klasse"),14,MUTED,false),8);
+        add(rankCard,button("Rangliste ansehen",PURPLE,WHITE,()->openRanking()),0);add(body,rankCard,14);
         if(!bank.isEmpty()){
             heading("Für dich");
             action(profileGrade==0?"▶  Meine Klasse wählen & starten":"▶  Meine Klasse · 10 Fragen",()->profileAction("quick"));
@@ -342,9 +480,9 @@ public class MainActivity extends Activity {
         Q q=round.get(index);chosen=selected;totalAnswered++;
         int attempts=prefs.getInt("answered_grade_"+q.grade,0)+1;
         int right=prefs.getInt("correct_grade_"+q.grade,0)+(selected==q.answer?1:0);
-        if(selected==q.answer){correct++;streak++;int points=streak>=3?125:100;score+=points;xp+=points;mistakes.remove(q.id);}
+        if(selected==q.answer){correct++;streak++;int points=streak>=3?125:100;score+=points;xp+=points;mistakes.remove(q.id);if(officialGrades.containsKey(q.id))solved.add(q.id);}
         else{streak=0;mistakes.add(q.id);}
-        prefs.edit().putLong("xp",xp).putInt("answered",totalAnswered).putInt("answered_grade_"+q.grade,attempts).putInt("correct_grade_"+q.grade,right).putStringSet("mistakes",new HashSet<>(mistakes)).apply();
+        prefs.edit().putLong("xp",xp).putInt("answered",totalAnswered).putInt("answered_grade_"+q.grade,attempts).putInt("correct_grade_"+q.grade,right).putStringSet("mistakes",new HashSet<>(mistakes)).putStringSet("rank_solved",new HashSet<>(solved)).apply();
         quiz();
     }
     void result(){
@@ -353,6 +491,7 @@ public class MainActivity extends Activity {
         add(card,text("★  "+score+" Punkte",32,WHITE,true),8);
         add(card,text(correct+" von "+round.size()+" richtig",22,WHITE,true),6);
         add(card,text("Level "+level()+"  ·  "+xp+" XP insgesamt",15,WHITE,false),0);add(body,card,18);
+        caption("Ranglistenpunkte insgesamt: "+RankModel.count(solved,officialGrades,0)*100+" RP");
         int stars=(correct*3)/round.size();heading(stars==3?"★★★  Fantastisch!":stars==2?"★★☆  Gut gemacht!":stars==1?"★☆☆  Weiter so!":"Weiter üben lohnt sich!");
         action("Noch eine Runde",()->setup());secondary("Fehler trainieren",()->{boolean wasMixed=mode.equals("mixed");mode="mistakes";subjects.clear();difficulty="Alle";if(wasMixed)profileAction("mistakes");else setup();});secondary("Zur Startseite",()->home());
     }
@@ -365,7 +504,7 @@ public class MainActivity extends Activity {
         for(int g=1;g<=9;g++){int n=prefs.getInt("answered_grade_"+g,0),r=prefs.getInt("correct_grade_"+g,0);if(n>0)caption(g+". Klasse · "+r+" von "+n+" richtig");}
         heading("Verfügbare Fragen");
         for(int g=1;g<=9;g++){final int gg=g;caption(g+". Klasse  ·  "+bank.stream().filter(q->q.grade==gg).count()+" Fragen");}
-        secondary("Fortschritt zurücksetzen",()->new AlertDialog.Builder(this).setTitle("Fortschritt löschen?").setMessage("XP und Fehlerliste werden gelöscht. Die Fragenbank bleibt erhalten.").setNegativeButton("Abbrechen",null).setPositiveButton("Löschen",(d,w)->{xp=0;totalAnswered=0;mistakes.clear();android.content.SharedPreferences.Editor e=prefs.edit().remove("xp").remove("answered").remove("mistakes");for(int g=1;g<=9;g++){e.remove("answered_grade_"+g).remove("correct_grade_"+g);}e.apply();stats();}).show());
+        secondary("Fortschritt zurücksetzen",()->new AlertDialog.Builder(this).setTitle("Fortschritt löschen?").setMessage("XP, Klassenstatistik, Ranglistenpunkte und Fehlerliste dieses Profils werden gelöscht. Name, Avatar, Klasse und Fragenbank bleiben erhalten.").setNegativeButton("Abbrechen",null).setPositiveButton("Löschen",(d,w)->{xp=0;totalAnswered=0;mistakes.clear();solved.clear();android.content.SharedPreferences.Editor e=prefs.edit().remove("xp").remove("answered").remove("mistakes").remove("rank_solved");for(int g=1;g<=9;g++){e.remove("answered_grade_"+g).remove("correct_grade_"+g);}e.apply();stats();}).show());
     }
     void back(){
         switch(screen){case "quiz":new AlertDialog.Builder(this).setTitle("Runde beenden?").setMessage("Deine bereits verdienten Punkte bleiben gespeichert.").setNegativeButton("Weiterspielen",null).setPositiveButton("Beenden",(d,w)->home()).show();break;
