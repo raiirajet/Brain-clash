@@ -25,18 +25,21 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.10.2'
+      - name: Validate embedded questions
+        run: python3 quiz-clash/scripts/validate_bank.py quiz-clash/app/src/main/assets/questions.json
       - name: Build and lint
         working-directory: quiz-clash
         run: gradle --no-daemon :app:assembleDebug :app:lintDebug
       - name: Verify APK
         run: |
           mkdir -p dist
-          cp quiz-clash/app/build/outputs/apk/debug/app-debug.apk dist/Quiz-Clash-0.1.1-debug.apk
+          cp quiz-clash/app/build/outputs/apk/debug/app-debug.apk dist/Quiz-Clash-0.1.2-debug.apk
+          python3 -c 'import zipfile, pathlib; p=pathlib.Path("quiz-clash/app/src/main/assets/questions.json"); z=zipfile.ZipFile("dist/Quiz-Clash-0.1.2-debug.apk"); assert z.read("assets/questions.json")==p.read_bytes(), "Embedded asset mismatch"'
           cd dist
-          sha256sum Quiz-Clash-0.1.1-debug.apk > SHA256SUMS.txt
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose Quiz-Clash-0.1.1-debug.apk
+          sha256sum Quiz-Clash-0.1.2-debug.apk > SHA256SUMS.txt
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose Quiz-Clash-0.1.2-debug.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: Quiz-Clash-0.1.1-APK
+          name: Quiz-Clash-0.1.2-APK
           path: dist/
           if-no-files-found: error

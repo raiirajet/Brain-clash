@@ -47,14 +47,34 @@ public class MainActivity extends Activity {
         xp=prefs.getLong("xp",0); totalAnswered=prefs.getInt("answered",0);
         grade=Math.max(1,Math.min(9,prefs.getInt("grade",4)));
         mistakes=new HashSet<>(prefs.getStringSet("mistakes",Collections.emptySet()));
-        demo();
+        loading=true;
         home();
-        File saved=new File(getFilesDir(),"questions.json");
-        if(saved.exists()) { loading=true;home();io.execute(()->{
-            try { String raw=read(new FileInputStream(saved)); ImportResult parsed=parse(raw);
-                runOnUiThread(()->{if(isFinishing()||isDestroyed())return;bank=parsed.questions;imported=true;loading=false;home();});
-            } catch(Exception ex){runOnUiThread(()->{if(isFinishing()||isDestroyed())return;loading=false;note="Gespeicherte Bank konnte nicht geladen werden. Demo aktiv.";home();});}
-        });}
+        io.execute(()->{
+            ArrayList<Q> bundled=new ArrayList<>(), active;
+            boolean fromImport=false;
+            String message="";
+            try {
+                ImportResult parsed=parse(read(getAssets().open("questions.json")));
+                if(parsed.skipped!=0)throw new IOException("Ungültige fest eingebaute Fragen");
+                bundled=parsed.questions;
+            }catch(Exception ex){message="Die eingebaute Fragenbank konnte nicht geladen werden.";}
+            active=bundled;
+            File saved=new File(getFilesDir(),"questions.json");
+            if(saved.exists()){
+                try{
+                    ImportResult parsed=parse(read(new android.util.AtomicFile(saved).openRead()));
+                    active=parsed.questions;fromImport=true;
+                    if(parsed.skipped>0)message=parsed.skipped+" ungültige importierte Fragen übersprungen.";
+                }catch(Exception ex){message="Gespeicherte Fragenbank nicht lesbar. Eingebaute Fragen werden verwendet.";}
+            }
+            final ArrayList<Q> selected=active;
+            final boolean localImport=fromImport;
+            final String status=message;
+            runOnUiThread(()->{
+                if(isFinishing()||isDestroyed())return;
+                bank=selected;imported=localImport;loading=false;note=status;home();
+            });
+        });
     }
     int dp(float n){return (int)(n*getResources().getDisplayMetrics().density+0.5f);}
     GradientDrawable bg(int color,int radius){GradientDrawable g=new GradientDrawable();g.setColor(color);g.setCornerRadius(dp(radius));return g;}
@@ -117,13 +137,15 @@ public class MainActivity extends Activity {
         add(hero,text((1000-xp%1000)+" XP bis zum nächsten Level",14,WHITE,false),0);add(body,hero,17);
         heading("Bereit für eine Runde?");
         if(loading){caption("Fragenbank wird geladen …");return;}
+        if(!bank.isEmpty()){
         action("⤨  Alle Fragen · Zufall",()->{mode="mixed";mixedSetup();});
         secondary("▶  Gezieltes Quiz",()->{mode="training";classes();});
         secondary("★  Tages-Challenge",()->{mode="daily";classes();});
         secondary("↻  Fehler trainieren  ("+mistakes.size()+")",()->{mode="mistakes";classes();});
         secondary("▥  Mein Fortschritt",()->stats());
+        }else caption("Keine spielbaren Fragen verfügbar. Bitte importiere eine gültige JSON-Datei.");
         heading("Fragenbank");
-        caption((imported?"Importierte Fragen · redaktionell nicht freigegeben":"Demo-Fragenbank")+" · "+bank.size()+" Fragen · Klassen 1–9");
+        caption((imported?"Importierte Fragen · redaktionell nicht freigegeben":"Fest eingebaute Demo-Fragenbank")+" · "+bank.size()+" Fragen · Klassen 1–9");
         if(!note.isEmpty())caption(note);
         secondary("＋  Fragenbank importieren (JSON)",()->pick());
         caption("Offline · ohne Werbung · keine Rechenaufgaben");
@@ -316,37 +338,5 @@ public class MainActivity extends Activity {
         }
         if(result.questions.isEmpty())throw new IOException("Keine gültigen Fragen erkannt. Prüfe JSON-Feldnamen und Antwortindizes.");
         return result;
-    }
-    void d(int g,String sub,String question,String right,String b,String c,String d,String exp){
-        bank.add(new Q("demo-"+g+"-"+bank.size(),g,sub,"Demo","mittel",question,new ArrayList<>(Arrays.asList(right,b,c,d)),0,exp));
-    }
-    void demo(){
-        d(1,"Deutsch","Welches Wort reimt sich auf Maus?","Haus","Baum","Tisch","Hund","Maus und Haus klingen am Ende gleich.");
-        d(1,"NMG","Welches Tier kann fliegen?","Spatz","Igel","Kuh","Frosch","Ein Spatz hat Flügel und kann fliegen.");
-        d(1,"Musik","Womit spielst du eine Trommel?","Mit Händen oder Schlägeln","Mit einer Schere","Mit einem Lineal zum Zeichnen","Mit einem Pinsel","Eine Trommel klingt, wenn ihr Fell angeschlagen wird.");
-        d(2,"Deutsch","Welches Wort ist ein Nomen?","Blume","schnell","laufen","rot","Blume bezeichnet eine Pflanze und ist ein Nomen.");
-        d(2,"NMG","Was brauchen Pflanzen zum Wachsen?","Wasser und Licht","Plastik und Rauch","Nur Sand","Nur Dunkelheit","Pflanzen benötigen unter anderem Wasser und Licht.");
-        d(2,"Sport","Was hilft beim Velofahren, den Kopf zu schützen?","Velohelm","Handschuhe","Rucksack","Schal","Ein passender Helm schützt den Kopf bei einem Sturz.");
-        d(3,"Englisch","What is the English word for «Hund»?","dog","cat","bird","fish","Dog bedeutet Hund.");
-        d(3,"Deutsch","Was ist das Gegenteil von leise?","laut","langsam","kalt","klein","Leise und laut sind Gegenteile.");
-        d(3,"NMG","Welche Jahreszeit folgt auf den Sommer?","Herbst","Winter","Frühling","Sommer","Nach dem Sommer beginnt der Herbst.");
-        d(4,"NMG","Welcher Kanton ist flächenmässig der grösste?","Graubünden","Zürich","Genf","Zug","Graubünden ist der grösste Kanton der Schweiz.");
-        d(4,"Deutsch","Welches Wort ist ein Verb?","springen","Schule","gelb","heute","Springen bezeichnet eine Tätigkeit.");
-        d(4,"Englisch","Which word means «Fenster»?","window","door","wall","floor","Window bedeutet Fenster.");
-        d(5,"Französisch","Was bedeutet «bonjour»?","Guten Tag","Gute Nacht","Danke","Bis morgen","Bonjour ist eine Begrüssung am Tag.");
-        d(5,"NMG","Welches Organ pumpt Blut durch den Körper?","Herz","Magen","Lunge","Leber","Das Herz pumpt Blut durch die Blutgefässe.");
-        d(5,"Medien und Informatik","Was ist ein starkes Passwort?","Ein langes, einzigartiges Passwort","Der eigene Vorname","123456","Das Wort Passwort","Lange einzigartige Passwörter sind schwerer zu erraten.");
-        d(6,"Deutsch","Welche Zeitform hat «Ich habe gelesen»?","Perfekt","Präsens","Futur I","Präteritum","Habe gelesen ist das Perfekt.");
-        d(6,"Englisch","Choose the past tense of «go».","went","goed","goes","going","Went ist die unregelmässige Vergangenheitsform von go.");
-        d(6,"NMG","Was beschreibt den Wasserkreislauf?","Verdunstung, Kondensation und Niederschlag","Nur das Gefrieren","Nur die Strömung eines Flusses","Nur die Reinigung von Trinkwasser","Wasser verdunstet, kondensiert und fällt als Niederschlag zurück.");
-        d(7,"Natur und Technik","Was ist bei der Fotosynthese ein Ausgangsstoff?","Kohlenstoffdioxid","Helium","Stickstoffgas","Kochsalz","Pflanzen nutzen unter anderem Kohlenstoffdioxid, Wasser und Lichtenergie.");
-        d(7,"Räume, Zeiten, Gesellschaften","Was bezeichnet eine Demokratie?","Eine Herrschaftsform mit politischer Beteiligung des Volkes","Eine Herrschaft ohne Wahlen durch eine einzelne Person","Eine Gebirgsform","Ein Wirtschaftszweig","In einer Demokratie kann das Volk an politischen Entscheidungen mitwirken.");
-        d(7,"WAH","Warum sollen rohe Pouletteile getrennt von Salat verarbeitet werden?","Um Keimübertragung zu vermeiden","Damit der Salat mehr Farbe hat","Damit das Poulet schneller abkühlt","Damit beide gleich riechen","Getrennte Arbeitsflächen und Geräte verringern Kreuzkontamination.");
-        d(8,"Natur und Technik","Welche Teilchen tragen eine negative elektrische Ladung?","Elektronen","Protonen","Neutronen","Photonen","Elektronen sind negativ geladen.");
-        d(8,"Räume, Zeiten, Gesellschaften","Welche Epoche ist für die Industrialisierung in Europa besonders bedeutend?","19. Jahrhundert","5. Jahrhundert","12. Jahrhundert","Antike","Im 19. Jahrhundert verbreiteten sich Fabriken und Maschinen stark.");
-        d(8,"Französisch","Welche Form passt: Nous ___ à Genève. (habiter)","habitons","habitez","habite","habitent","Bei nous lautet die Form habitons.");
-        d(9,"Natur und Technik","Welche Aufgabe hat die DNA?","Erbinformation speichern","Sauerstoff im Blut transportieren","Nahrung im Magen zerkleinern","Licht ins Auge bündeln","DNA enthält die genetische Information.");
-        d(9,"Berufliche Orientierung","Was gehört typischerweise in ein Bewerbungsschreiben?","Motivation und Bezug zur Stelle","Passwörter","Eine unpassende Einkaufsliste","Nur ein Emoji","Ein Bewerbungsschreiben erklärt, warum die Stelle und die Person zusammenpassen.");
-        d(9,"Medien und Informatik","Was ist Phishing?","Ein Versuch, vertrauliche Daten durch Täuschung zu erlangen","Eine Methode zur Datensicherung","Ein Programm für Tabellen","Eine Art der Bildschirmreinigung","Phishing täuscht Vertrauen vor, um beispielsweise Zugangsdaten zu stehlen.");
     }
 }
