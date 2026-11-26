@@ -208,7 +208,7 @@ public class MainActivity extends Activity {
             LinearLayout row=new LinearLayout(this);
             for(int g=start;g<start+3;g++){
                 final int selected=g;
-                TextView cell=button(g+". Klasse"+(profileGrade==g?" ✓":"")+"\\n"+classCount(g)+" Fragen",
+                TextView cell=button(g+". Klasse"+(profileGrade==g?" ✓":"")+"\n"+classCount(g)+" Fragen",
                     profileGrade==g?PURPLE:WHITE,profileGrade==g?WHITE:INK,()->{
                         profileGrade=selected;prefs.edit().putInt("profile_grade",selected).apply();
                         String next=pendingProfileAction;pendingProfileAction="";
