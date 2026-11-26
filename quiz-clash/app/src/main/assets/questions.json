@@ -1,0 +1,434 @@
+[
+  {
+    "id": "demo-1-0",
+    "grade": 1,
+    "subject": "Deutsch",
+    "topic": "Demo",
+    "difficulty": "mittel",
+    "question": "Welches Wort reimt sich auf Maus?",
+    "options": [
+      "Haus",
+      "Baum",
+      "Tisch",
+      "Hund"
+    ],
+    "correct_index": 0,
+    "explanation": "Maus und Haus klingen am Ende gleich."
+  },
+  {
+    "id": "demo-1-1",
+    "grade": 1,
+    "subject": "NMG",
+    "topic": "Demo",
+    "difficulty": "mittel",
+    "question": "Welches Tier kann fliegen?",
+    "options": [
+      "Spatz",
+      "Igel",
+      "Kuh",
+      "Frosch"
+    ],
+    "correct_index": 0,
+    "explanation": "Ein Spatz hat Flügel und kann fliegen."
+  },
+  {
+    "id": "demo-1-2",
+    "grade": 1,
+    "subject": "Musik",
+    "topic": "Demo",
+    "difficulty": "mittel",
+    "question": "Womit spielst du eine Trommel?",
+    "options": [
+      "Mit Händen oder Schlägeln",
+      "Mit einer Schere",
+      "Mit einem Lineal zum Zeichnen",
+      "Mit einem Pinsel"
+    ],
+    "correct_index": 0,
+    "explanation": "Eine Trommel klingt, wenn ihr Fell angeschlagen wird."
+  },
+  {
+    "id": "demo-2-3",
+    "grade": 2,
+    "subject": "Deutsch",
+    "topic": "Demo",
+    "difficulty": "mittel",
+    "question": "Welches Wort ist ein Nomen?",
+    "options": [
+      "Blume",
+      "schnell",
+      "laufen",
+      "rot"
+    ],
+    "correct_index": 0,
+    "explanation": "Blume bezeichnet eine Pflanze und ist ein Nomen."
+  },
+  {
+    "id": "demo-2-4",
+    "grade": 2,
+    "subject": "NMG",
+    "topic": "Demo",
+    "difficulty": "mittel",
+    "question": "Was brauchen Pflanzen zum Wachsen?",
+    "options": [
+      "Wasser und Licht",
+      "Plastik und Rauch",
+      "Nur Sand",
+      "Nur Dunkelheit"
+    ],
+    "correct_index": 0,
+    "explanation": "Pflanzen benötigen unter anderem Wasser und Licht."
+  },
+  {
+    "id": "demo-2-5",
+    "grade": 2,
+    "subject": "Sport",
+    "topic": "Demo",
+    "difficulty": "mittel",
+    "question": "Was hilft beim Velofahren, den Kopf zu schützen?",
+    "options": [
+      "Velohelm",
+      "Handschuhe",
+      "Rucksack",
+      "Schal"
+    ],
+    "correct_index": 0,
+    "explanation": "Ein passender Helm schützt den Kopf bei einem Sturz."
+  },
+  {
+    "id": "demo-3-6",
+    "grade": 3,
+    "subject": "Englisch",
+    "topic": "Demo",
+    "difficulty": "mittel",
+    "question": "What is the English word for «Hund»?",
+    "options": [
+      "dog",
+      "cat",
+      "bird",
+      "fish"
+    ],
+    "correct_index": 0,
+    "explanation": "Dog bedeutet Hund."
+  },
+  {
+    "id": "demo-3-7",
+    "grade": 3,
+    "subject": "Deutsch",
+    "topic": "Demo",
+    "difficulty": "mittel",
+    "question": "Was ist das Gegenteil von leise?",
+    "options": [
+      "laut",
+      "langsam",
+      "kalt",
+      "klein"
+    ],
+    "correct_index": 0,
+    "explanation": "Leise und laut sind Gegenteile."
+  },
+  {
+    "id": "demo-3-8",
+    "grade": 3,
+    "subject": "NMG",
+    "topic": "Demo",
+    "difficulty": "mittel",
+    "question": "Welche Jahreszeit folgt auf den Sommer?",
+    "options": [
+      "Herbst",
+      "Winter",
+      "Frühling",
+      "Sommer"
+    ],
+    "correct_index": 0,
+    "explanation": "Nach dem Sommer beginnt der Herbst."
+  },
+  {
+    "id": "demo-4-9",
+    "grade": 4,
+    "subject": "NMG",
+    "topic": "Demo",
+    "difficulty": "mittel",
+    "question": "Welcher Kanton ist flächenmässig der grösste?",
+    "options": [
+      "Graubünden",
+      "Zürich",
+      "Genf",
+      "Zug"
+    ],
+    "correct_index": 0,
+    "explanation": "Graubünden ist der grösste Kanton der Schweiz."
+  },
+  {
+    "id": "demo-4-10",
+    "grade": 4,
+    "subject": "Deutsch",
+    "topic": "Demo",
+    "difficulty": "mittel",
+    "question": "Welches Wort ist ein Verb?",
+    "options": [
+      "springen",
+      "Schule",
+      "gelb",
+      "heute"
+    ],
+    "correct_index": 0,
+    "explanation": "Springen bezeichnet eine Tätigkeit."
+  },
+  {
+    "id": "demo-4-11",
+    "grade": 4,
+    "subject": "Englisch",
+    "topic": "Demo",
+    "difficulty": "mittel",
+    "question": "Which word means «Fenster»?",
+    "options": [
+      "window",
+      "door",
+      "wall",
+      "floor"
+    ],
+    "correct_index": 0,
+    "explanation": "Window bedeutet Fenster."
+  },
+  {
+    "id": "demo-5-12",
+    "grade": 5,
+    "subject": "Französisch",
+    "topic": "Demo",
+    "difficulty": "mittel",
+    "question": "Was bedeutet «bonjour»?",
+    "options": [
+      "Guten Tag",
+      "Gute Nacht",
+      "Danke",
+      "Bis morgen"
+    ],
+    "correct_index": 0,
+    "explanation": "Bonjour ist eine Begrüssung am Tag."
+  },
+  {
+    "id": "demo-5-13",
+    "grade": 5,
+    "subject": "NMG",
+    "topic": "Demo",
+    "difficulty": "mittel",
+    "question": "Welches Organ pumpt Blut durch den Körper?",
+    "options": [
+      "Herz",
+      "Magen",
+      "Lunge",
+      "Leber"
+    ],
+    "correct_index": 0,
+    "explanation": "Das Herz pumpt Blut durch die Blutgefässe."
+  },
+  {
+    "id": "demo-5-14",
+    "grade": 5,
+    "subject": "Medien und Informatik",
+    "topic": "Demo",
+    "difficulty": "mittel",
+    "question": "Was ist ein starkes Passwort?",
+    "options": [
+      "Ein langes, einzigartiges Passwort",
+      "Der eigene Vorname",
+      "123456",
+      "Das Wort Passwort"
+    ],
+    "correct_index": 0,
+    "explanation": "Lange einzigartige Passwörter sind schwerer zu erraten."
+  },
+  {
+    "id": "demo-6-15",
+    "grade": 6,
+    "subject": "Deutsch",
+    "topic": "Demo",
+    "difficulty": "mittel",
+    "question": "Welche Zeitform hat «Ich habe gelesen»?",
+    "options": [
+      "Perfekt",
+      "Präsens",
+      "Futur I",
+      "Präteritum"
+    ],
+    "correct_index": 0,
+    "explanation": "Habe gelesen ist das Perfekt."
+  },
+  {
+    "id": "demo-6-16",
+    "grade": 6,
+    "subject": "Englisch",
+    "topic": "Demo",
+    "difficulty": "mittel",
+    "question": "Choose the past tense of «go».",
+    "options": [
+      "went",
+      "goed",
+      "goes",
+      "going"
+    ],
+    "correct_index": 0,
+    "explanation": "Went ist die unregelmässige Vergangenheitsform von go."
+  },
+  {
+    "id": "demo-6-17",
+    "grade": 6,
+    "subject": "NMG",
+    "topic": "Demo",
+    "difficulty": "mittel",
+    "question": "Was beschreibt den Wasserkreislauf?",
+    "options": [
+      "Verdunstung, Kondensation und Niederschlag",
+      "Nur das Gefrieren",
+      "Nur die Strömung eines Flusses",
+      "Nur die Reinigung von Trinkwasser"
+    ],
+    "correct_index": 0,
+    "explanation": "Wasser verdunstet, kondensiert und fällt als Niederschlag zurück."
+  },
+  {
+    "id": "demo-7-18",
+    "grade": 7,
+    "subject": "Natur und Technik",
+    "topic": "Demo",
+    "difficulty": "mittel",
+    "question": "Was ist bei der Fotosynthese ein Ausgangsstoff?",
+    "options": [
+      "Kohlenstoffdioxid",
+      "Helium",
+      "Stickstoffgas",
+      "Kochsalz"
+    ],
+    "correct_index": 0,
+    "explanation": "Pflanzen nutzen unter anderem Kohlenstoffdioxid, Wasser und Lichtenergie."
+  },
+  {
+    "id": "demo-7-19",
+    "grade": 7,
+    "subject": "Räume, Zeiten, Gesellschaften",
+    "topic": "Demo",
+    "difficulty": "mittel",
+    "question": "Was bezeichnet eine Demokratie?",
+    "options": [
+      "Eine Herrschaftsform mit politischer Beteiligung des Volkes",
+      "Eine Herrschaft ohne Wahlen durch eine einzelne Person",
+      "Eine Gebirgsform",
+      "Ein Wirtschaftszweig"
+    ],
+    "correct_index": 0,
+    "explanation": "In einer Demokratie kann das Volk an politischen Entscheidungen mitwirken."
+  },
+  {
+    "id": "demo-7-20",
+    "grade": 7,
+    "subject": "WAH",
+    "topic": "Demo",
+    "difficulty": "mittel",
+    "question": "Warum sollen rohe Pouletteile getrennt von Salat verarbeitet werden?",
+    "options": [
+      "Um Keimübertragung zu vermeiden",
+      "Damit der Salat mehr Farbe hat",
+      "Damit das Poulet schneller abkühlt",
+      "Damit beide gleich riechen"
+    ],
+    "correct_index": 0,
+    "explanation": "Getrennte Arbeitsflächen und Geräte verringern Kreuzkontamination."
+  },
+  {
+    "id": "demo-8-21",
+    "grade": 8,
+    "subject": "Natur und Technik",
+    "topic": "Demo",
+    "difficulty": "mittel",
+    "question": "Welche Teilchen tragen eine negative elektrische Ladung?",
+    "options": [
+      "Elektronen",
+      "Protonen",
+      "Neutronen",
+      "Photonen"
+    ],
+    "correct_index": 0,
+    "explanation": "Elektronen sind negativ geladen."
+  },
+  {
+    "id": "demo-8-22",
+    "grade": 8,
+    "subject": "Räume, Zeiten, Gesellschaften",
+    "topic": "Demo",
+    "difficulty": "mittel",
+    "question": "Welche Epoche ist für die Industrialisierung in Europa besonders bedeutend?",
+    "options": [
+      "19. Jahrhundert",
+      "5. Jahrhundert",
+      "12. Jahrhundert",
+      "Antike"
+    ],
+    "correct_index": 0,
+    "explanation": "Im 19. Jahrhundert verbreiteten sich Fabriken und Maschinen stark."
+  },
+  {
+    "id": "demo-8-23",
+    "grade": 8,
+    "subject": "Französisch",
+    "topic": "Demo",
+    "difficulty": "mittel",
+    "question": "Welche Form passt: Nous ___ à Genève. (habiter)",
+    "options": [
+      "habitons",
+      "habitez",
+      "habite",
+      "habitent"
+    ],
+    "correct_index": 0,
+    "explanation": "Bei nous lautet die Form habitons."
+  },
+  {
+    "id": "demo-9-24",
+    "grade": 9,
+    "subject": "Natur und Technik",
+    "topic": "Demo",
+    "difficulty": "mittel",
+    "question": "Welche Aufgabe hat die DNA?",
+    "options": [
+      "Erbinformation speichern",
+      "Sauerstoff im Blut transportieren",
+      "Nahrung im Magen zerkleinern",
+      "Licht ins Auge bündeln"
+    ],
+    "correct_index": 0,
+    "explanation": "DNA enthält die genetische Information."
+  },
+  {
+    "id": "demo-9-25",
+    "grade": 9,
+    "subject": "Berufliche Orientierung",
+    "topic": "Demo",
+    "difficulty": "mittel",
+    "question": "Was gehört typischerweise in ein Bewerbungsschreiben?",
+    "options": [
+      "Motivation und Bezug zur Stelle",
+      "Passwörter",
+      "Eine unpassende Einkaufsliste",
+      "Nur ein Emoji"
+    ],
+    "correct_index": 0,
+    "explanation": "Ein Bewerbungsschreiben erklärt, warum die Stelle und die Person zusammenpassen."
+  },
+  {
+    "id": "demo-9-26",
+    "grade": 9,
+    "subject": "Medien und Informatik",
+    "topic": "Demo",
+    "difficulty": "mittel",
+    "question": "Was ist Phishing?",
+    "options": [
+      "Ein Versuch, vertrauliche Daten durch Täuschung zu erlangen",
+      "Eine Methode zur Datensicherung",
+      "Ein Programm für Tabellen",
+      "Eine Art der Bildschirmreinigung"
+    ],
+    "correct_index": 0,
+    "explanation": "Phishing täuscht Vertrauen vor, um beispielsweise Zugangsdaten zu stehlen."
+  }
+]

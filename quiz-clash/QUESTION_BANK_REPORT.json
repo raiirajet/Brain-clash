@@ -1,0 +1,130 @@
+{
+  "count": 5400,
+  "by_grade": {
+    "1": {
+      "selected": 600,
+      "subjects": {
+        "Deutsch": 443,
+        "NMG": 137,
+        "Musik": 9,
+        "Gestalten": 7,
+        "Bewegung und Sport": 4
+      }
+    },
+    "2": {
+      "selected": 600,
+      "subjects": {
+        "Deutsch": 446,
+        "NMG": 128,
+        "Gestalten": 8,
+        "Musik": 9,
+        "Bewegung und Sport": 9
+      }
+    },
+    "3": {
+      "selected": 600,
+      "subjects": {
+        "Deutsch": 266,
+        "Englisch": 169,
+        "NMG": 155,
+        "Medien und Informatik": 3,
+        "Gestalten": 3,
+        "Bewegung und Sport": 3,
+        "Musik": 1
+      }
+    },
+    "4": {
+      "selected": 600,
+      "subjects": {
+        "Englisch": 255,
+        "NMG": 103,
+        "Musik": 9,
+        "Deutsch": 223,
+        "Gestalten": 3,
+        "Medien und Informatik": 5,
+        "Bewegung und Sport": 2
+      }
+    },
+    "5": {
+      "selected": 600,
+      "subjects": {
+        "NMG": 83,
+        "Englisch": 91,
+        "Französisch": 216,
+        "Deutsch": 182,
+        "Musik": 20,
+        "Medien und Informatik": 6,
+        "Bewegung und Sport": 1,
+        "Gestalten": 1
+      }
+    },
+    "6": {
+      "selected": 600,
+      "subjects": {
+        "Deutsch": 112,
+        "Englisch": 112,
+        "Musik": 17,
+        "Französisch": 255,
+        "NMG": 98,
+        "Gestalten": 3,
+        "Medien und Informatik": 3
+      }
+    },
+    "7": {
+      "selected": 600,
+      "subjects": {
+        "Räume, Zeiten, Gesellschaften": 33,
+        "Französisch": 150,
+        "Englisch": 189,
+        "Deutsch": 203,
+        "Berufliche Orientierung": 2,
+        "Natur und Technik": 6,
+        "Gestalten": 2,
+        "Medien und Informatik": 3,
+        "Religionen, Kulturen, Ethik": 3,
+        "Musik": 2,
+        "WAH": 6,
+        "Bewegung und Sport": 1
+      }
+    },
+    "8": {
+      "selected": 600,
+      "subjects": {
+        "Englisch": 174,
+        "Religionen, Kulturen, Ethik": 3,
+        "Französisch": 151,
+        "Natur und Technik": 43,
+        "Deutsch": 175,
+        "Räume, Zeiten, Gesellschaften": 41,
+        "Berufliche Orientierung": 3,
+        "WAH": 5,
+        "Gestalten": 2,
+        "Medien und Informatik": 3
+      }
+    },
+    "9": {
+      "selected": 600,
+      "subjects": {
+        "Deutsch": 187,
+        "Natur und Technik": 35,
+        "Englisch": 186,
+        "Französisch": 138,
+        "Räume, Zeiten, Gesellschaften": 38,
+        "Medien und Informatik": 4,
+        "Berufliche Orientierung": 4,
+        "WAH": 5,
+        "Religionen, Kulturen, Ethik": 3
+      }
+    }
+  },
+  "origins": {
+    "rule_based_practice": 4682,
+    "original_fact_draft": 691,
+    "original_demo": 27
+  },
+  "exact_duplicate_stems": 0,
+  "unique_ids": 5400,
+  "corrected_in_integration": 132,
+  "limitations": "KI-entworfene und regelbasierte Übungen, keine vollständige redaktionelle Einzelprüfung; Klassenempfehlung, keine verbindliche Lehrplanabdeckung. Wiederkehrende Übungsmuster und ungleiche Fachverteilung.",
+  "curriculum_reference": "https://zh.lehrplan.ch/"
+}
