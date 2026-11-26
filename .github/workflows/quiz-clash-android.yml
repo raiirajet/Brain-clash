@@ -25,6 +25,11 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.10.2'
+      - name: Profile model tests
+        run: |
+          mkdir -p /tmp/quiz-profile-tests
+          javac -d /tmp/quiz-profile-tests quiz-clash/app/src/main/java/ch/quizclash/mobile/ProfileModel.java quiz-clash/tests/ProfileModelTest.java
+          java -cp /tmp/quiz-profile-tests ch.quizclash.mobile.ProfileModelTest
       - name: Validate embedded questions
         run: python3 quiz-clash/scripts/validate_bank.py quiz-clash/app/src/main/assets/bank
       - name: Build and lint
@@ -33,13 +38,13 @@ jobs:
       - name: Verify APK
         run: |
           mkdir -p dist
-          cp quiz-clash/app/build/outputs/apk/debug/app-debug.apk dist/Quiz-Clash-0.1.3-debug.apk
-          python3 quiz-clash/scripts/validate_bank.py quiz-clash/app/src/main/assets/bank dist/Quiz-Clash-0.1.3-debug.apk dist/Quiz-Clash-5400-Fragen.json
+          cp quiz-clash/app/build/outputs/apk/debug/app-debug.apk dist/Quiz-Clash-0.1.4-debug.apk
+          python3 quiz-clash/scripts/validate_bank.py quiz-clash/app/src/main/assets/bank dist/Quiz-Clash-0.1.4-debug.apk dist/Quiz-Clash-5400-Fragen.json
           cd dist
-          sha256sum Quiz-Clash-0.1.3-debug.apk > SHA256SUMS.txt
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose Quiz-Clash-0.1.3-debug.apk
+          sha256sum Quiz-Clash-0.1.4-debug.apk > SHA256SUMS.txt
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose Quiz-Clash-0.1.4-debug.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: Quiz-Clash-0.1.3-APK
+          name: Quiz-Clash-0.1.4-APK
           path: dist/
           if-no-files-found: error

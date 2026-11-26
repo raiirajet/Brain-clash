@@ -35,7 +35,11 @@ public class MainActivity extends Activity {
     android.content.SharedPreferences prefs;
     LinearLayout root,body; ScrollView scroll;
     int grade=4,count=10,index=0,score=0,correct=0,streak=0,chosen=-1,totalAnswered=0;
-    int mixedCount=10;
+    int mixedCount=10,profileGrade=0,avatarStyle=0,draftStyle=0;
+    long avatarSeed,draftSeed;
+    boolean setupFromClasses=false;
+    String pendingProfileAction="";
+    final Random avatarRandom=new Random();
     long xp=0;
     String screen="home",mode="training",difficulty="Alle";
     boolean imported=false,loading=false;
@@ -46,7 +50,11 @@ public class MainActivity extends Activity {
         super.onCreate(state);
         prefs=getSharedPreferences("quiz_progress",MODE_PRIVATE);
         xp=prefs.getLong("xp",0); totalAnswered=prefs.getInt("answered",0);
-        grade=Math.max(1,Math.min(9,prefs.getInt("grade",4)));
+        profileGrade=ProfileModel.validGrade(prefs.getInt("profile_grade",0));
+        grade=profileGrade>0?profileGrade:4;
+        avatarStyle=ProfileModel.validStyle(prefs.getInt("avatar_style",0));
+        if(!prefs.contains("avatar_seed"))prefs.edit().putLong("avatar_seed",avatarRandom.nextLong()).apply();
+        avatarSeed=prefs.getLong("avatar_seed",0L);
         mistakes=new HashSet<>(prefs.getStringSet("mistakes",Collections.emptySet()));
         loading=true;
         home();
@@ -141,23 +149,51 @@ public class MainActivity extends Activity {
         if(k.contains("wah")||k.contains("haushalt"))return "🍎";return "✦";
     }
     int level(){return (int)Math.min(Integer.MAX_VALUE,1+xp/1000);}
+    long classCount(int g){return bank.stream().filter(q->q.grade==g).count();}
+    long classMistakes(int g){return bank.stream().filter(q->q.grade==g&&mistakes.contains(q.id)).count();}
+    void profileAction(String requested){
+        if(profileGrade==0){pendingProfileAction=requested;profileClass();return;}
+        grade=profileGrade;subjects.clear();difficulty="Alle";setupFromClasses=false;
+        mode=requested.equals("quick")?"training":requested;
+        if(requested.equals("quick")){count=10;start();}else setup();
+    }
     void home(){
-        base("home","Quiz Clash","Dein Wissen. Dein Abenteuer.",false);
-        ImageView logo=new ImageView(this);logo.setImageResource(R.drawable.quiz_icon);logo.setContentDescription("Quiz Clash Logo");logo.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        LinearLayout.LayoutParams logoParams=new LinearLayout.LayoutParams(dp(84),dp(84));logoParams.gravity=Gravity.CENTER_HORIZONTAL;logoParams.bottomMargin=dp(12);body.addView(logo,logoParams);
-        LinearLayout hero=column(PURPLE,20);
-        add(hero,text("✦  LEVEL "+level(),14,0xffffe3a1,true),8);
-        add(hero,text(xp+" XP",34,WHITE,true),5);
-        ProgressBar p=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);p.setMax(1000);p.setProgress((int)(xp%1000));p.setProgressTintList(ColorStateList.valueOf(GOLD));add(hero,p,8);
-        add(hero,text((1000-xp%1000)+" XP bis zum nächsten Level",14,WHITE,false),0);add(body,hero,17);
-        heading("Bereit für eine Runde?");
+        base("home","Quiz Clash","Dein persönliches Lern-Dashboard",false);
         if(loading){caption("Fragenbank wird geladen …");return;}
+        LinearLayout profile=column(PURPLE,16);
+        LinearLayout top=new LinearLayout(this);top.setOrientation(LinearLayout.HORIZONTAL);top.setGravity(Gravity.CENTER_VERTICAL);
+        AvatarView portrait=new AvatarView(this,avatarSeed,avatarStyle);
+        portrait.setContentDescription("Dein Avatar. Tippen zum Bearbeiten.");portrait.setOnClickListener(v->openAvatar());portrait.setClickable(true);portrait.setFocusable(true);
+        LinearLayout.LayoutParams ap=new LinearLayout.LayoutParams(dp(92),dp(92));ap.rightMargin=dp(14);top.addView(portrait,ap);
+        LinearLayout info=new LinearLayout(this);info.setOrientation(LinearLayout.VERTICAL);
+        add(info,text("DEIN PROFIL",12,GOLD,true),4);
+        add(info,text(profileGrade==0?"Welche Klasse besuchst du?":profileGrade+". Klasse",23,WHITE,true),5);
+        add(info,text(profileGrade==0?"Wähle deine Klasse für passende Quizfragen.":classCount(profileGrade)+" passende Fragen",14,WHITE,false),0);
+        top.addView(info,new LinearLayout.LayoutParams(0,-2,1));add(profile,top,14);
+        add(profile,button(profileGrade==0?"Meine Klasse festlegen":"Klasse ändern",WHITE,INK,()->{pendingProfileAction="";profileClass();}),8);
+        add(profile,button("Avatar gestalten",0xff3e329f,WHITE,()->openAvatar()),0);add(body,profile,14);
+
+        LinearLayout hero=column(WHITE,16);
+        add(hero,text("★  LEVEL "+level(),15,PURPLE,true),5);
+        add(hero,text(xp+" XP",30,INK,true),5);
+        ProgressBar p=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);p.setMax(1000);p.setProgress((int)(xp%1000));p.setProgressTintList(ColorStateList.valueOf(PURPLE));add(hero,p,8);
+        add(hero,text((1000-xp%1000)+" XP bis zum nächsten Level",14,MUTED,false),8);
+        if(profileGrade>0){
+            int attempts=prefs.getInt("answered_grade_"+profileGrade,0),right=prefs.getInt("correct_grade_"+profileGrade,0);
+            add(hero,text(attempts==0?"Klassenstatistik: noch keine neuen Antworten":attempts+" Antworten · "+Math.round(100.0*right/attempts)+" % richtig",14,INK,true),4);
+            add(hero,text(classMistakes(profileGrade)+" Fragen zum Wiederholen",14,MUTED,false),0);
+        }else add(hero,text(totalAnswered+" beantwortete Fragen insgesamt",14,MUTED,false),0);
+        add(body,hero,16);
         if(!bank.isEmpty()){
-        action("⤨  Alle Fragen · Zufall",()->{mode="mixed";mixedSetup();});
-        secondary("▶  Gezieltes Quiz",()->{mode="training";classes();});
-        secondary("★  Tages-Challenge",()->{mode="daily";classes();});
-        secondary("↻  Fehler trainieren  ("+mistakes.size()+")",()->{mode="mistakes";classes();});
-        secondary("▥  Mein Fortschritt",()->stats());
+            heading("Für dich");
+            action(profileGrade==0?"▶  Meine Klasse wählen & starten":"▶  Meine Klasse · 10 Fragen",()->profileAction("quick"));
+            secondary("📚  Fächer meiner Klasse",()->profileAction("training"));
+            secondary("★  Tages-Challenge",()->profileAction("daily"));
+            secondary("↻  Fehler meiner Klasse trainieren",()->profileAction("mistakes"));
+            heading("Entdecken");
+            secondary("⤨  Alle Fragen · Zufall",()->{mode="mixed";mixedSetup();});
+            secondary("🎓  Andere Klasse üben",()->{mode="training";classes();});
+            secondary("▥  Mein Fortschritt",()->stats());
         }else caption("Keine spielbaren Fragen verfügbar. Bitte importiere eine gültige JSON-Datei.");
         heading("Fragenbank");
         caption(bank.size()+" Fragen · Klassen 1–9 · "+bundledBank.size()+" fest eingebaut"+(imported?" + Zusatzfragen":""));
@@ -166,12 +202,49 @@ public class MainActivity extends Activity {
         secondary("＋  Zusatzfragen importieren (JSON)",()->pick());
         caption("Offline · ohne Werbung · keine Rechenaufgaben");
     }
+    void profileClass(){
+        base("profileClass","Meine Klasse","Die Auswahl wird auf diesem Gerät gespeichert.",true);
+        for(int start=1;start<=9;start+=3){
+            LinearLayout row=new LinearLayout(this);
+            for(int g=start;g<start+3;g++){
+                final int selected=g;
+                TextView cell=button(g+". Klasse"+(profileGrade==g?" ✓":"")+"\\n"+classCount(g)+" Fragen",
+                    profileGrade==g?PURPLE:WHITE,profileGrade==g?WHITE:INK,()->{
+                        profileGrade=selected;prefs.edit().putInt("profile_grade",selected).apply();
+                        String next=pendingProfileAction;pendingProfileAction="";
+                        if(next.isEmpty())home();else profileAction(next);
+                    });
+                LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,-2,1);lp.setMargins(dp(3),0,dp(3),dp(10));row.addView(cell,lp);
+            }add(body,row,0);
+        }
+        caption("Du kannst deine Klasse später ändern und jederzeit auch andere Klassen oder alle Fragen spielen.");
+    }
+    void openAvatar(){draftSeed=avatarSeed;draftStyle=avatarStyle;avatarEditor();}
+    void avatarEditor(){
+        base("avatar","Mein Avatar","Gestalte deinen eigenen Quiz-Helden.",true);
+        LinearLayout panel=column(WHITE,16);
+        AvatarView preview=new AvatarView(this,draftSeed,draftStyle);preview.setContentDescription("Avatar-Vorschau: "+ProfileModel.STYLES[draftStyle]);
+        LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(dp(204),dp(204));lp.gravity=Gravity.CENTER_HORIZONTAL;lp.bottomMargin=dp(8);panel.addView(preview,lp);
+        TextView label=text(ProfileModel.STYLES[draftStyle],20,INK,true);label.setGravity(Gravity.CENTER);add(panel,label,0);add(body,panel,14);
+        heading("Wähle deinen Stil");
+        for(int start=0;start<ProfileModel.STYLES.length;start+=2){
+            LinearLayout row=new LinearLayout(this);
+            for(int k=start;k<Math.min(start+2,ProfileModel.STYLES.length);k++){final int style=k;
+                TextView v=button(ProfileModel.STYLES[k],draftStyle==k?PURPLE:WHITE,draftStyle==k?WHITE:INK,()->{draftStyle=style;avatarEditor();});
+                LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(0,-2,1);cp.setMargins(dp(3),0,dp(3),dp(8));row.addView(v,cp);
+            }add(body,row,0);
+        }
+        action("🎲  Neuen Avatar generieren",()->{draftSeed=avatarRandom.nextLong();avatarEditor();});
+        secondary("✨  Zufälliger Stil",()->{draftStyle=avatarRandom.nextInt(ProfileModel.STYLES.length);draftSeed=avatarRandom.nextLong();avatarEditor();});
+        action("✓  Avatar speichern",()->{avatarSeed=draftSeed;avatarStyle=draftStyle;prefs.edit().putLong("avatar_seed",avatarSeed).putInt("avatar_style",avatarStyle).apply();home();});
+        caption("Lokal generierte Illustration. Keine Fotos, keine KI-Cloud und kein Konto erforderlich.");
+    }
     void classes(){
-        base("classes","Deine Klasse","Wähle deine Schulstufe.",true);
+        base("classes","Klasse zum Üben","Dein gespeichertes Profil bleibt unverändert.",true);
         for(int start=1;start<=9;start+=3){
             LinearLayout row=new LinearLayout(this);row.setOrientation(LinearLayout.HORIZONTAL);
             for(int g=start;g<start+3;g++){final int gg=g;long n=bank.stream().filter(q->q.grade==gg&&(!mode.equals("mistakes")||mistakes.contains(q.id))).count();
-                TextView cell=button(g+". Klasse\n"+n+" Fragen",g==grade?PURPLE:WHITE,g==grade?WHITE:INK,()->{grade=gg;prefs.edit().putInt("grade",grade).apply();subjects.clear();difficulty="Alle";setup();});
+                TextView cell=button(g+". Klasse\n"+n+" Fragen",g==grade?PURPLE:WHITE,g==grade?WHITE:INK,()->{grade=gg;setupFromClasses=true;subjects.clear();difficulty="Alle";setup();});
                 LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,-2,1);lp.setMargins(dp(3),0,dp(3),dp(10));row.addView(cell,lp);
             }
             add(body,row,0);
@@ -228,7 +301,7 @@ public class MainActivity extends Activity {
         add(body,row,3);
     }
     void start(){
-        ArrayList<Q> p=pool();if(p.isEmpty())return;
+        ArrayList<Q> p=pool();if(p.isEmpty()){Toast.makeText(this,"Keine passenden Fragen verfügbar",Toast.LENGTH_SHORT).show();return;}
         if(mode.equals("daily")){
             p.sort(Comparator.comparing(q->q.id));
             long seed=java.time.LocalDate.now().toEpochDay()*31+grade;Collections.shuffle(p,new Random(seed));
@@ -267,9 +340,11 @@ public class MainActivity extends Activity {
     void answer(int selected){
         if(!screen.equals("quiz")||chosen>=0||index>=round.size())return;
         Q q=round.get(index);chosen=selected;totalAnswered++;
+        int attempts=prefs.getInt("answered_grade_"+q.grade,0)+1;
+        int right=prefs.getInt("correct_grade_"+q.grade,0)+(selected==q.answer?1:0);
         if(selected==q.answer){correct++;streak++;int points=streak>=3?125:100;score+=points;xp+=points;mistakes.remove(q.id);}
         else{streak=0;mistakes.add(q.id);}
-        prefs.edit().putLong("xp",xp).putInt("answered",totalAnswered).putStringSet("mistakes",new HashSet<>(mistakes)).apply();
+        prefs.edit().putLong("xp",xp).putInt("answered",totalAnswered).putInt("answered_grade_"+q.grade,attempts).putInt("correct_grade_"+q.grade,right).putStringSet("mistakes",new HashSet<>(mistakes)).apply();
         quiz();
     }
     void result(){
@@ -279,19 +354,22 @@ public class MainActivity extends Activity {
         add(card,text(correct+" von "+round.size()+" richtig",22,WHITE,true),6);
         add(card,text("Level "+level()+"  ·  "+xp+" XP insgesamt",15,WHITE,false),0);add(body,card,18);
         int stars=(correct*3)/round.size();heading(stars==3?"★★★  Fantastisch!":stars==2?"★★☆  Gut gemacht!":stars==1?"★☆☆  Weiter so!":"Weiter üben lohnt sich!");
-        action("Noch eine Runde",()->setup());secondary("Fehler trainieren",()->{boolean wasMixed=mode.equals("mixed");mode="mistakes";subjects.clear();difficulty="Alle";if(wasMixed)classes();else setup();});secondary("Zur Startseite",()->home());
+        action("Noch eine Runde",()->setup());secondary("Fehler trainieren",()->{boolean wasMixed=mode.equals("mixed");mode="mistakes";subjects.clear();difficulty="Alle";if(wasMixed)profileAction("mistakes");else setup();});secondary("Zur Startseite",()->home());
     }
     void stats(){
         base("stats","Mein Fortschritt","Dein persönlicher Lernweg.",true);
         heading("Level "+level());caption(xp+" XP insgesamt · "+totalAnswered+" beantwortete Fragen");
         heading("Fehlertraining");caption(mistakes.size()+" Fragen warten auf eine Wiederholung.");
+        heading("Meine Klassenstatistik");
+        caption("Antworten ab Version 0.1.4; frühere Gesamt-XP bleiben erhalten.");
+        for(int g=1;g<=9;g++){int n=prefs.getInt("answered_grade_"+g,0),r=prefs.getInt("correct_grade_"+g,0);if(n>0)caption(g+". Klasse · "+r+" von "+n+" richtig");}
         heading("Verfügbare Fragen");
         for(int g=1;g<=9;g++){final int gg=g;caption(g+". Klasse  ·  "+bank.stream().filter(q->q.grade==gg).count()+" Fragen");}
-        secondary("Fortschritt zurücksetzen",()->new AlertDialog.Builder(this).setTitle("Fortschritt löschen?").setMessage("XP und Fehlerliste werden gelöscht. Die Fragenbank bleibt erhalten.").setNegativeButton("Abbrechen",null).setPositiveButton("Löschen",(d,w)->{xp=0;totalAnswered=0;mistakes.clear();prefs.edit().remove("xp").remove("answered").remove("mistakes").apply();stats();}).show());
+        secondary("Fortschritt zurücksetzen",()->new AlertDialog.Builder(this).setTitle("Fortschritt löschen?").setMessage("XP und Fehlerliste werden gelöscht. Die Fragenbank bleibt erhalten.").setNegativeButton("Abbrechen",null).setPositiveButton("Löschen",(d,w)->{xp=0;totalAnswered=0;mistakes.clear();android.content.SharedPreferences.Editor e=prefs.edit().remove("xp").remove("answered").remove("mistakes");for(int g=1;g<=9;g++){e.remove("answered_grade_"+g).remove("correct_grade_"+g);}e.apply();stats();}).show());
     }
     void back(){
         switch(screen){case "quiz":new AlertDialog.Builder(this).setTitle("Runde beenden?").setMessage("Deine bereits verdienten Punkte bleiben gespeichert.").setNegativeButton("Weiterspielen",null).setPositiveButton("Beenden",(d,w)->home()).show();break;
-        case "mixed":home();break;case "setup":classes();break;case "home":super.onBackPressed();break;default:home();}
+        case "profileClass":pendingProfileAction="";home();break;case "avatar":home();break;case "mixed":home();break;case "setup":if(setupFromClasses)classes();else home();break;case "home":super.onBackPressed();break;default:home();}
     }
     @Override public void onBackPressed(){back();}
     void pick(){
