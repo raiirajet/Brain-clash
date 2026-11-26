@@ -28,7 +28,8 @@ public class MainActivity extends Activity {
             id=i;grade=g;subject=s;topic=t;difficulty=d;question=q;options=o;answer=a;explanation=e;
         }
     }
-    ArrayList<Q> bank=new ArrayList<>(),round=new ArrayList<>();
+    static final int BUNDLED_COUNT=5400;
+    ArrayList<Q> bank=new ArrayList<>(),round=new ArrayList<>(),bundledBank=new ArrayList<>();
     Set<String> mistakes=new HashSet<>(), subjects=new TreeSet<>();
     ArrayList<Integer> order=new ArrayList<>();
     android.content.SharedPreferences prefs;
@@ -54,27 +55,41 @@ public class MainActivity extends Activity {
             boolean fromImport=false;
             String message="";
             try {
-                ImportResult parsed=parse(read(getAssets().open("questions.json")));
-                if(parsed.skipped!=0)throw new IOException("Ungültige fest eingebaute Fragen");
-                bundled=parsed.questions;
+                ArrayList<Q> loaded=new ArrayList<>();
+                Set<String> ids=new HashSet<>(), stems=new HashSet<>();
+                for(int g=1;g<=9;g++){
+                    ImportResult parsed=parse(read(getAssets().open("bank/grade-"+g+".json")));
+                    if(parsed.skipped!=0||parsed.questions.size()!=600)throw new IOException("Ungültige Klassendatei "+g);
+                    for(Q q:parsed.questions){
+                        if(q.grade!=g||!ids.add(q.id)||!stems.add(norm(q.question)))throw new IOException("Doppelte oder falsch zugeordnete Frage");
+                        loaded.add(q);
+                    }
+                }
+                if(loaded.size()!=BUNDLED_COUNT)throw new IOException("Unvollständige Fragenbank");
+                bundled=loaded;
             }catch(Exception ex){message="Die eingebaute Fragenbank konnte nicht geladen werden.";}
             active=bundled;
             File saved=new File(getFilesDir(),"questions.json");
             if(saved.exists()){
                 try{
                     ImportResult parsed=parse(read(new android.util.AtomicFile(saved).openRead()));
-                    active=parsed.questions;fromImport=true;
+                    active=mergeBanks(bundled,parsed.questions);fromImport=active.size()>bundled.size();
                     if(parsed.skipped>0)message=parsed.skipped+" ungültige importierte Fragen übersprungen.";
                 }catch(Exception ex){message="Gespeicherte Fragenbank nicht lesbar. Eingebaute Fragen werden verwendet.";}
             }
-            final ArrayList<Q> selected=active;
+            final ArrayList<Q> selected=active, fixed=bundled;
             final boolean localImport=fromImport;
             final String status=message;
             runOnUiThread(()->{
                 if(isFinishing()||isDestroyed())return;
-                bank=selected;imported=localImport;loading=false;note=status;home();
+                bundledBank=fixed;bank=selected;imported=localImport;loading=false;note=status;home();
             });
         });
+    }
+    static ArrayList<Q> mergeBanks(List<Q> fixed,List<Q> extra){
+        ArrayList<Q> out=new ArrayList<>();Set<String> ids=new HashSet<>(),stems=new HashSet<>();
+        for(List<Q> source:Arrays.asList(fixed,extra))for(Q q:source){String stem=norm(q.question);if(ids.contains(q.id)||stems.contains(stem))continue;ids.add(q.id);stems.add(stem);out.add(q);}
+        return out;
     }
     int dp(float n){return (int)(n*getResources().getDisplayMetrics().density+0.5f);}
     GradientDrawable bg(int color,int radius){GradientDrawable g=new GradientDrawable();g.setColor(color);g.setCornerRadius(dp(radius));return g;}
@@ -145,9 +160,10 @@ public class MainActivity extends Activity {
         secondary("▥  Mein Fortschritt",()->stats());
         }else caption("Keine spielbaren Fragen verfügbar. Bitte importiere eine gültige JSON-Datei.");
         heading("Fragenbank");
-        caption((imported?"Importierte Fragen · redaktionell nicht freigegeben":"Fest eingebaute Demo-Fragenbank")+" · "+bank.size()+" Fragen · Klassen 1–9");
+        caption(bank.size()+" Fragen · Klassen 1–9 · "+bundledBank.size()+" fest eingebaut"+(imported?" + Zusatzfragen":""));
+        caption("Lernfragenbank · redaktionelle Vorschau");
         if(!note.isEmpty())caption(note);
-        secondary("＋  Fragenbank importieren (JSON)",()->pick());
+        secondary("＋  Zusatzfragen importieren (JSON)",()->pick());
         caption("Offline · ohne Werbung · keine Rechenaufgaben");
     }
     void classes(){
@@ -293,8 +309,8 @@ public class MainActivity extends Activity {
                 android.util.AtomicFile af=new android.util.AtomicFile(new File(getFilesDir(),"questions.json"));
                 FileOutputStream out=af.startWrite();
                 try{out.write(raw.getBytes(StandardCharsets.UTF_8));af.finishWrite(out);}catch(Exception e){af.failWrite(out);throw e;}
-                runOnUiThread(()->{if(isFinishing()||isDestroyed())return;bank=parsed.questions;imported=true;loading=false;mistakes.clear();prefs.edit().remove("mistakes").apply();
-                    note=bank.size()+" Fragen importiert. "+parsed.skipped+" ungültige oder doppelte Einträge übersprungen.";home();});
+                runOnUiThread(()->{if(isFinishing()||isDestroyed())return;bank=mergeBanks(bundledBank,parsed.questions);imported=bank.size()>bundledBank.size();loading=false;
+                    note=(bank.size()-bundledBank.size())+" zusätzliche Fragen verfügbar. "+parsed.skipped+" ungültige oder doppelte Einträge übersprungen.";home();});
             }catch(Exception e){runOnUiThread(()->{if(isFinishing()||isDestroyed())return;loading=false;note="Import nicht möglich: "+(e.getMessage()==null?"unbekannter Fehler":e.getMessage());home();});}
         });
     }
