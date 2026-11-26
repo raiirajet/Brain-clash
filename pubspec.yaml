@@ -23,6 +23,7 @@ flutter:
   assets:
     - assets/branding/brain_clash.webp
     - assets/games/
+    - assets/characters/
     - assets/fonts/Outfit-OFL.txt
     - assets/fonts/Inter-OFL.txt
   fonts:

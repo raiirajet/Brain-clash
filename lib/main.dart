@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'learning/progress.dart';
 import 'screens/home.dart';
 import 'widgets/arcade.dart';
+import 'widgets/character.dart';
 import 'audio/audio.dart';
 import 'localization/strings.dart' show L;
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -12,6 +13,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   LicenseRegistry.addLicense(() async* {for(final family in ['Outfit','Inter']){yield LicenseEntryWithLineBreaks([family],await rootBundle.loadString('assets/fonts/$family-OFL.txt'));}});
+  await preloadCharacterArt();
   final prefs=await SharedPreferences.getInstance();
   runApp(BrainClash(progress:await Progress.open(prefs)));
   await GameAudio(prefs).music();
